@@ -1,0 +1,49 @@
+
+> @artboard/web@0.1.0 dev
+> dotenv -e ../../.env -- next dev --port 3000 --webpack
+
+▲ Next.js 16.2.6 (webpack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.1.110:3000
+✓ Ready in 669ms
+
+○ Compiling / ...
+ GET / 200 in 3.8s (next.js: 3.6s, application-code: 190ms)
+ GET / 200 in 153ms (next.js: 18ms, application-code: 135ms)
+ GET / 200 in 259ms (next.js: 23ms, application-code: 236ms)
+ GET /prijava 500 in 2.6s (next.js: 2.1s, application-code: 561ms)
+ GET /prijava? 500 in 209ms (next.js: 11ms, application-code: 198ms)
+ GET /admin/admissions 500 in 2.5s (next.js: 2.1s, application-code: 421ms)
+ GET /admin/admissions 200 in 538ms (next.js: 16ms, application-code: 521ms)
+ GET /admin/admissions 404 in 3.0s (next.js: 2.2s, application-code: 760ms)
+ GET /admin/admissions 404 in 592ms (next.js: 79ms, application-code: 514ms)
+ GET /admin/admissions 404 in 522ms (next.js: 85ms, application-code: 437ms)
+○ Compiling /admin/admissions ...
+ GET /admin/admissions 200 in 4.4s (next.js: 4.2s, application-code: 212ms)
+ GET /admin/admissions 200 in 146ms (next.js: 4ms, application-code: 141ms)
+ GET /admin/admissions 200 in 198ms (next.js: 3ms, application-code: 195ms)
+ GET /admin/admissions 200 in 165ms (next.js: 6ms, application-code: 159ms)
+ GET /admin/admissions 200 in 42ms (next.js: 4ms, application-code: 38ms)
+ GET /admin/admissions 200 in 90ms (next.js: 2ms, application-code: 88ms)
+ GET /admin/admissions 200 in 178ms (next.js: 71ms, application-code: 107ms)
+ GET /admin/admissions 200 in 91ms (next.js: 42ms, application-code: 49ms)
+ GET /admin/admissions 200 in 173ms (next.js: 3ms, application-code: 170ms)
+ GET /admin/admissions 200 in 252ms (next.js: 6ms, application-code: 246ms)
+ GET /admin/admissions/8c682f2f-f5d8-475f-b554-e53a0aace02b 200 in 3.3s (next.js: 3.0s, application-code: 255ms)
+ GET /admin/admissions 200 in 166ms (next.js: 16ms, application-code: 150ms)
+ GET /admin/admissions/5e76fd66-bba9-4cbf-b22c-d7739b511d41 200 in 188ms (next.js: 23ms, application-code: 165ms)
+ GET /admin/admissions 200 in 108ms (next.js: 3ms, application-code: 105ms)
+ GET /admin/admissions 200 in 146ms (next.js: 27ms, application-code: 118ms)
+ GET /artists 200 in 3.5s (next.js: 2.3s, application-code: 1214ms)
+ GET /admin/admissions 200 in 333ms (next.js: 13ms, application-code: 319ms)
+ GET /admin/admissions/8c682f2f-f5d8-475f-b554-e53a0aace02b 200 in 212ms (next.js: 52ms, application-code: 159ms)
+ GET / 200 in 770ms (next.js: 649ms, application-code: 120ms)
+ GET /admin/admissions/8c682f2f-f5d8-475f-b554-e53a0aace02b 200 in 71ms (next.js: 22ms, application-code: 49ms)
+ GET /prijava 200 in 501ms (next.js: 30ms, application-code: 471ms)
+ GET /prijava 200 in 770ms (next.js: 696ms, application-code: 73ms)
+ GET /prijava 200 in 32ms (next.js: 2ms, application-code: 30ms)
+ GET /prijava 200 in 76ms (next.js: 41ms, application-code: 35ms)
+○ Compiling / ...
+ GET /prijava 200 in 130ms (next.js: 31ms, application-code: 99ms)
+ GET / 200 in 4.1s (next.js: 3.5s, application-code: 508ms)
+ GET /artists 200 in 904ms (next.js: 22ms, application-code: 882ms)

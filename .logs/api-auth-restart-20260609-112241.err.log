@@ -1,0 +1,135 @@
+(node:24952) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Unhandled exception PrismaClientValidationError: 
+Invalid `this.prisma.artistSubmission.findMany()` invocation in
+C:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\apps\api\src\modules\artist-submissions\artist-submissions.service.ts:81:36
+
+  78 const where = this.buildListWhere(query);
+  79 
+  80 const [items, total] = await this.prisma.$transaction([
+→ 81   this.prisma.artistSubmission.findMany({
+         where: {},
+         include: {
+           portfolioLinks: {
+             orderBy: {
+               createdAt: "asc"
+             }
+           },
+           socialLinks: {
+             orderBy: {
+               createdAt: "asc"
+             }
+           },
+           disciplines: {
+             include: {
+               discipline: true
+             },
+             orderBy: {
+               discipline: {
+                 name: "asc"
+               }
+             }
+           },
+           artworks: {
+             orderBy: {
+               orderIndex: "asc"
+             }
+           },
+           approvedArtist: {
+           ~~~~~~~~~~~~~~
+             select: {
+               id: true,
+               name: true,
+               slug: true
+             }
+           }
+         },
+         orderBy: [
+           {
+             createdAt: "desc"
+           },
+           {
+             fullName: "asc"
+           }
+         ],
+         skip: 0,
+         take: 20
+       })
+
+Unknown field `approvedArtist` for include statement on model `ArtistSubmission`. Available options are marked with ?.
+    at throwValidationException (C:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\node_modules\@prisma\client\src\runtime\core\errorRendering\throwValidationException.ts:46:9)
+    at zr.handleRequestError (C:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\node_modules\@prisma\client\src\runtime\RequestHandler.ts:211:7)
+    at zr.handleAndLogRequestError (C:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\node_modules\@prisma\client\src\runtime\RequestHandler.ts:183:12)
+    at zr.request (C:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\node_modules\@prisma\client\src\runtime\RequestHandler.ts:152:12)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at a (C:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:963:24) {
+  clientVersion: '7.8.0'
+}
+[31m[Nest] 20300  - [39m06/09/2026, 12:27:26 PM [31m  ERROR[39m [38;5;3m[NestApplication] [39m[31mError: listen EADDRINUSE: address already in use 0.0.0.0:4000[39m[38;5;3m +2ms[39m
+Error: listen EADDRINUSE: address already in use 0.0.0.0:4000
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at node:net:2206:7
+    at processTicksAndRejections (node:internal/process/task_queues:90:21)
+[31m[Nest] 24184  - [39m06/09/2026, 12:27:36 PM [31m  ERROR[39m [38;5;3m[NestApplication] [39m[31mError: listen EADDRINUSE: address already in use 0.0.0.0:4000[39m[38;5;3m +1ms[39m
+Error: listen EADDRINUSE: address already in use 0.0.0.0:4000
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at node:net:2206:7
+    at processTicksAndRejections (node:internal/process/task_queues:90:21)
+[31m[Nest] 19556  - [39m06/09/2026, 7:36:29 PM [31m  ERROR[39m [38;5;3m[NestApplication] [39m[31mError: listen EADDRINUSE: address already in use 0.0.0.0:4000[39m[38;5;3m +1ms[39m
+Error: listen EADDRINUSE: address already in use 0.0.0.0:4000
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at node:net:2206:7
+    at processTicksAndRejections (node:internal/process/task_queues:90:21)
+[31m[Nest] 25892  - [39m06/09/2026, 8:09:41 PM [31m  ERROR[39m [38;5;3m[NestApplication] [39m[31mError: listen EADDRINUSE: address already in use 0.0.0.0:4000[39m[38;5;3m +4ms[39m
+Error: listen EADDRINUSE: address already in use 0.0.0.0:4000
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at node:net:2206:7
+    at processTicksAndRejections (node:internal/process/task_queues:90:21)
+[31m[Nest] 22484  - [39m06/09/2026, 8:21:48 PM [31m  ERROR[39m [38;5;3m[NestApplication] [39m[31mError: listen EADDRINUSE: address already in use 0.0.0.0:4000[39m[38;5;3m +2ms[39m
+Error: listen EADDRINUSE: address already in use 0.0.0.0:4000
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at node:net:2206:7
+    at processTicksAndRejections (node:internal/process/task_queues:90:21)
+[31m[Nest] 27780  - [39m06/09/2026, 8:24:04 PM [31m  ERROR[39m [38;5;3m[NestApplication] [39m[31mError: listen EADDRINUSE: address already in use 0.0.0.0:4000[39m[38;5;3m +2ms[39m
+Error: listen EADDRINUSE: address already in use 0.0.0.0:4000
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at node:net:2206:7
+    at processTicksAndRejections (node:internal/process/task_queues:90:21)
+[31m[Nest] 25332  - [39m06/09/2026, 8:24:33 PM [31m  ERROR[39m [38;5;3m[NestApplication] [39m[31mError: listen EADDRINUSE: address already in use 0.0.0.0:4000[39m[38;5;3m +1ms[39m
+Error: listen EADDRINUSE: address already in use 0.0.0.0:4000
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at node:net:2206:7
+    at processTicksAndRejections (node:internal/process/task_queues:90:21)
+(node:8712) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[31m[Nest] 16316  - [39m06/09/2026, 8:26:10 PM [31m  ERROR[39m [38;5;3m[NestApplication] [39m[31mError: listen EADDRINUSE: address already in use 0.0.0.0:4000[39m[38;5;3m +2ms[39m
+Error: listen EADDRINUSE: address already in use 0.0.0.0:4000
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at node:net:2206:7
+    at processTicksAndRejections (node:internal/process/task_queues:90:21)
+[31m[Nest] 18532  - [39m06/09/2026, 8:30:29 PM [31m  ERROR[39m [38;5;3m[NestApplication] [39m[31mError: listen EADDRINUSE: address already in use 0.0.0.0:4000[39m[38;5;3m +2ms[39m
+Error: listen EADDRINUSE: address already in use 0.0.0.0:4000
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at node:net:2206:7
+    at processTicksAndRejections (node:internal/process/task_queues:90:21)
+[31m[Nest] 18352  - [39m06/09/2026, 8:31:14 PM [31m  ERROR[39m [38;5;3m[NestApplication] [39m[31mError: listen EADDRINUSE: address already in use 0.0.0.0:4000[39m[38;5;3m +1ms[39m
+Error: listen EADDRINUSE: address already in use 0.0.0.0:4000
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at node:net:2206:7
+    at processTicksAndRejections (node:internal/process/task_queues:90:21)
+[31m[Nest] 9468  - [39m06/09/2026, 8:34:45 PM [31m  ERROR[39m [38;5;3m[NestApplication] [39m[31mError: listen EADDRINUSE: address already in use 0.0.0.0:4000[39m[38;5;3m +3ms[39m
+Error: listen EADDRINUSE: address already in use 0.0.0.0:4000
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at node:net:2206:7
+    at processTicksAndRejections (node:internal/process/task_queues:90:21)

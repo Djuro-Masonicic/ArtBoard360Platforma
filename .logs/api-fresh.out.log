@@ -1,0 +1,193 @@
+[INFO] 19:06:07 ts-node-dev ver. 2.0.0 (using ts-node ver. 10.9.2, typescript ver. 5.9.3)
+[32m[Nest] 30040  - [39m06/08/2026, 7:06:09 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 30040  - [39m06/08/2026, 7:06:09 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +25ms[39m
+[32m[Nest] 30040  - [39m06/08/2026, 7:06:09 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPrismaModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 30040  - [39m06/08/2026, 7:06:09 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mStorageModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 30040  - [39m06/08/2026, 7:06:09 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mMailModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 30040  - [39m06/08/2026, 7:06:09 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mArtistsModule dependencies initialized[39m[38;5;3m +3ms[39m
+[32m[Nest] 30040  - [39m06/08/2026, 7:06:09 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTestimonialsModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 30040  - [39m06/08/2026, 7:06:09 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mArtworksModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 30040  - [39m06/08/2026, 7:06:09 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mArtistSubmissionsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 30040  - [39m06/08/2026, 7:06:09 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mArtistsController {/artists}:[39m[38;5;3m +4ms[39m
+[32m[Nest] 30040  - [39m06/08/2026, 7:06:09 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artists, GET} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 30040  - [39m06/08/2026, 7:06:09 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artists/:slug, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 30040  - [39m06/08/2026, 7:06:09 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artists, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 30040  - [39m06/08/2026, 7:06:09 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artists/:id, PATCH} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 30040  - [39m06/08/2026, 7:06:09 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mArtistSubmissionsController {/artist-submissions}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 30040  - [39m06/08/2026, 7:06:09 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artist-submissions, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 30040  - [39m06/08/2026, 7:06:09 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mArtworksController {/artworks}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 30040  - [39m06/08/2026, 7:06:09 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artworks/upload-url, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 30040  - [39m06/08/2026, 7:06:09 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artworks/upload, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 30040  - [39m06/08/2026, 7:06:09 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artworks, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 30040  - [39m06/08/2026, 7:06:09 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artworks/reorder, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 30040  - [39m06/08/2026, 7:06:09 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mTestimonialsController {/testimonials}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 30040  - [39m06/08/2026, 7:06:09 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/testimonials, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 30040  - [39m06/08/2026, 7:06:09 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +53ms[39m
+API listening on 0.0.0.0:4000
+GET /artists?page=1&pageSize=1 200 89ms
+GET /artists?page=1&pageSize=1&includeNsfw=true 200 38ms
+POST /artworks/upload-url 201 26ms
+POST /artist-submissions 201 3003ms
+GET /artists?page=1&pageSize=100&includeNsfw=true 200 66ms
+POST /artist-submissions 201 3419ms
+[INFO] 19:42:28 Restarting: c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\apps\api\src\modules\artist-submissions\artist-submissions.dto.ts has been modified
+[32m[Nest] 12984  - [39m06/08/2026, 7:42:29 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 12984  - [39m06/08/2026, 7:42:29 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +22ms[39m
+[32m[Nest] 12984  - [39m06/08/2026, 7:42:29 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPrismaModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 12984  - [39m06/08/2026, 7:42:29 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mStorageModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 12984  - [39m06/08/2026, 7:42:29 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mMailModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 12984  - [39m06/08/2026, 7:42:29 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mArtistsModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 12984  - [39m06/08/2026, 7:42:29 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTestimonialsModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 12984  - [39m06/08/2026, 7:42:29 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mArtworksModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 12984  - [39m06/08/2026, 7:42:29 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mArtistSubmissionsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 12984  - [39m06/08/2026, 7:42:29 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mArtistsController {/artists}:[39m[38;5;3m +5ms[39m
+[32m[Nest] 12984  - [39m06/08/2026, 7:42:29 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artists, GET} route[39m[38;5;3m +3ms[39m
+[32m[Nest] 12984  - [39m06/08/2026, 7:42:29 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artists/:slug, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 12984  - [39m06/08/2026, 7:42:29 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artists, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 12984  - [39m06/08/2026, 7:42:29 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artists/:id, PATCH} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 12984  - [39m06/08/2026, 7:42:29 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mArtistSubmissionsController {/artist-submissions}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 12984  - [39m06/08/2026, 7:42:29 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artist-submissions, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 12984  - [39m06/08/2026, 7:42:29 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mArtworksController {/artworks}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 12984  - [39m06/08/2026, 7:42:29 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artworks/upload-url, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 12984  - [39m06/08/2026, 7:42:29 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artworks/upload, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 12984  - [39m06/08/2026, 7:42:29 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artworks, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 12984  - [39m06/08/2026, 7:42:29 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artworks/reorder, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 12984  - [39m06/08/2026, 7:42:29 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mTestimonialsController {/testimonials}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 12984  - [39m06/08/2026, 7:42:29 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/testimonials, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 12984  - [39m06/08/2026, 7:42:29 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +56ms[39m
+[ERROR] 19:42:29 Error: listen EADDRINUSE: address already in use 0.0.0.0:4000
+[INFO] 19:42:42 Restarting: c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\apps\api\src\modules\artist-submissions\artist-submissions.controller.ts has been modified
+[32m[Nest] 42000  - [39m06/08/2026, 7:42:44 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 42000  - [39m06/08/2026, 7:42:44 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +35ms[39m
+[32m[Nest] 42000  - [39m06/08/2026, 7:42:44 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPrismaModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 42000  - [39m06/08/2026, 7:42:44 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mStorageModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 42000  - [39m06/08/2026, 7:42:44 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mMailModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 42000  - [39m06/08/2026, 7:42:44 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mArtistsModule dependencies initialized[39m[38;5;3m +3ms[39m
+[32m[Nest] 42000  - [39m06/08/2026, 7:42:44 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTestimonialsModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 42000  - [39m06/08/2026, 7:42:44 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mArtworksModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 42000  - [39m06/08/2026, 7:42:44 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mArtistSubmissionsModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 42000  - [39m06/08/2026, 7:42:44 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mArtistsController {/artists}:[39m[38;5;3m +7ms[39m
+[32m[Nest] 42000  - [39m06/08/2026, 7:42:44 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artists, GET} route[39m[38;5;3m +5ms[39m
+[32m[Nest] 42000  - [39m06/08/2026, 7:42:44 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artists/:slug, GET} route[39m[38;5;3m +3ms[39m
+[32m[Nest] 42000  - [39m06/08/2026, 7:42:44 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artists, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 42000  - [39m06/08/2026, 7:42:44 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artists/:id, PATCH} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 42000  - [39m06/08/2026, 7:42:44 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mArtistSubmissionsController {/artist-submissions}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 42000  - [39m06/08/2026, 7:42:44 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artist-submissions, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 42000  - [39m06/08/2026, 7:42:44 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artist-submissions, POST} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 42000  - [39m06/08/2026, 7:42:44 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mArtworksController {/artworks}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 42000  - [39m06/08/2026, 7:42:44 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artworks/upload-url, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 42000  - [39m06/08/2026, 7:42:44 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artworks/upload, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 42000  - [39m06/08/2026, 7:42:44 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artworks, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 42000  - [39m06/08/2026, 7:42:44 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artworks/reorder, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 42000  - [39m06/08/2026, 7:42:44 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mTestimonialsController {/testimonials}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 42000  - [39m06/08/2026, 7:42:44 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/testimonials, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 42000  - [39m06/08/2026, 7:42:44 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +64ms[39m
+API listening on 0.0.0.0:4000
+[INFO] 19:43:20 Restarting: c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\apps\api\src\modules\artist-submissions\artist-submissions.service.ts has been modified
+[32m[Nest] 41992  - [39m06/08/2026, 7:43:22 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 41992  - [39m06/08/2026, 7:43:22 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +27ms[39m
+[32m[Nest] 41992  - [39m06/08/2026, 7:43:22 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPrismaModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 41992  - [39m06/08/2026, 7:43:22 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mStorageModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 41992  - [39m06/08/2026, 7:43:22 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mMailModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 41992  - [39m06/08/2026, 7:43:22 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mArtistsModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 41992  - [39m06/08/2026, 7:43:22 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTestimonialsModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 41992  - [39m06/08/2026, 7:43:22 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mArtworksModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 41992  - [39m06/08/2026, 7:43:22 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mArtistSubmissionsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 41992  - [39m06/08/2026, 7:43:22 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mArtistsController {/artists}:[39m[38;5;3m +4ms[39m
+[32m[Nest] 41992  - [39m06/08/2026, 7:43:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artists, GET} route[39m[38;5;3m +3ms[39m
+[32m[Nest] 41992  - [39m06/08/2026, 7:43:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artists/:slug, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 41992  - [39m06/08/2026, 7:43:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artists, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 41992  - [39m06/08/2026, 7:43:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artists/:id, PATCH} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 41992  - [39m06/08/2026, 7:43:22 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mArtistSubmissionsController {/artist-submissions}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 41992  - [39m06/08/2026, 7:43:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artist-submissions, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 41992  - [39m06/08/2026, 7:43:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artist-submissions, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 41992  - [39m06/08/2026, 7:43:22 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mArtworksController {/artworks}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 41992  - [39m06/08/2026, 7:43:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artworks/upload-url, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 41992  - [39m06/08/2026, 7:43:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artworks/upload, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 41992  - [39m06/08/2026, 7:43:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artworks, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 41992  - [39m06/08/2026, 7:43:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artworks/reorder, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 41992  - [39m06/08/2026, 7:43:22 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mTestimonialsController {/testimonials}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 41992  - [39m06/08/2026, 7:43:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/testimonials, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 41992  - [39m06/08/2026, 7:43:22 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +58ms[39m
+[ERROR] 19:43:22 Error: listen EADDRINUSE: address already in use 0.0.0.0:4000
+[INFO] 19:43:34 Restarting: c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\apps\api\src\storage\r2-storage.service.ts has been modified
+[32m[Nest] 26620  - [39m06/08/2026, 7:43:35 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 26620  - [39m06/08/2026, 7:43:35 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +26ms[39m
+[32m[Nest] 26620  - [39m06/08/2026, 7:43:35 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPrismaModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 26620  - [39m06/08/2026, 7:43:35 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mStorageModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 26620  - [39m06/08/2026, 7:43:35 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mMailModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 26620  - [39m06/08/2026, 7:43:35 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mArtistsModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 26620  - [39m06/08/2026, 7:43:35 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTestimonialsModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 26620  - [39m06/08/2026, 7:43:35 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mArtworksModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 26620  - [39m06/08/2026, 7:43:35 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mArtistSubmissionsModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 26620  - [39m06/08/2026, 7:43:35 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mArtistsController {/artists}:[39m[38;5;3m +5ms[39m
+[32m[Nest] 26620  - [39m06/08/2026, 7:43:35 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artists, GET} route[39m[38;5;3m +3ms[39m
+[32m[Nest] 26620  - [39m06/08/2026, 7:43:35 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artists/:slug, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 26620  - [39m06/08/2026, 7:43:35 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artists, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 26620  - [39m06/08/2026, 7:43:35 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artists/:id, PATCH} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 26620  - [39m06/08/2026, 7:43:35 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mArtistSubmissionsController {/artist-submissions}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 26620  - [39m06/08/2026, 7:43:35 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artist-submissions, GET} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 26620  - [39m06/08/2026, 7:43:35 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artist-submissions, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 26620  - [39m06/08/2026, 7:43:35 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mArtworksController {/artworks}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 26620  - [39m06/08/2026, 7:43:35 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artworks/upload-url, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 26620  - [39m06/08/2026, 7:43:35 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artworks/upload, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 26620  - [39m06/08/2026, 7:43:35 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artworks, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 26620  - [39m06/08/2026, 7:43:35 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artworks/reorder, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 26620  - [39m06/08/2026, 7:43:35 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mTestimonialsController {/testimonials}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 26620  - [39m06/08/2026, 7:43:35 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/testimonials, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 26620  - [39m06/08/2026, 7:43:35 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +58ms[39m
+API listening on 0.0.0.0:4000
+[INFO] 19:45:56 Restarting: c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\apps\api\src\modules\artist-submissions\artist-submissions.service.ts has been modified
+[32m[Nest] 15608  - [39m06/08/2026, 7:45:57 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 15608  - [39m06/08/2026, 7:45:57 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +23ms[39m
+[32m[Nest] 15608  - [39m06/08/2026, 7:45:57 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPrismaModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 15608  - [39m06/08/2026, 7:45:57 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mStorageModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 15608  - [39m06/08/2026, 7:45:57 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mMailModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 15608  - [39m06/08/2026, 7:45:57 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mArtistsModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 15608  - [39m06/08/2026, 7:45:57 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTestimonialsModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 15608  - [39m06/08/2026, 7:45:57 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mArtworksModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 15608  - [39m06/08/2026, 7:45:57 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mArtistSubmissionsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 15608  - [39m06/08/2026, 7:45:57 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mArtistsController {/artists}:[39m[38;5;3m +5ms[39m
+[32m[Nest] 15608  - [39m06/08/2026, 7:45:57 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artists, GET} route[39m[38;5;3m +3ms[39m
+[32m[Nest] 15608  - [39m06/08/2026, 7:45:57 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artists/:slug, GET} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 15608  - [39m06/08/2026, 7:45:57 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artists, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 15608  - [39m06/08/2026, 7:45:57 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artists/:id, PATCH} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 15608  - [39m06/08/2026, 7:45:57 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mArtistSubmissionsController {/artist-submissions}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 15608  - [39m06/08/2026, 7:45:57 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artist-submissions, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 15608  - [39m06/08/2026, 7:45:57 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artist-submissions, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 15608  - [39m06/08/2026, 7:45:57 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mArtworksController {/artworks}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 15608  - [39m06/08/2026, 7:45:57 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artworks/upload-url, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 15608  - [39m06/08/2026, 7:45:57 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artworks/upload, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 15608  - [39m06/08/2026, 7:45:57 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artworks, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 15608  - [39m06/08/2026, 7:45:57 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artworks/reorder, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 15608  - [39m06/08/2026, 7:45:57 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mTestimonialsController {/testimonials}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 15608  - [39m06/08/2026, 7:45:57 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/testimonials, GET} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 15608  - [39m06/08/2026, 7:45:57 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +59ms[39m
+API listening on 0.0.0.0:4000
+[INFO] 19:46:32 Restarting: c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\apps\api\src\storage\r2-storage.service.ts has been modified
+[32m[Nest] 44156  - [39m06/08/2026, 7:46:33 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 44156  - [39m06/08/2026, 7:46:33 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +24ms[39m
+[32m[Nest] 44156  - [39m06/08/2026, 7:46:33 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPrismaModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 44156  - [39m06/08/2026, 7:46:33 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mStorageModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 44156  - [39m06/08/2026, 7:46:33 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mMailModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 44156  - [39m06/08/2026, 7:46:33 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mArtistsModule dependencies initialized[39m[38;5;3m +2ms[39m
+[32m[Nest] 44156  - [39m06/08/2026, 7:46:33 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTestimonialsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 44156  - [39m06/08/2026, 7:46:33 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mArtworksModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 44156  - [39m06/08/2026, 7:46:33 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mArtistSubmissionsModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 44156  - [39m06/08/2026, 7:46:33 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mArtistsController {/artists}:[39m[38;5;3m +4ms[39m
+[32m[Nest] 44156  - [39m06/08/2026, 7:46:33 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artists, GET} route[39m[38;5;3m +3ms[39m
+[32m[Nest] 44156  - [39m06/08/2026, 7:46:33 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artists/:slug, GET} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 44156  - [39m06/08/2026, 7:46:33 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artists, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 44156  - [39m06/08/2026, 7:46:33 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artists/:id, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 44156  - [39m06/08/2026, 7:46:33 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mArtistSubmissionsController {/artist-submissions}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 44156  - [39m06/08/2026, 7:46:33 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artist-submissions, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 44156  - [39m06/08/2026, 7:46:33 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artist-submissions, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 44156  - [39m06/08/2026, 7:46:33 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mArtworksController {/artworks}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 44156  - [39m06/08/2026, 7:46:33 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artworks/upload-url, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 44156  - [39m06/08/2026, 7:46:33 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artworks/upload, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 44156  - [39m06/08/2026, 7:46:33 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artworks, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 44156  - [39m06/08/2026, 7:46:33 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/artworks/reorder, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 44156  - [39m06/08/2026, 7:46:33 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mTestimonialsController {/testimonials}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 44156  - [39m06/08/2026, 7:46:33 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/testimonials, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 44156  - [39m06/08/2026, 7:46:33 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +65ms[39m
+[ERROR] 19:46:33 Error: listen EADDRINUSE: address already in use 0.0.0.0:4000

@@ -1,0 +1,4 @@
+Unhandled exception TypeError: Cannot read properties of undefined (reading 'listArtists')
+    at ArtistsController.listArtists (c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\apps\api\src\modules\artists\artists.controller.ts:16:32)
+    at c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\node_modules\@nestjs\core\router\router-execution-context.js:38:29
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)

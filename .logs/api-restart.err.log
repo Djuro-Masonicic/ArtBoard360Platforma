@@ -1,0 +1,130 @@
+Unhandled exception PrismaClientKnownRequestError: 
+Invalid `this.prisma.artist.findMany()` invocation in
+c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\apps\api\src\modules\artists\artists.service.ts:89:26
+
+  86 const pageSize = query.pageSize;
+  87 
+  88 const [items, total] = await this.prisma.$transaction([
+→ 89   this.prisma.artist.findMany(
+
+    at zr.handleRequestError (c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\node_modules\@prisma\client\src\runtime\RequestHandler.ts:237:13)
+    at zr.handleAndLogRequestError (c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\node_modules\@prisma\client\src\runtime\RequestHandler.ts:183:12)
+    at zr.request (c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\node_modules\@prisma\client\src\runtime\RequestHandler.ts:152:12)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at a (c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:963:24) {
+  code: 'ECONNREFUSED',
+  meta: { modelName: 'Artist' },
+  clientVersion: '7.8.0'
+}
+Unhandled exception PrismaClientKnownRequestError: 
+Invalid `this.prisma.artist.findMany()` invocation in
+c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\apps\api\src\modules\artists\artists.service.ts:89:26
+
+  86 const pageSize = query.pageSize;
+  87 
+  88 const [items, total] = await this.prisma.$transaction([
+→ 89   this.prisma.artist.findMany(
+
+    at zr.handleRequestError (c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\node_modules\@prisma\client\src\runtime\RequestHandler.ts:237:13)
+    at zr.handleAndLogRequestError (c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\node_modules\@prisma\client\src\runtime\RequestHandler.ts:183:12)
+    at zr.request (c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\node_modules\@prisma\client\src\runtime\RequestHandler.ts:152:12)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at a (c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:963:24) {
+  code: 'ECONNREFUSED',
+  meta: { modelName: 'Artist' },
+  clientVersion: '7.8.0'
+}
+Unhandled exception PrismaClientKnownRequestError: 
+Invalid `this.prisma.artist.findMany()` invocation in
+c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\apps\api\src\modules\artists\artists.service.ts:89:26
+
+  86 const pageSize = query.pageSize;
+  87 
+  88 const [items, total] = await this.prisma.$transaction([
+→ 89   this.prisma.artist.findMany(
+
+    at zr.handleRequestError (c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\node_modules\@prisma\client\src\runtime\RequestHandler.ts:237:13)
+    at zr.handleAndLogRequestError (c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\node_modules\@prisma\client\src\runtime\RequestHandler.ts:183:12)
+    at zr.request (c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\node_modules\@prisma\client\src\runtime\RequestHandler.ts:152:12)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at a (c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:963:24) {
+  code: 'ECONNREFUSED',
+  meta: { modelName: 'Artist' },
+  clientVersion: '7.8.0'
+}
+Unhandled exception PrismaClientKnownRequestError: 
+Invalid `this.prisma.artistSubmission.findMany()` invocation in
+c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\apps\api\src\modules\artist-submissions\artist-submissions.service.ts:66:36
+
+  63 const where = this.buildListWhere(query);
+  64 
+  65 const [items, total] = await this.prisma.$transaction([
+→ 66   this.prisma.artistSubmission.findMany(
+
+    at zr.handleRequestError (c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\node_modules\@prisma\client\src\runtime\RequestHandler.ts:237:13)
+    at zr.handleAndLogRequestError (c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\node_modules\@prisma\client\src\runtime\RequestHandler.ts:183:12)
+    at zr.request (c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\node_modules\@prisma\client\src\runtime\RequestHandler.ts:152:12)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at a (c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:963:24) {
+  code: 'ECONNREFUSED',
+  meta: { modelName: 'ArtistSubmission' },
+  clientVersion: '7.8.0'
+}
+(node:17152) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:3680) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Artist submission was stored, but the admin notification email failed. InternalServerErrorException: Resend could not send the notification email: You can only send testing emails to your own email address (djuromasonicic12345@gmail.com). To send emails to other recipients, please verify a domain at resend.com/domains, and change the `from` address to an email using this domain.
+    at ResendMailService.sendArtistSubmissionNotification (c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\apps\api\src\mail\resend-mail.service.ts:119:13)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at ArtistSubmissionsService.createSubmission (c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\apps\api\src\modules\artist-submissions\artist-submissions.service.ts:230:9) {
+  response: {
+    message: 'Resend could not send the notification email: You can only send testing emails to your own email address (djuromasonicic12345@gmail.com). To send emails to other recipients, please verify a domain at resend.com/domains, and change the `from` address to an email using this domain.',
+    error: 'Internal Server Error',
+    statusCode: 500
+  },
+  status: 500,
+  options: {}
+}
+Artist submission was stored, but the admin notification email failed. InternalServerErrorException: Resend could not send the notification email: You can only send testing emails to your own email address (djuromasonicic12345@gmail.com). To send emails to other recipients, please verify a domain at resend.com/domains, and change the `from` address to an email using this domain.
+    at ResendMailService.sendArtistSubmissionNotification (c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\apps\api\src\mail\resend-mail.service.ts:119:13)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at ArtistSubmissionsService.createSubmission (c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\apps\api\src\modules\artist-submissions\artist-submissions.service.ts:230:9) {
+  response: {
+    message: 'Resend could not send the notification email: You can only send testing emails to your own email address (djuromasonicic12345@gmail.com). To send emails to other recipients, please verify a domain at resend.com/domains, and change the `from` address to an email using this domain.',
+    error: 'Internal Server Error',
+    statusCode: 500
+  },
+  status: 500,
+  options: {}
+}
+Artist submission was stored, but the admin notification email failed. InternalServerErrorException: Resend could not send the notification email: You can only send testing emails to your own email address (djuromasonicic12345@gmail.com). To send emails to other recipients, please verify a domain at resend.com/domains, and change the `from` address to an email using this domain.
+    at ResendMailService.sendArtistSubmissionNotification (c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\apps\api\src\mail\resend-mail.service.ts:119:13)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at ArtistSubmissionsService.createSubmission (c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\apps\api\src\modules\artist-submissions\artist-submissions.service.ts:230:9) {
+  response: {
+    message: 'Resend could not send the notification email: You can only send testing emails to your own email address (djuromasonicic12345@gmail.com). To send emails to other recipients, please verify a domain at resend.com/domains, and change the `from` address to an email using this domain.',
+    error: 'Internal Server Error',
+    statusCode: 500
+  },
+  status: 500,
+  options: {}
+}
+Artist submission was stored, but the admin notification email failed. InternalServerErrorException: Resend could not send the notification email: You can only send testing emails to your own email address (djuromasonicic12345@gmail.com). To send emails to other recipients, please verify a domain at resend.com/domains, and change the `from` address to an email using this domain.
+    at ResendMailService.sendArtistSubmissionNotification (c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\apps\api\src\mail\resend-mail.service.ts:119:13)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at ArtistSubmissionsService.createSubmission (c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\apps\api\src\modules\artist-submissions\artist-submissions.service.ts:230:9) {
+  response: {
+    message: 'Resend could not send the notification email: You can only send testing emails to your own email address (djuromasonicic12345@gmail.com). To send emails to other recipients, please verify a domain at resend.com/domains, and change the `from` address to an email using this domain.',
+    error: 'Internal Server Error',
+    statusCode: 500
+  },
+  status: 500,
+  options: {}
+}
+[31m[Nest] 8168  - [39m06/08/2026, 11:01:16 PM [31m  ERROR[39m [38;5;3m[NestApplication] [39m[31mError: listen EADDRINUSE: address already in use 0.0.0.0:4000[39m[38;5;3m +11ms[39m
+Error: listen EADDRINUSE: address already in use 0.0.0.0:4000
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at node:net:2206:7
+    at processTicksAndRejections (node:internal/process/task_queues:90:21)

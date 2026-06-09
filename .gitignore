@@ -1,0 +1,20 @@
+# Dependency directories
+node_modules/
+
+# Build output
+dist/
+.next/
+coverage/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Prisma and database artifacts
+dev.db
+dev.db-journal
+
+# Operating system noise
+.DS_Store
+Thumbs.db

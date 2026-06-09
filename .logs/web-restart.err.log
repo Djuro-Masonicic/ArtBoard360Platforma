@@ -1,0 +1,94 @@
+⨯ Error: Internal server error
+    at apiFetch (services\api.ts:51:11)
+    at async PrijavaPage (app\prijava\page.tsx:5:27)
+  49 |         : `Request failed with status ${response.status}`;
+  50 |
+> 51 |     throw new ApiError(message, response.status, payload);
+     |           ^
+  52 |   }
+  53 |
+  54 |   return response.json() as Promise<T>; {
+  status: 500,
+  details: {
+    statusCode: 500,
+    message: 'Internal server error',
+    path: '/artists?page=1&pageSize=100&includeNsfw=true',
+    timestamp: '2026-06-08T20:15:52.630Z'
+  },
+  digest: '2495591843'
+}
+[browser] Uncaught Error: Internal server error
+    at apiFetch (services\api.ts:51:11)
+    at  PrijavaPage (app\prijava\page.tsx:5:27)
+  49 |         : `Request failed with status ${response.status}`;
+  50 |
+> 51 |     throw new ApiError(message, response.status, payload);
+     |           ^
+  52 |   }
+  53 |
+  54 |   return response.json() as Promise<T>;
+⨯ Error: Internal server error
+    at apiFetch (services\api.ts:51:11)
+    at async PrijavaPage (app\prijava\page.tsx:5:27)
+  49 |         : `Request failed with status ${response.status}`;
+  50 |
+> 51 |     throw new ApiError(message, response.status, payload);
+     |           ^
+  52 |   }
+  53 |
+  54 |   return response.json() as Promise<T>; {
+  status: 500,
+  details: {
+    statusCode: 500,
+    message: 'Internal server error',
+    path: '/artists?page=1&pageSize=100&includeNsfw=true',
+    timestamp: '2026-06-08T20:16:15.290Z'
+  },
+  digest: '2495591843'
+}
+[browser] Uncaught Error: Internal server error
+    at apiFetch (services\api.ts:51:11)
+    at  PrijavaPage (app\prijava\page.tsx:5:27)
+  49 |         : `Request failed with status ${response.status}`;
+  50 |
+> 51 |     throw new ApiError(message, response.status, payload);
+     |           ^
+  52 |   }
+  53 |
+  54 |   return response.json() as Promise<T>;
+⨯ Error: Internal server error
+    at apiFetch (services\api.ts:51:11)
+    at async AdmissionsPage (app\admin\admissions\page.tsx:28:20)
+  49 |         : `Request failed with status ${response.status}`;
+  50 |
+> 51 |     throw new ApiError(message, response.status, payload);
+     |           ^
+  52 |   }
+  53 |
+  54 |   return response.json() as Promise<T>; {
+  status: 500,
+  details: {
+    statusCode: 500,
+    message: 'Internal server error',
+    path: '/artist-submissions?page=1&pageSize=24',
+    timestamp: '2026-06-08T20:16:24.915Z'
+  },
+  digest: '2277266638'
+}
+[browser] Uncaught Error: Internal server error
+    at apiFetch (services\api.ts:51:11)
+    at  AdmissionsPage (app\admin\admissions\page.tsx:28:20)
+  49 |         : `Request failed with status ${response.status}`;
+  50 |
+> 51 |     throw new ApiError(message, response.status, payload);
+     |           ^
+  52 |   }
+  53 |
+  54 |   return response.json() as Promise<T>;
+npm error Lifecycle script `dev` failed with error:
+npm error code 4294967295
+npm error path c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\apps\web
+npm error workspace @artboard/web@0.1.0
+npm error location c:\Users\djuro\OneDrive\Desktop\ArtBoardPlatforma\apps\web
+npm error command failed
+npm error command C:\WINDOWS\system32\cmd.exe /d /s /c dotenv -e ../../.env -- next dev --port 3000 --webpack

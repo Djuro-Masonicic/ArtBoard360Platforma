@@ -1,0 +1,32 @@
+{
+  "name": "artboard-platforma",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Monorepo for the ArtBoard artist gallery platform.",
+  "workspaces": [
+    "apps/api",
+    "apps/web"
+  ],
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "dev": "concurrently -n web,api -c blue,green \"npm run dev:web\" \"npm run dev:api\"",
+    "dev:web": "npm run dev --workspace @artboard/web",
+    "dev:api": "npm run start:dev --workspace @artboard/api",
+    "build": "npm run build --workspace @artboard/api && npm run build --workspace @artboard/web",
+    "railway:build:api": "npm run build --workspace @artboard/api",
+    "railway:start:api": "npm run start:railway --workspace @artboard/api",
+    "railway:migrate:api": "npm run prisma:deploy:railway --workspace @artboard/api",
+    "prisma:generate": "npm run prisma:generate --workspace @artboard/api",
+    "prisma:migrate": "npm run prisma:migrate --workspace @artboard/api",
+    "import:artists": "npm run import:artists --workspace @artboard/api",
+    "import:testimonials": "npm run import:testimonials --workspace @artboard/api",
+    "import:all": "npm run import:artists && npm run import:testimonials",
+    "storage:setup": "npm run storage:setup --workspace @artboard/api"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "dotenv-cli": "^8.0.0"
+  }
+}

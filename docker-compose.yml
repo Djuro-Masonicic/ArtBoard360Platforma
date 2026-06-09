@@ -1,0 +1,60 @@
+version: "3.9"
+
+services:
+  # Local Postgres keeps development close to production without requiring a
+  # live Railway database for everyday coding.
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: artboard_platforma
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d artboard_platforma"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    env_file:
+      - .env
+    environment:
+      PORT: 4000
+      API_PORT: 4000
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/artboard_platforma
+      DIRECT_URL: postgresql://postgres:postgres@postgres:5432/artboard_platforma
+    ports:
+      - "4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # The production frontend lives on Vercel, but an optional Dockerized web
+  # service is still useful for local full-stack smoke tests.
+  web:
+    profiles: ["fullstack"]
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    env_file:
+      - .env
+    environment:
+      API_BASE_URL: http://api:4000
+      INTERNAL_API_BASE_URL: http://api:4000
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:4000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

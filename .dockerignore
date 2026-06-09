@@ -1,0 +1,19 @@
+# Dependencies and local build artifacts should not be copied into Docker
+# because the image installs and builds its own clean copies.
+node_modules
+apps/api/node_modules
+apps/web/node_modules
+dist
+apps/api/dist
+apps/web/.next
+
+# Local environment files should be injected by the platform, not baked in.
+.env
+.env.local
+.env.*.local
+
+# VCS and editor noise do not belong in the build context.
+.git
+.gitignore
+.DS_Store
+Thumbs.db
