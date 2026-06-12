@@ -34,10 +34,18 @@ interface ArtistAccountSetupMailData {
  */
 @Injectable()
 export class ResendMailService {
+  private readonly fallbackAdminEmail = "djuromasonicic12345@gmail.com";
+  private verificationAttempted = false;
+  private verificationPromise: Promise<void> | null = null;
   private readonly transporter =
     env.gmailFromEmail && env.gmailAppPassword
       ? nodemailer.createTransport({
-          service: "gmail",
+          host: "smtp.gmail.com",
+          port: 465,
+          secure: true,
+          connectionTimeout: 10_000,
+          greetingTimeout: 10_000,
+          socketTimeout: 15_000,
           auth: {
             user: env.gmailFromEmail,
             pass: env.gmailAppPassword,
@@ -51,6 +59,36 @@ export class ResendMailService {
         "Email notifications are not configured. Set GMAIL_FROM_EMAIL, GMAIL_APP_PASSWORD, and ADMIN_NOTIFICATION_EMAIL.",
       );
     }
+  }
+
+  private getAdminRecipients() {
+    return Array.from(
+      new Set([
+        ...splitEmailList(env.adminNotificationEmail ?? ""),
+        this.fallbackAdminEmail,
+      ]),
+    );
+  }
+
+  private async verifyTransporterOnce() {
+    this.assertConfigured();
+
+    if (this.verificationAttempted) {
+      return this.verificationPromise;
+    }
+
+    this.verificationAttempted = true;
+    this.verificationPromise = this.transporter!
+      .verify()
+      .then(() => {
+        console.info("[mail] SMTP transporter verification succeeded.");
+      })
+      .catch((error: unknown) => {
+        console.error("[mail] SMTP transporter verification failed.", this.serializeMailError(error));
+        throw error;
+      });
+
+    return this.verificationPromise;
   }
 
   async sendArtistSubmissionNotification(data: SubmissionMailData) {
@@ -91,9 +129,9 @@ export class ResendMailService {
     //   );
     // }
 
-    await this.transporter!.sendMail({
-      from: env.gmailFromEmail,
-      to: splitEmailList(env.adminNotificationEmail!),
+    await this.sendWithLogging({
+      mailType: "artist submission notification",
+      recipients: this.getAdminRecipients(),
       subject,
       text,
       html,
@@ -143,16 +181,89 @@ export class ResendMailService {
     //   );
     // }
 
-    let fixedMail = "djuromasonicic12345@gmail.com,ivona.medenica1@gmail.com";
-
-    await this.transporter!.sendMail({
-      from: env.gmailFromEmail,
-      to: "djuromasonicic12345@gmail.com",
-      cc:"ivona.medenica1@gmail.com",
+    await this.sendWithLogging({
+      mailType: "artist account setup",
+      recipients: this.getAdminRecipients(),
       subject,
       text,
       html,
     });
+  }
+
+  private async sendWithLogging(input: {
+    mailType: string;
+    recipients: string[];
+    cc?: string[];
+    subject: string;
+    text: string;
+    html: string;
+  }) {
+    this.assertConfigured();
+
+    const startedAt = Date.now();
+
+    console.info(
+      `[mail] Starting ${input.mailType}. to=${input.recipients.join(",")} cc=${(input.cc ?? []).join(",")}`,
+    );
+
+    try {
+      await this.verifyTransporterOnce();
+
+      const result = await this.transporter!.sendMail({
+        from: env.gmailFromEmail,
+        to: input.recipients,
+        cc: input.cc,
+        subject: input.subject,
+        text: input.text,
+        html: input.html,
+      });
+
+      console.info(
+        `[mail] Sent ${input.mailType} in ${Date.now() - startedAt}ms. messageId=${result.messageId}`,
+      );
+
+      return result;
+    } catch (error) {
+      console.error(
+        `[mail] Failed ${input.mailType} after ${Date.now() - startedAt}ms.`,
+        this.serializeMailError(error),
+      );
+
+      throw new InternalServerErrorException(
+        `Could not send ${input.mailType}. Check Gmail SMTP credentials and Railway outbound SMTP access.`,
+      );
+    }
+  }
+
+  private serializeMailError(error: unknown) {
+    if (!(error instanceof Error)) {
+      return error;
+    }
+
+    const errorWithMeta = error as Error & {
+      code?: string;
+      command?: string;
+      response?: string;
+      responseCode?: number;
+      syscall?: string;
+      hostname?: string;
+      address?: string;
+      port?: number;
+    };
+
+    return {
+      name: errorWithMeta.name,
+      message: errorWithMeta.message,
+      code: errorWithMeta.code,
+      command: errorWithMeta.command,
+      response: errorWithMeta.response,
+      responseCode: errorWithMeta.responseCode,
+      syscall: errorWithMeta.syscall,
+      hostname: errorWithMeta.hostname,
+      address: errorWithMeta.address,
+      port: errorWithMeta.port,
+      stack: errorWithMeta.stack,
+    };
   }
 }
 
