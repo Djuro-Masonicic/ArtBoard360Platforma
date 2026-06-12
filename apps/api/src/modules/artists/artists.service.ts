@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma, SocialPlatform } from "@prisma/client";
 
 import { PaginatedResponse } from "../../common/dto/pagination-query.dto";
 import { createSlug } from "../../common/utils/text";
 import { PrismaService } from "../../prisma/prisma.service";
+import { R2StorageService } from "../../storage/r2-storage.service";
 import {
   ArtistSocialLinkInputDto,
   CreateArtistDto,
@@ -84,7 +85,10 @@ const artistDetailInclude = {
  */
 @Injectable()
 export class ArtistsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storageService: R2StorageService,
+  ) {}
 
   async listArtists(query: ListArtistsQueryDto): Promise<PaginatedResponse<unknown>> {
     const where = this.buildListWhere(query);
@@ -225,6 +229,41 @@ export class ArtistsService {
       }
 
       await this.syncArtistRelations(tx, id, dto.disciplines, dto.socialLinks);
+    });
+
+    const hydratedArtist = await this.prisma.artist.findUnique({
+      where: {
+        id,
+      },
+      include: artistDetailInclude,
+    });
+
+    return this.serializeArtist(hydratedArtist);
+  }
+
+  async uploadProfileImage(id: string, file: Express.Multer.File | undefined) {
+    await this.assertArtistExists(id);
+
+    if (!file) {
+      throw new BadRequestException("A profile image file is required.");
+    }
+
+    const uploadedFile = await this.storageService.uploadFile({
+      recordId: id,
+      entityType: "profile",
+      fileName: file.originalname,
+      mimeType: file.mimetype,
+      fileSizeBytes: file.size,
+      body: file.buffer,
+    });
+
+    await this.prisma.artist.update({
+      where: { id },
+      data: {
+        profileImageUrl: uploadedFile.publicUrl,
+        profileThumbnailUrl: uploadedFile.publicUrl,
+        thumbnailUrl: uploadedFile.publicUrl,
+      },
     });
 
     const hydratedArtist = await this.prisma.artist.findUnique({

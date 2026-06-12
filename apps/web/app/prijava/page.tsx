@@ -20,16 +20,16 @@ export default async function PrijavaPage() {
 
   return (
     <div className="space-y-10 pb-14 sm:space-y-12">
-      <section className="mx-auto max-w-[980px] pt-[18vh] text-center">
+      <section className="mx-auto max-w-[1180px] px-4 pt-[18vh] text-center sm:px-6">
         <p className="text-[13px] font-medium uppercase tracking-[0.32em] text-[#7b8391]">
           Prijava za ArtBoard platformu
         </p>
-        <h1 className="mt-6 text-[52px] font-bold leading-[0.96] text-[#2f3138] sm:text-[64px]">
+        <h1 className="mt-6 text-[46px] font-bold leading-[0.96] text-[#2f3138] sm:text-[64px]">
           Prijava umjetnika,
           <br />
           korak po korak.
         </h1>
-        <p className="mt-6 text-[22px] leading-[1.4] text-[#4e5560]">
+        <p className="mx-auto mt-6 max-w-[880px] text-[20px] leading-[1.45] text-[#4e5560] sm:text-[22px]">
           Forma je sada vodjena i preglednija. Prolazis pitanje po pitanje, uz dovoljno prostora da
           pripremis portfolio, drustvene mreze i materijale za selekciju.
         </p>

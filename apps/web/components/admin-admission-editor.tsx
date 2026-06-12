@@ -34,6 +34,7 @@ type SaveState =
   | { kind: "error"; message: string };
 
 export function AdminAdmissionEditor({ disciplines, submission }: AdminAdmissionEditorProps) {
+  const [artworks, setArtworks] = useState(submission.artworks);
   const [formState, setFormState] = useState<FormState>({
     fullName: submission.fullName,
     email: submission.email,
@@ -103,6 +104,10 @@ export function AdminAdmissionEditor({ disciplines, submission }: AdminAdmission
     });
   }
 
+  function removeArtwork(artworkId: string) {
+    setArtworks((current) => current.filter((artwork) => artwork.id !== artworkId));
+  }
+
   async function submitUpdate(forcedStatus?: ArtistSubmissionStatus) {
     setSaveState({
       kind: "saving",
@@ -129,6 +134,7 @@ export function AdminAdmissionEditor({ disciplines, submission }: AdminAdmission
         disciplines: formState.disciplineSlugs,
         portfolioLinks: formState.portfolioLinks.map((item) => item.trim()).filter(Boolean),
         socialLinks: formState.socialLinks.map((item) => item.trim()).filter(Boolean),
+        keptArtworkIds: artworks.map((artwork) => artwork.id),
       });
 
       startTransition(() => {
@@ -148,6 +154,7 @@ export function AdminAdmissionEditor({ disciplines, submission }: AdminAdmission
           portfolioLinks: response.portfolioLinks.map((link) => link.url),
           socialLinks: response.socialLinks.map((link) => link.url),
         }));
+        setArtworks(response.artworks);
       });
 
       setSaveState({
@@ -386,29 +393,47 @@ export function AdminAdmissionEditor({ disciplines, submission }: AdminAdmission
           ) : null}
 
           <div className="mt-5 space-y-3">
-            {submission.artworks.map((artwork) => (
-              <a
-                className="flex items-center gap-3 rounded-[18px] border border-[#e2e8f0] bg-[#f8fbff] p-3 transition hover:border-[#c9d4e3]"
-                href={artwork.imageUrl}
+            {artworks.map((artwork) => (
+              <div
+                className="flex items-center gap-3 rounded-[18px] border border-[#e2e8f0] bg-[#f8fbff] p-3"
                 key={artwork.id}
-                rel="noreferrer"
-                target="_blank"
               >
-                <img
-                  alt={artwork.originalFileName}
-                  className="h-14 w-14 rounded-[14px] object-cover"
-                  src={artwork.imageUrl}
-                />
-                <div className="min-w-0">
-                  <div className="truncate text-[14px] font-medium text-[#2f3138]">
-                    {artwork.originalFileName}
+                <a
+                  className="flex min-w-0 flex-1 items-center gap-3 transition hover:opacity-80"
+                  href={artwork.imageUrl}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  <img
+                    alt={artwork.originalFileName}
+                    className="h-14 w-14 rounded-[14px] object-cover"
+                    src={artwork.imageUrl}
+                  />
+                  <div className="min-w-0">
+                    <div className="truncate text-[14px] font-medium text-[#2f3138]">
+                      {artwork.originalFileName}
+                    </div>
+                    <div className="text-[13px] text-[#66707d]">
+                      {artwork.mimeType} • {formatFileSize(artwork.fileSizeBytes)}
+                    </div>
                   </div>
-                  <div className="text-[13px] text-[#66707d]">
-                    {artwork.mimeType} • {formatFileSize(artwork.fileSizeBytes)}
-                  </div>
-                </div>
-              </a>
+                </a>
+
+                <button
+                  className="shrink-0 rounded-full border border-[#dc1735]/20 bg-white px-3 py-2 text-[13px] font-medium text-[#b4132c] transition hover:border-[#dc1735] hover:bg-[#fff1f4]"
+                  onClick={() => removeArtwork(artwork.id)}
+                  type="button"
+                >
+                  Ukloni
+                </button>
+              </div>
             ))}
+
+            {artworks.length === 0 ? (
+              <div className="rounded-[18px] border border-dashed border-[#d8e0eb] bg-white px-4 py-5 text-[14px] text-[#66707d]">
+                Nema vise zadrzanih radova. Sacuvaj izmjene ako zelis da uklanjanje bude trajno.
+              </div>
+            ) : null}
           </div>
         </section>
       </aside>

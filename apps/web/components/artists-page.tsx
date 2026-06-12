@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import type { Artist } from "@/types/api";
 
 import { ArtistsBrowser } from "./artists-browser";
@@ -13,6 +15,8 @@ interface ArtistsPageProps {
  * hero first, moving showcase second, searchable browser last.
  */
 export function ArtistsPage({ artists, totalArtists }: ArtistsPageProps) {
+  const featuredArtists = pickRandomArtists(artists, 3);
+
   return (
     <section className="artists-page-frame -mx-5 -mt-8 pb-20 sm:-mx-8 sm:-mt-10 lg:-mx-10 lg:-mt-12">
       <div className="px-5 pb-12 pt-[26vh] sm:px-8 lg:px-10">
@@ -52,13 +56,14 @@ export function ArtistsPage({ artists, totalArtists }: ArtistsPageProps) {
 
           <div className="mt-14 flex items-center gap-4 rounded-full px-4 py-3">
             <div className="flex -space-x-3">
-              {artists.slice(0, 3).map((artist, index) => {
+              {featuredArtists.map((artist, index) => {
                 const avatarUrl =
                   artist.profileThumbnailUrl || artist.profileImageUrl || artist.thumbnailUrl;
 
                 return (
-                  <div
-                    className="flex h-[66px] w-[66px] items-center justify-center overflow-hidden rounded-full border-[3px] border-[#f8fbff] bg-[#d7d7d7]"
+                  <Link
+                    className="flex h-[66px] w-[66px] items-center justify-center overflow-hidden rounded-full border-[3px] border-[#f8fbff] bg-[#d7d7d7] transition duration-300 hover:z-10 hover:scale-110"
+                    href={`/artists/${artist.slug}`}
                     key={`${artist.id}-${index}`}
                   >
                     {avatarUrl ? (
@@ -72,7 +77,7 @@ export function ArtistsPage({ artists, totalArtists }: ArtistsPageProps) {
                         {artist.name.slice(0, 1)}
                       </span>
                     )}
-                  </div>
+                  </Link>
                 );
               })}
             </div>
@@ -90,4 +95,23 @@ export function ArtistsPage({ artists, totalArtists }: ArtistsPageProps) {
       <ArtistsBrowser artists={artists} />
     </section>
   );
+}
+
+function pickRandomArtists(artists: Artist[], count: number) {
+  const shuffled = [...artists];
+
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    const currentArtist = shuffled[index];
+    const swapArtist = shuffled[swapIndex];
+
+    if (!currentArtist || !swapArtist) {
+      continue;
+    }
+
+    shuffled[index] = swapArtist;
+    shuffled[swapIndex] = currentArtist;
+  }
+
+  return shuffled.slice(0, count);
 }

@@ -4,6 +4,7 @@ import { PrismaService } from "../../prisma/prisma.service";
 import { R2StorageService } from "../../storage/r2-storage.service";
 import {
   CreateArtworkDto,
+  DeleteArtworkDto,
   ReorderArtworksDto,
   RequestUploadUrlDto,
   UploadArtworkFileDto,
@@ -143,6 +144,36 @@ export class ArtworksService {
     return {
       success: true,
       updatedCount: dto.items.length,
+    };
+  }
+
+  async deleteArtwork(id: string, dto: DeleteArtworkDto) {
+    const artwork = await this.prisma.artwork.findFirst({
+      where: {
+        id,
+        artistId: dto.artistId,
+      },
+    });
+
+    if (!artwork) {
+      throw new NotFoundException("The selected artwork was not found for this artist.");
+    }
+
+    await this.prisma.artwork.delete({
+      where: { id },
+    });
+
+    if (dto.deleteFromStorage !== false && artwork.storagePath) {
+      try {
+        await this.storageService.deleteFile(artwork.storagePath);
+      } catch (error) {
+        console.error("Could not delete artwork object after metadata removal.", error);
+      }
+    }
+
+    return {
+      success: true,
+      deletedArtworkId: id,
     };
   }
 

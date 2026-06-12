@@ -92,6 +92,8 @@ export const env = {
   r2SecretAccessKey: requireEnv("R2_SECRET_ACCESS_KEY"),
   r2BucketName: requireEnv("R2_BUCKET_NAME"),
   r2PublicUrl: requireEnv("R2_PUBLIC_URL"),
+  gmailFromEmail: readOptionalEnv("GMAIL_FROM_EMAIL") ?? readOptionalEnv("RESEND_FROM_EMAIL"),
+  gmailAppPassword: readOptionalEnv("GMAIL_APP_PASSWORD"),
   resendApiKey: readOptionalEnv("RESEND_API_KEY"),
   resendFromEmail: readOptionalEnv("RESEND_FROM_EMAIL"),
   adminNotificationEmail: readOptionalEnv("ADMIN_NOTIFICATION_EMAIL"),

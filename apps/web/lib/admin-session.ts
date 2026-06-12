@@ -48,7 +48,14 @@ export async function getAdminSessionUser() {
     };
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) {
-      await clearAdminSessionToken();
+      /**
+       * Reading session state is used inside Server Components as well.
+       * Next.js does not allow mutating cookies during render, so an invalid
+       * token simply behaves like "no session" here.
+       *
+       * Cookie cleanup still happens in places that are allowed to mutate
+       * cookies, such as server actions and route handlers.
+       */
       return null;
     }
 

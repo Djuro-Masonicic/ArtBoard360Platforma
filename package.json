@@ -28,5 +28,8 @@
   "devDependencies": {
     "concurrently": "^9.2.1",
     "dotenv-cli": "^8.0.0"
+  },
+  "dependencies": {
+    "nodemailer": "^8.0.11"
   }
 }

@@ -1,5 +1,5 @@
 import { Injectable, InternalServerErrorException } from "@nestjs/common";
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 
 import { env } from "../config/env";
 
@@ -24,21 +24,31 @@ interface SubmissionMailData {
 interface ArtistAccountSetupMailData {
   artistName: string;
   email: string;
-  setupUrl: string;
+  loginUrl: string;
+  temporaryPassword: string;
 }
 
 /**
- * Resend is kept behind one tiny service so the rest of the backend only talks
- * in terms of "send submission notification" instead of provider-specific APIs.
+ * We keep the existing service name so the rest of the application does not
+ * need to change, but the actual transport is now Gmail SMTP via Nodemailer.
  */
 @Injectable()
 export class ResendMailService {
-  private readonly client = env.resendApiKey ? new Resend(env.resendApiKey) : null;
+  private readonly transporter =
+    env.gmailFromEmail && env.gmailAppPassword
+      ? nodemailer.createTransport({
+          service: "gmail",
+          auth: {
+            user: env.gmailFromEmail,
+            pass: env.gmailAppPassword,
+          },
+        })
+      : null;
 
   private assertConfigured() {
-    if (!this.client || !env.resendFromEmail || !env.adminNotificationEmail) {
+    if (!this.transporter || !env.gmailFromEmail || !env.adminNotificationEmail) {
       throw new InternalServerErrorException(
-        "Email notifications are not configured. Set RESEND_API_KEY, RESEND_FROM_EMAIL, and ADMIN_NOTIFICATION_EMAIL.",
+        "Email notifications are not configured. Set GMAIL_FROM_EMAIL, GMAIL_APP_PASSWORD, and ADMIN_NOTIFICATION_EMAIL.",
       );
     }
   }
@@ -66,63 +76,91 @@ export class ResendMailService {
       </div>
     `;
 
-    const response = await this.client!.emails.send({
-      from: env.resendFromEmail!,
-      to: env.adminNotificationEmail!,
+    // Previous Resend implementation kept for reference while we test Gmail SMTP.
+    // const response = await this.client!.emails.send({
+    //   from: env.resendFromEmail!,
+    //   to: env.adminNotificationEmail!,
+    //   subject,
+    //   text,
+    //   html,
+    // });
+    //
+    // if (response.error) {
+    //   throw new InternalServerErrorException(
+    //     `Resend could not send the notification email: ${response.error.message}`,
+    //   );
+    // }
+
+    await this.transporter!.sendMail({
+      from: env.gmailFromEmail,
+      to: splitEmailList(env.adminNotificationEmail!),
       subject,
       text,
       html,
     });
-
-    // Resend may resolve successfully at the HTTP layer while still returning
-    // a provider-level error in the payload. We convert that into a thrown
-    // error so the submission flow can report that the notification was not
-    // delivered.
-    if (response.error) {
-      throw new InternalServerErrorException(
-        `Resend could not send the notification email: ${response.error.message}`,
-      );
-    }
   }
 
   async sendArtistAccountSetupEmail(data: ArtistAccountSetupMailData) {
     this.assertConfigured();
 
-    const subject = "Tvoj ArtBoard nalog je spreman";
+    const subject = "Tvoj ArtBoard nalog je aktivan";
     const text = [
       "Postovani,",
       "",
       `Tvoj profil na ArtBoard Platformi je odobren za ${data.artistName}.`,
-      "Da bi pristupio/la svom nalogu, potrebno je da postavis lozinku preko sljedeceg linka:",
-      data.setupUrl,
+      "U nastavku su podaci za prvi pristup nalogu:",
+      `Email: ${data.email}`,
+      `Privremena lozinka: ${data.temporaryPassword}`,
+      `Login: ${data.loginUrl}`,
       "",
-      "Ako nijesi ocekivao/la ovu poruku, slobodno je ignorisi.",
+      "Preporuka je da nakon prve prijave promijenis lozinku.",
     ].join("\n");
 
     const html = `
       <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #1f2430;">
         <p>Postovani,</p>
         <p>Tvoj profil na ArtBoard Platformi je odobren za <strong>${escapeHtml(data.artistName)}</strong>.</p>
-        <p>Da bi pristupio/la svom nalogu, potrebno je da postavis lozinku preko sljedeceg linka:</p>
-        <p><a href="${data.setupUrl}">${data.setupUrl}</a></p>
-        <p>Ako nijesi ocekivao/la ovu poruku, slobodno je ignorisi.</p>
+        <p>U nastavku su podaci za prvi pristup nalogu:</p>
+        <p><strong>Email:</strong> ${escapeHtml(data.email)}</p>
+        <p><strong>Privremena lozinka:</strong> ${escapeHtml(data.temporaryPassword)}</p>
+        <p><strong>Login:</strong> <a href="${data.loginUrl}">${data.loginUrl}</a></p>
+        <p>Preporuka je da nakon prve prijave promijenis lozinku.</p>
       </div>
     `;
 
-    const response = await this.client!.emails.send({
-      from: env.resendFromEmail!,
-      to: data.email,
+    // Previous Resend implementation kept for reference while we test Gmail SMTP.
+    // const response = await this.client!.emails.send({
+    //   from: env.resendFromEmail!,
+    //   to: data.email,
+    //   subject,
+    //   text,
+    //   html,
+    // });
+    //
+    // if (response.error) {
+    //   throw new InternalServerErrorException(
+    //     `Resend could not send the artist setup email: ${response.error.message}`,
+    //   );
+    // }
+
+    let fixedMail = "djuromasonicic12345@gmail.com,ivona.medenica1@gmail.com";
+
+    await this.transporter!.sendMail({
+      from: env.gmailFromEmail,
+      to: "djuromasonicic12345@gmail.com",
+      cc:"ivona.medenica1@gmail.com",
       subject,
       text,
       html,
     });
-
-    if (response.error) {
-      throw new InternalServerErrorException(
-        `Resend could not send the artist setup email: ${response.error.message}`,
-      );
-    }
   }
+}
+
+function splitEmailList(value: string) {
+  return value
+    .split(",")
+    .map((email) => email.trim())
+    .filter(Boolean);
 }
 
 function escapeHtml(value: string) {

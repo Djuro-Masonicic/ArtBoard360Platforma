@@ -1,5 +1,6 @@
 import { Type } from "class-transformer";
 import {
+  IsBoolean,
   IsArray,
   IsIn,
   IsInt,
@@ -132,4 +133,14 @@ export class ReorderArtworksDto {
   @ValidateNested({ each: true })
   @Type(() => ReorderArtworkItemDto)
   items!: ReorderArtworkItemDto[];
+}
+
+export class DeleteArtworkDto {
+  @IsUUID()
+  artistId!: string;
+
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
+  deleteFromStorage?: boolean;
 }

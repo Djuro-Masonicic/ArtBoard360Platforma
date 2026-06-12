@@ -96,6 +96,7 @@ export class CreateArtistSubmissionDto {
   @ArrayMinSize(1)
   @IsUrl({}, { each: true })
   socialLinks!: string[];
+
 }
 
 export class ListArtistSubmissionsQueryDto extends PaginationQueryDto {
@@ -162,4 +163,10 @@ export class UpdateArtistSubmissionDto {
   @ArrayMinSize(1)
   @IsUrl({}, { each: true })
   socialLinks!: string[];
+
+  @IsOptional()
+  @Transform(({ value }) => parseStringArray(value))
+  @IsArray()
+  @IsUUID("4", { each: true })
+  keptArtworkIds?: string[];
 }

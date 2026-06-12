@@ -1,5 +1,8 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query } from "@nestjs/common";
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { memoryStorage } from "multer";
 
+import { env } from "../../config/env";
 import { ArtistsService } from "./artists.service";
 import { CreateArtistDto, ListArtistsQueryDto, UpdateArtistDto } from "./artists.dto";
 
@@ -32,5 +35,21 @@ export class ArtistsController {
     @Body() dto: UpdateArtistDto,
   ) {
     return this.artistsService.updateArtist(id, dto);
+  }
+
+  @Post(":id/profile-image")
+  @UseInterceptors(
+    FileInterceptor("file", {
+      storage: memoryStorage(),
+      limits: {
+        fileSize: env.maxUploadFileSizeBytes,
+      },
+    }),
+  )
+  uploadProfileImage(
+    @Param("id", new ParseUUIDPipe({ version: "4" })) id: string,
+    @UploadedFile() file: Express.Multer.File | undefined,
+  ) {
+    return this.artistsService.uploadProfileImage(id, file);
   }
 }

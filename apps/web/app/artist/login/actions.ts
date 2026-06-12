@@ -18,8 +18,6 @@ export async function loginArtistAction(
 ): Promise<{ error: string | null }> {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
-  const normalizedEmail = email.toLowerCase();
-  const adminEmail = (process.env.ADMIN_SEED_EMAIL ?? "admin@artboard.local").trim().toLowerCase();
 
   if (!email || !password) {
     return {
@@ -27,19 +25,18 @@ export async function loginArtistAction(
     };
   }
 
-  if (normalizedEmail === adminEmail) {
-    try {
-      const adminResponse = await loginAdmin({ email, password });
-      await clearArtistSessionToken();
-      await setAdminSessionToken(adminResponse.token);
-      redirect("/admin/admissions");
-    } catch (error) {
-      if (error instanceof ApiError && error.status === 401) {
-        return {
-          error: "Pogresan email ili lozinka.",
-        };
-      }
-
+  /**
+   * The shared login page should not depend on a frontend env variable to know
+   * who is an admin. We first try the admin endpoint, and only if it responds
+   * with 401 do we fall back to the artist endpoint.
+   */
+  try {
+    const adminResponse = await loginAdmin({ email, password });
+    await clearArtistSessionToken();
+    await setAdminSessionToken(adminResponse.token);
+    redirect("/admin/admissions");
+  } catch (error) {
+    if (!(error instanceof ApiError) || error.status !== 401) {
       return {
         error: "Prijava trenutno nije dostupna. Pokusaj ponovo.",
       };

@@ -1,10 +1,9 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { ArtistSubmissionStatus, Prisma, SocialPlatform } from "@prisma/client";
-import { randomUUID } from "node:crypto";
-
+import { randomBytes, randomUUID } from "node:crypto";
 import { PaginatedResponse } from "../../common/dto/pagination-query.dto";
 import { createSlug } from "../../common/utils/text";
-import { AuthService } from "../auth/auth.service";
+import { hashPassword } from "../auth/auth-crypto";
 import { env } from "../../config/env";
 import { ResendMailService } from "../../mail/resend-mail.service";
 import { PrismaService } from "../../prisma/prisma.service";
@@ -67,7 +66,6 @@ export class ArtistSubmissionsService {
     private readonly prisma: PrismaService,
     private readonly storageService: R2StorageService,
     private readonly resendMailService: ResendMailService,
-    private readonly authService: AuthService,
   ) {}
 
   async listSubmissions(
@@ -299,6 +297,14 @@ export class ArtistSubmissionsService {
     const trimmedPortfolioLinks = normalizeUniqueStrings(dto.portfolioLinks);
     const trimmedSocialLinks = normalizeUniqueStrings(dto.socialLinks);
     const disciplineSlugs = normalizeUniqueStrings(dto.disciplines);
+    const keptArtworkIds = dto.keptArtworkIds ?? existingSubmission.artworks.map((artwork) => artwork.id);
+    const keptArtworkIdSet = new Set(keptArtworkIds);
+    const keptArtworks = existingSubmission.artworks.filter((artwork) => keptArtworkIdSet.has(artwork.id));
+    const removedArtworks = existingSubmission.artworks.filter((artwork) => !keptArtworkIdSet.has(artwork.id));
+
+    if (keptArtworks.length !== keptArtworkIdSet.size) {
+      throw new BadRequestException("One or more selected submission artworks are not valid.");
+    }
 
     if (disciplineSlugs.length === 0 || disciplineSlugs.length > 3) {
       throw new BadRequestException("Select between 1 and 3 disciplines.");
@@ -333,7 +339,8 @@ export class ArtistSubmissionsService {
       | {
           email: string;
           artistName: string;
-          setupUrl: string;
+          loginUrl: string;
+          temporaryPassword: string;
         }
       | null = null;
 
@@ -346,6 +353,7 @@ export class ArtistSubmissionsService {
           dto,
           disciplines,
           socialLinks: trimmedSocialLinks,
+          artworks: keptArtworks,
         });
 
         approvedArtistId = approvalResult.artistId;
@@ -404,6 +412,32 @@ export class ArtistSubmissionsService {
         })),
       });
 
+      if (removedArtworks.length > 0) {
+        await tx.artistSubmissionArtwork.deleteMany({
+          where: {
+            submissionId: id,
+            id: {
+              in: removedArtworks.map((artwork) => artwork.id),
+            },
+          },
+        });
+
+        const removedStoragePaths = removedArtworks
+          .map((artwork) => artwork.storagePath)
+          .filter((storagePath): storagePath is string => Boolean(storagePath));
+
+        if (approvedArtistId && removedStoragePaths.length > 0) {
+          await tx.artwork.deleteMany({
+            where: {
+              artistId: approvedArtistId,
+              storagePath: {
+                in: removedStoragePaths,
+              },
+            },
+          });
+        }
+      }
+
       return updated;
     });
 
@@ -422,6 +456,22 @@ export class ArtistSubmissionsService {
       } catch (error) {
         console.error("Artist profile was created, but the account setup email failed.", error);
       }
+    }
+
+    if (removedArtworks.length > 0) {
+      await Promise.all(
+        removedArtworks.map(async (artwork) => {
+          if (!artwork.storagePath) {
+            return;
+          }
+
+          try {
+            await this.storageService.deleteFile(artwork.storagePath);
+          } catch (error) {
+            console.error("Submission artwork was removed from the database, but storage cleanup failed.", error);
+          }
+        }),
+      );
     }
 
     return this.serializeSubmission(hydratedSubmission);
@@ -652,6 +702,7 @@ export class ArtistSubmissionsService {
       dto: UpdateArtistSubmissionDto;
       disciplines: Array<{ id: string; name: string; slug: string }>;
       socialLinks: string[];
+      artworks: Prisma.ArtistSubmissionGetPayload<{ include: typeof artistSubmissionInclude }>["artworks"];
     },
   ) {
     const normalizedEmail = input.dto.email.trim().toLowerCase();
@@ -705,9 +756,9 @@ export class ArtistSubmissionsService {
       });
     }
 
-    if (input.submission.artworks.length > 0) {
+    if (input.artworks.length > 0) {
       await tx.artwork.createMany({
-        data: input.submission.artworks.map((artwork) => ({
+        data: input.artworks.map((artwork) => ({
           artistId: artist.id,
           imageUrl: artwork.imageUrl,
           storagePath: artwork.storagePath,
@@ -721,22 +772,23 @@ export class ArtistSubmissionsService {
       });
     }
 
+    const temporaryPassword = generateTemporaryArtistPassword();
     const artistAccount = await tx.artistAccount.create({
       data: {
         artistId: artist.id,
         email: normalizedEmail,
         name: input.dto.fullName.trim(),
+        passwordHash: await hashPassword(temporaryPassword),
       },
     });
-
-    const setupToken = await this.authService.issueArtistSetupToken(artistAccount.id, tx);
 
     return {
       artistId: artist.id,
       artistSetupInvite: {
         email: artistAccount.email,
         artistName: artist.name,
-        setupUrl: `${env.siteBaseUrl.replace(/\/+$/, "")}/artist/setup-password?token=${setupToken.token}`,
+        loginUrl: `${env.siteBaseUrl.replace(/\/+$/, "")}/artist/login`,
+        temporaryPassword,
       },
     };
   }
@@ -795,4 +847,8 @@ function inferSocialPlatformFromUrl(url: string): SocialPlatform {
 
 function sleep(milliseconds: number) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+function generateTemporaryArtistPassword() {
+  return `Art${randomBytes(4).toString("hex")}#`;
 }

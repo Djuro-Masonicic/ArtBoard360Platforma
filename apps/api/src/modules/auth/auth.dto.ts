@@ -9,7 +9,6 @@ export class LoginAdminDto {
   email!: string;
 
   @IsString()
-  @MinLength(8)
   password!: string;
 }
 
@@ -18,7 +17,6 @@ export class LoginArtistDto {
   email!: string;
 
   @IsString()
-  @MinLength(8)
   password!: string;
 }
 

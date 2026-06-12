@@ -119,6 +119,7 @@ export function updateArtistSubmission(
     disciplines: string[];
     portfolioLinks: string[];
     socialLinks: string[];
+    keptArtworkIds?: string[];
   },
 ) {
   return fetchAdminSubmissionUpdate(id, payload);
@@ -140,6 +141,7 @@ async function fetchAdminSubmissionUpdate(
     disciplines: string[];
     portfolioLinks: string[];
     socialLinks: string[];
+    keptArtworkIds?: string[];
   },
 ) {
   const response = await fetch(`/api/admin/submissions/${id}`, {

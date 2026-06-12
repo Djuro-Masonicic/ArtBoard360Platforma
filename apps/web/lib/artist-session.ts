@@ -48,7 +48,11 @@ export async function getArtistSessionUser() {
     };
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) {
-      await clearArtistSessionToken();
+      /**
+       * This helper is also called while rendering Server Components.
+       * Cookie mutation is not allowed there, so an expired/invalid token
+       * is treated as an anonymous session instead of deleting the cookie.
+       */
       return null;
     }
 
