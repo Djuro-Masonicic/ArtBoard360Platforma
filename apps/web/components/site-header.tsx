@@ -17,7 +17,7 @@ const navigationItems = [
   { href: "#", label: "ArtBoard" },
   { href: "/artists", label: "Umjetnici", matchPrefix: "/artists" },
   { href: "#", label: "Usluge" },
-  { href: "#", label: "Kontakt" },
+  { href: "/kontakt", label: "Kontakt", matchPrefix: "/kontakt" },
   { href: "#", label: "Blog" },
 ];
 

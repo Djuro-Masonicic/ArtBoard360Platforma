@@ -165,7 +165,7 @@ export default async function ArtistDetailPage({ params }: ArtistDetailPageProps
         </section>
 
         <section className="bg-[#f8fbff] px-[5vw] py-20 sm:py-24">
-          <div className="mx-auto w-full max-w-[1220px] space-y-16 sm:space-y-20">
+          <div className="mx-auto w-full max-w-[1520px] space-y-16 sm:space-y-20">
             <div className="grid gap-6 lg:grid-cols-[180px_minmax(0,1fr)] lg:gap-12">
               <div className="pt-1 text-[18px] text-[#888f99]">Biografija</div>
 

@@ -110,6 +110,15 @@ select {
   background-attachment: fixed;
 }
 
+.contact-page-frame {
+  background-color: #f8fbff;
+  background-image: url("https://cdn.prod.website-files.com/681b5dac4415aa941af374fe/682466e8731350f6b7e38b00_hero_pattern.png");
+  background-position: top center;
+  background-repeat: no-repeat;
+  background-size: 100vw 100vh;
+  background-attachment: fixed;
+}
+
 .site-cta-button {
   position: relative;
   overflow: hidden;
@@ -551,6 +560,113 @@ select {
   background: rgba(255, 255, 255, 0.2);
 }
 
+.contact-form-tab {
+  --tab-accent: #dc1735;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 220px;
+  padding: 0 0 0.65rem;
+  color: #a0a7b2;
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  transition:
+    color 220ms ease,
+    transform 220ms ease;
+}
+
+.contact-form-tab::after {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--tab-accent);
+  content: "";
+  transform: scaleX(0);
+  transform-origin: right center;
+  transition: transform 360ms ease;
+}
+
+.contact-form-tab:hover {
+  transform: translateY(2px);
+}
+
+.contact-form-tab:hover::after,
+.contact-form-tab--active::after {
+  transform: scaleX(1);
+  transform-origin: left center;
+}
+
+.contact-form-tab--active {
+  color: var(--tab-accent);
+}
+
+.contact-form-input {
+  width: 100%;
+  border: 1px solid #cfd7e2;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #2f3138;
+  font-size: 1rem;
+  outline: none;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.contact-form-input::placeholder {
+  color: #a0a7b2;
+}
+
+.contact-form-input:focus {
+  border-color: #182fc7;
+  box-shadow: 0 0 0 4px rgba(24, 47, 199, 0.08);
+}
+
+.contact-submit-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50px;
+  padding: 0.85rem 1.3rem;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+  background: #ef173f;
+  box-shadow: 0 0 0 2px #ef173f;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+  transition:
+    transform 180ms ease,
+    background-color 180ms ease,
+    box-shadow 180ms ease,
+    color 180ms ease;
+}
+
+.contact-submit-button:hover {
+  background: #ffffff;
+  box-shadow: 0 0 0 2px #ef173f;
+  color: #ef173f;
+  transform: translateY(2px);
+}
+
+.contact-submit-button--blue {
+  background: #2440d8;
+  box-shadow: 0 0 0 2px #2440d8;
+}
+
+.contact-submit-button--blue:hover {
+  box-shadow: 0 0 0 2px #2440d8;
+  color: #2440d8;
+}
+
 .artists-marquee {
   overflow: hidden;
   padding: 0.5rem 0;
@@ -729,6 +845,10 @@ select {
     background-size: 100vw 78vh;
   }
 
+  .contact-page-frame {
+    background-size: 100vw 82vh;
+  }
+
   .artists-marquee__track {
     animation-duration: 30s;
   }
@@ -739,5 +859,11 @@ select {
 
   .site-mobile-menu__content {
     padding-top: calc(5vh + 108px);
+  }
+
+  .contact-form-tab {
+    min-width: auto;
+    font-size: 1.05rem;
+    white-space: normal;
   }
 }

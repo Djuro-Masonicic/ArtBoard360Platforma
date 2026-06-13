@@ -3,7 +3,7 @@ const footerNavigation = [
   { href: "/", label: "ArtBoard" },
   { href: "/artists", label: "Umjetnici" },
   { href: "#", label: "Usluge" },
-  { href: "#", label: "Kontakt" },
+  { href: "/kontakt", label: "Kontakt" },
   { href: "#", label: "Blog" },
 ];
 

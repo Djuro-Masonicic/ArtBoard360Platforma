@@ -16,7 +16,7 @@ export function ArtistGrid({ artists }: ArtistGridProps) {
   }
 
   return (
-    <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
+    <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
       {artists.map((artist) => (
         <ArtistCard key={artist.id} artist={artist} />
       ))}

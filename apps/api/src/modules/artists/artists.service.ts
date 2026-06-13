@@ -94,7 +94,6 @@ export class ArtistsService {
     const where = this.buildListWhere(query);
     const page = query.page;
     const pageSize = query.pageSize;
-    console.log(pageSize,'xzczxczxczx')
 
     const [items, total] = await this.prisma.$transaction([
       this.prisma.artist.findMany({
@@ -108,7 +107,6 @@ export class ArtistsService {
       }),
       this.prisma.artist.count({ where }),
     ]);
-
 
     return {
       items: items.map((artist) => this.serializeArtist(artist)),
@@ -414,7 +412,6 @@ export class ArtistsService {
     if (!artist) {
       return null;
     }
-
 
     return {
       id: artist.id,

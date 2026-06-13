@@ -85,7 +85,7 @@ export function ArtistsBrowser({ artists }: ArtistsBrowserProps) {
         </section>
       ) : null}
 
-      <section className="mx-auto max-w-[1240px] px-5 sm:px-8 lg:px-10" id="artists-browser">
+      <section className="mx-auto max-w-[1500px] px-5 sm:px-8 lg:px-10" id="artists-browser">
         <div className="rounded-[42px] bg-transparent py-2 text-center">
           <h2 className="text-[34px] font-medium text-[#2f3138] sm:text-[40px]">Svi umjetnici</h2>
 
@@ -157,7 +157,7 @@ export function ArtistsBrowser({ artists }: ArtistsBrowserProps) {
         </div>
       </section>
 
-      <section className="mx-auto max-w-[1240px] px-5 sm:px-8 lg:px-10">
+      <section className="mx-auto max-w-[1500px] px-5 sm:px-8 lg:px-10">
         {filteredArtists.length === 0 ? (
           <div className="rounded-[34px] border border-dashed border-[#d6dce5] bg-white px-8 py-12 text-center text-[18px] text-[#7d8793]">
             Nema umjetnika koji odgovaraju izabranim filterima.
@@ -201,7 +201,7 @@ export function ArtistsBrowser({ artists }: ArtistsBrowserProps) {
       ) : null}
 
       {hasActiveFilters && filteredArtists.length > 0 ? (
-        <p className="mx-auto max-w-[1240px] px-5 text-center text-[16px] text-[#7d8793] sm:px-8 lg:px-10">
+        <p className="mx-auto max-w-[1500px] px-5 text-center text-[16px] text-[#7d8793] sm:px-8 lg:px-10">
           Prikazano {visibleArtists.length} od {filteredArtists.length} rezultata.
         </p>
       ) : null}
