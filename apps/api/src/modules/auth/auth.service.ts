@@ -16,7 +16,12 @@ import {
   verifyPassword,
   verifySessionToken,
 } from "./auth-crypto";
-import { CompleteArtistSetupDto, LoginAdminDto, LoginArtistDto } from "./auth.dto";
+import {
+  ChangeArtistPasswordDto,
+  CompleteArtistSetupDto,
+  LoginAdminDto,
+  LoginArtistDto,
+} from "./auth.dto";
 
 export interface AdminSessionUser {
   id: string;
@@ -212,6 +217,47 @@ export class AuthService implements OnModuleInit {
     return {
       token: this.signArtistToken(updatedArtistAccount.id, updatedArtistAccount.email),
       user: this.serializeArtistUser(updatedArtistAccount),
+    };
+  }
+
+  async changeArtistPassword(artistAccountId: string, dto: ChangeArtistPasswordDto) {
+    const artistAccount = await this.prisma.artistAccount.findUnique({
+      where: {
+        id: artistAccountId,
+      },
+    });
+
+    if (!artistAccount || !artistAccount.isActive) {
+      throw new UnauthorizedException("Artist session is invalid or expired.");
+    }
+
+    const isCurrentPasswordValid = await verifyPassword(
+      dto.currentPassword,
+      artistAccount.passwordHash,
+    );
+
+    if (!isCurrentPasswordValid) {
+      throw new UnauthorizedException("Trenutna lozinka nije ispravna.");
+    }
+
+    const isSamePassword = await verifyPassword(dto.newPassword, artistAccount.passwordHash);
+
+    if (isSamePassword) {
+      throw new UnauthorizedException("Nova lozinka mora biti drugacija od trenutne.");
+    }
+
+    await this.prisma.artistAccount.update({
+      where: {
+        id: artistAccount.id,
+      },
+      data: {
+        passwordHash: await hashPassword(dto.newPassword),
+      },
+    });
+
+    return {
+      success: true,
+      message: "Lozinka je uspjesno promijenjena.",
     };
   }
 

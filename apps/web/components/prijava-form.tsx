@@ -2,6 +2,7 @@
 
 import { startTransition, useEffect, useMemo, useState } from "react";
 
+import { useUiFeedback, useUiLoadingState } from "@/components/ui-feedback-provider";
 import { ApiError } from "@/services/api";
 import { submitArtistSubmission } from "@/services/artist-submissions";
 
@@ -90,6 +91,7 @@ const initialFormValues: FormValues = {
  * the narrow sidebar feeling.
  */
 export function PrijavaForm({ disciplines }: PrijavaFormProps) {
+  const { showAlert } = useUiFeedback();
   const [currentStep, setCurrentStep] = useState(0);
   const [animationDirection, setAnimationDirection] = useState<"forward" | "backward">("forward");
   const [formValues, setFormValues] = useState<FormValues>(initialFormValues);
@@ -133,6 +135,8 @@ export function PrijavaForm({ disciplines }: PrijavaFormProps) {
   const completionPercent = ((currentStep + 1) / steps.length) * 100;
   const activeArtworkPreview = artworkPreviews[activeArtworkPreviewIndex] ?? null;
 
+  useUiLoadingState(submitState.kind === "submitting");
+
   useEffect(() => {
     const nextPreviews = artworkFiles.map((file) => ({
       key: buildFileKey(file),
@@ -173,6 +177,24 @@ export function PrijavaForm({ disciplines }: PrijavaFormProps) {
       setActiveArtworkPreviewIndex(artworkPreviews.length - 1);
     }
   }, [activeArtworkPreviewIndex, artworkPreviews.length]);
+
+  useEffect(() => {
+    if (submitState.kind === "success") {
+      showAlert({
+        kind: "success",
+        title: "Prijava je poslata",
+        message: submitState.message,
+      });
+    }
+
+    if (submitState.kind === "error") {
+      showAlert({
+        kind: "error",
+        title: "Prijava nije poslata",
+        message: submitState.message,
+      });
+    }
+  }, [showAlert, submitState]);
 
   function goToStep(nextStep: number) {
     if (nextStep < 0 || nextStep >= steps.length) {
@@ -330,20 +352,6 @@ export function PrijavaForm({ disciplines }: PrijavaFormProps) {
 
   return (
     <form className="mx-auto max-w-[1320px] space-y-8" onSubmit={handleSubmit}>
-      {submitState.kind !== "idle" ? (
-        <div
-          className={`rounded-[1.4rem] border px-5 py-4 text-[15px] ${
-            submitState.kind === "success"
-              ? "border-[#2440d8]/15 bg-[#2440d8]/6 text-[#1d34b7]"
-              : submitState.kind === "error"
-                ? "border-[#dc1735]/15 bg-[#dc1735]/6 text-[#b3162d]"
-                : "border-black/8 bg-white text-[#4e5560]"
-          }`}
-        >
-          {submitState.kind === "submitting" ? "Slanje prijave je u toku..." : submitState.message}
-        </div>
-      ) : null}
-
       <div className="rounded-[2.2rem] border border-black/8 bg-white/78 p-4 shadow-[0_24px_75px_rgba(29,45,83,0.08)] backdrop-blur-sm sm:p-5 lg:p-6">
         <div className="overflow-x-auto pb-3">
           <div className="flex min-w-max gap-3">

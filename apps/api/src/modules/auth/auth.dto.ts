@@ -28,3 +28,12 @@ export class CompleteArtistSetupDto {
   @MinLength(8)
   password!: string;
 }
+
+export class ChangeArtistPasswordDto {
+  @IsString()
+  currentPassword!: string;
+
+  @IsString()
+  @MinLength(8)
+  newPassword!: string;
+}

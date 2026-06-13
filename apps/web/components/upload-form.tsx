@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+import { useUiFeedback, useUiLoadingState } from "@/components/ui-feedback-provider";
 import { useUploadArtwork } from "@/hooks/use-upload-artwork";
 import type { Artist } from "@/types/api";
 
@@ -10,12 +11,37 @@ interface UploadFormProps {
 }
 
 export function UploadForm({ artists }: UploadFormProps) {
+  const { showAlert } = useUiFeedback();
   const [artistId, setArtistId] = useState(artists[0]?.id ?? "");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [altText, setAltText] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const { status, errorMessage, createdArtwork, uploadArtwork } = useUploadArtwork();
+
+  useUiLoadingState(status === "uploading");
+
+  useEffect(() => {
+    if (status === "success" && createdArtwork) {
+      showAlert({
+        kind: "success",
+        title: "Rad je uploadovan",
+        message: "Artwork je uspješno sačuvan i dodat umjetniku.",
+      });
+    }
+  }, [createdArtwork, showAlert, status]);
+
+  useEffect(() => {
+    if (!errorMessage) {
+      return;
+    }
+
+    showAlert({
+      kind: "error",
+      title: "Upload nije uspio",
+      message: errorMessage,
+    });
+  }, [errorMessage, showAlert]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();

@@ -2,7 +2,12 @@ import { Body, Controller, Get, Post, Req, UseGuards } from "@nestjs/common";
 
 import { AdminAuthGuard, type AdminRequest } from "./admin-auth.guard";
 import { ArtistAuthGuard, type ArtistRequest } from "./artist-auth.guard";
-import { CompleteArtistSetupDto, LoginAdminDto, LoginArtistDto } from "./auth.dto";
+import {
+  ChangeArtistPasswordDto,
+  CompleteArtistSetupDto,
+  LoginAdminDto,
+  LoginArtistDto,
+} from "./auth.dto";
 import { AuthService } from "./auth.service";
 
 /**
@@ -32,6 +37,12 @@ export class AuthController {
   @Post("artist/setup-password")
   completeArtistSetup(@Body() dto: CompleteArtistSetupDto) {
     return this.authService.completeArtistSetup(dto);
+  }
+
+  @UseGuards(ArtistAuthGuard)
+  @Post("artist/change-password")
+  changeArtistPassword(@Req() request: ArtistRequest, @Body() dto: ChangeArtistPasswordDto) {
+    return this.authService.changeArtistPassword(request.artistUser!.id, dto);
   }
 
   @UseGuards(AdminAuthGuard)

@@ -1,7 +1,8 @@
 "use client";
 
-import { startTransition, useState } from "react";
+import { startTransition, useEffect, useState } from "react";
 
+import { useUiFeedback, useUiLoadingState } from "@/components/ui-feedback-provider";
 import type { ArtistSubmissionListItem, ArtistSubmissionStatus, Discipline } from "@/types/api";
 import { ApiError } from "@/services/api";
 import { updateArtistSubmission } from "@/services/artist-submissions";
@@ -34,6 +35,7 @@ type SaveState =
   | { kind: "error"; message: string };
 
 export function AdminAdmissionEditor({ disciplines, submission }: AdminAdmissionEditorProps) {
+  const { showAlert } = useUiFeedback();
   const [artworks, setArtworks] = useState(submission.artworks);
   const [formState, setFormState] = useState<FormState>({
     fullName: submission.fullName,
@@ -55,6 +57,26 @@ export function AdminAdmissionEditor({ disciplines, submission }: AdminAdmission
   const fieldClassName =
     "w-full rounded-[1.2rem] border border-[#dbe2ec] bg-white px-4 py-3 text-[16px] text-[#2f3138] outline-none transition focus:border-[#182fc7]";
   const areaClassName = `${fieldClassName} min-h-36 resize-y`;
+
+  useUiLoadingState(saveState.kind === "saving");
+
+  useEffect(() => {
+    if (saveState.kind === "success") {
+      showAlert({
+        kind: "success",
+        title: "Prijava je ažurirana",
+        message: saveState.message,
+      });
+    }
+
+    if (saveState.kind === "error") {
+      showAlert({
+        kind: "error",
+        title: "Izmjene nijesu sačuvane",
+        message: saveState.message,
+      });
+    }
+  }, [saveState, showAlert]);
 
   function setField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setFormState((current) => ({
@@ -182,20 +204,6 @@ export function AdminAdmissionEditor({ disciplines, submission }: AdminAdmission
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
       <section className="space-y-6 rounded-[30px] border border-[#dde4ef] bg-white/95 p-6 shadow-[0_18px_48px_rgba(31,46,86,0.06)] sm:p-8">
-        {saveState.kind !== "idle" ? (
-          <div
-            className={`rounded-[18px] border px-5 py-4 text-[15px] ${
-              saveState.kind === "success"
-                ? "border-[#1f9d52]/20 bg-[#ecfbf2] text-[#176f3b]"
-                : saveState.kind === "error"
-                  ? "border-[#dc1735]/20 bg-[#fff1f4] text-[#b4132c]"
-                  : "border-[#182fc7]/16 bg-[#eef2ff] text-[#182fc7]"
-            }`}
-          >
-            {saveState.kind === "saving" ? saveState.label : saveState.message}
-          </div>
-        ) : null}
-
         <div className="grid gap-5 md:grid-cols-2">
           <Field label="Ime i prezime">
             <input

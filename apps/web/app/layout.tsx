@@ -5,6 +5,7 @@ import { getAdminSessionUser } from "@/lib/admin-session";
 import { getArtistSessionUser } from "@/lib/artist-session";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { UiFeedbackProvider } from "@/components/ui-feedback-provider";
 import { getArtistBySlug } from "@/services/artists";
 
 import "./globals.css";
@@ -63,13 +64,15 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html lang="sr">
       <body className={dmSans.className}>
-        <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
-          <SiteHeader session={headerSession} />
-          <main className="mx-auto w-full max-w-[100vw] px-5 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
-            {children}
-          </main>
-          <SiteFooter />
-        </div>
+        <UiFeedbackProvider>
+          <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
+            <SiteHeader session={headerSession} />
+            <main className="mx-auto w-full max-w-[100vw] px-5 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
+              {children}
+            </main>
+            <SiteFooter />
+          </div>
+        </UiFeedbackProvider>
       </body>
     </html>
   );

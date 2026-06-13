@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 
 import { logoutArtistAction } from "@/app/artist/login/actions";
+import { PasswordInput } from "@/components/password-input";
+import { useUiFeedback, useUiLoadingState } from "@/components/ui-feedback-provider";
 import {
+  changeArtistPassword,
   deleteArtistArtwork,
   updateArtistProfile,
   uploadArtistArtwork,
@@ -41,6 +44,7 @@ export function ArtistDashboardEditor({
   artist: initialArtist,
   sessionEmail,
 }: ArtistDashboardEditorProps) {
+  const { showAlert } = useUiFeedback();
   const [artist, setArtist] = useState(initialArtist);
   const [bio, setBio] = useState(initialArtist.bio ?? "");
   const [quote, setQuote] = useState(initialArtist.quote ?? "");
@@ -58,11 +62,47 @@ export function ArtistDashboardEditor({
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSaving, startSaving] = useTransition();
+  const [isChangingPassword, startChangingPassword] = useTransition();
   const [isUploadingProfileImage, setIsUploadingProfileImage] = useState(false);
   const [isUploadingArtworks, setIsUploadingArtworks] = useState(false);
   const [deletingArtworkId, setDeletingArtworkId] = useState<string | null>(null);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const profileImageInputRef = useRef<HTMLInputElement | null>(null);
   const artworkInputRef = useRef<HTMLInputElement | null>(null);
+  const hasPendingAction =
+    isSaving ||
+    isChangingPassword ||
+    isUploadingProfileImage ||
+    isUploadingArtworks ||
+    deletingArtworkId !== null;
+
+  useUiLoadingState(hasPendingAction);
+
+  useEffect(() => {
+    if (!feedbackMessage) {
+      return;
+    }
+
+    showAlert({
+      kind: "success",
+      title: "Uspješno",
+      message: feedbackMessage,
+    });
+  }, [feedbackMessage, showAlert]);
+
+  useEffect(() => {
+    if (!errorMessage) {
+      return;
+    }
+
+    showAlert({
+      kind: "error",
+      title: "Greška",
+      message: errorMessage,
+    });
+  }, [errorMessage, showAlert]);
 
   function syncArtist(nextArtist: Artist) {
     setArtist(nextArtist);
@@ -84,6 +124,43 @@ export function ArtistDashboardEditor({
   function clearMessages() {
     setFeedbackMessage(null);
     setErrorMessage(null);
+  }
+
+  function handleChangePassword() {
+    clearMessages();
+
+    if (!currentPassword || !newPassword || !confirmNewPassword) {
+      setErrorMessage("Popuni sva polja za promjenu lozinke.");
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setErrorMessage("Nova lozinka mora imati najmanje 8 karaktera.");
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      setErrorMessage("Nova lozinka i potvrda lozinke moraju biti iste.");
+      return;
+    }
+
+    startChangingPassword(async () => {
+      try {
+        const response = await changeArtistPassword({
+          currentPassword,
+          newPassword,
+        });
+
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmNewPassword("");
+        setFeedbackMessage(response.message);
+      } catch (error) {
+        setErrorMessage(
+          error instanceof Error ? error.message : "Lozinka nije mogla biti promijenjena.",
+        );
+      }
+    });
   }
 
   function handleSaveProfile() {
@@ -232,18 +309,6 @@ export function ArtistDashboardEditor({
           </div>
         </div>
       </section>
-
-      {feedbackMessage ? (
-        <div className="rounded-[20px] border border-[#d9ebdd] bg-[#f4fbf5] px-5 py-4 text-[15px] text-[#265b33]">
-          {feedbackMessage}
-        </div>
-      ) : null}
-
-      {errorMessage ? (
-        <div className="rounded-[20px] border border-[#f1d2d8] bg-[#fff5f7] px-5 py-4 text-[15px] text-[#9f2842]">
-          {errorMessage}
-        </div>
-      ) : null}
 
       <section className="grid gap-8 lg:grid-cols-[0.74fr_1.26fr]">
         <div className="space-y-8">
@@ -501,6 +566,53 @@ export function ArtistDashboardEditor({
                 Jos nema radova u portfoliju.
               </div>
             )}
+          </section>
+
+          <section className="rounded-[30px] border border-[#dde4ef] bg-white/95 p-6 shadow-[0_18px_48px_rgba(31,46,86,0.06)]">
+            <div className="flex flex-col gap-6">
+              <div>
+                <h2 className="text-[22px] font-semibold text-[#2f3138]">Promjena lozinke</h2>
+                <p className="mt-2 text-[15px] leading-[1.6] text-[#66707d]">
+                  Ovdje mozes promijeniti lozinku za pristup svom artist nalogu.
+                </p>
+              </div>
+
+              <Field label="Trenutna lozinka">
+                <PasswordInput
+                  autoComplete="current-password"
+                  className="h-12 w-full rounded-[16px] border border-[#d8e0ec] bg-[#f8fbff] px-4 text-[15px] text-[#2f3138] outline-none transition focus:border-[#182fc7]"
+                  onChange={(event) => setCurrentPassword(event.target.value)}
+                  value={currentPassword}
+                />
+              </Field>
+
+              <Field label="Nova lozinka">
+                <PasswordInput
+                  autoComplete="new-password"
+                  className="h-12 w-full rounded-[16px] border border-[#d8e0ec] bg-[#f8fbff] px-4 text-[15px] text-[#2f3138] outline-none transition focus:border-[#182fc7]"
+                  onChange={(event) => setNewPassword(event.target.value)}
+                  value={newPassword}
+                />
+              </Field>
+
+              <Field label="Potvrdi novu lozinku">
+                <PasswordInput
+                  autoComplete="new-password"
+                  className="h-12 w-full rounded-[16px] border border-[#d8e0ec] bg-[#f8fbff] px-4 text-[15px] text-[#2f3138] outline-none transition focus:border-[#182fc7]"
+                  onChange={(event) => setConfirmNewPassword(event.target.value)}
+                  value={confirmNewPassword}
+                />
+              </Field>
+
+              <button
+                className="inline-flex h-12 items-center justify-center rounded-full border border-[#182fc7] bg-[#182fc7] px-6 text-[15px] font-medium text-white transition hover:-translate-y-[1px] hover:bg-[#1026b2] disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={isChangingPassword}
+                onClick={handleChangePassword}
+                type="button"
+              >
+                {isChangingPassword ? "Promjena u toku..." : "Promijeni lozinku"}
+              </button>
+            </div>
           </section>
         </div>
       </section>

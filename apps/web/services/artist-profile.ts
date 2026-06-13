@@ -84,6 +84,22 @@ export async function deleteArtistArtwork(artworkId: string) {
   return readRouteResponse<{ success: boolean; deletedArtworkId: string }>(response);
 }
 
+export async function changeArtistPassword(payload: {
+  currentPassword: string;
+  newPassword: string;
+}) {
+  const response = await fetch("/api/artist/change-password", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+    cache: "no-store",
+  });
+
+  return readRouteResponse<{ success: boolean; message: string }>(response);
+}
+
 async function readRouteResponse<T>(response: Response) {
   if (!response.ok) {
     let payload: unknown = undefined;
