@@ -106,7 +106,7 @@ export function ArtistArtworkGallery({ artistName, artworks }: ArtistArtworkGall
 
   return (
     <>
-      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
         {sortedArtworks.map((artwork, index) => (
           <article
             className="overflow-hidden rounded-[18px] bg-white shadow-[0_8px_28px_rgba(37,48,71,0.08)]"

@@ -39,6 +39,8 @@ export async function POST(request: Request) {
   const description = incomingFormData.get("description");
   const altText = incomingFormData.get("altText");
   const orderIndex = incomingFormData.get("orderIndex");
+  const isFeatured = incomingFormData.get("isFeatured");
+  const isBackground = incomingFormData.get("isBackground");
 
   if (typeof title === "string" && title.trim()) {
     formData.set("title", title);
@@ -54,6 +56,14 @@ export async function POST(request: Request) {
 
   if (typeof orderIndex === "string" && orderIndex.trim()) {
     formData.set("orderIndex", orderIndex);
+  }
+
+  if (typeof isFeatured === "string" && isFeatured.trim()) {
+    formData.set("isFeatured", isFeatured);
+  }
+
+  if (typeof isBackground === "string" && isBackground.trim()) {
+    formData.set("isBackground", isBackground);
   }
 
   const response = await fetch(new URL("/artworks/upload", serverEnv.apiBaseUrl), {

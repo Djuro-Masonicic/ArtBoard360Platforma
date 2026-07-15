@@ -5,8 +5,10 @@ import { ArtistAuthGuard, type ArtistRequest } from "./artist-auth.guard";
 import {
   ChangeArtistPasswordDto,
   CompleteArtistSetupDto,
+  ForgotArtistPasswordDto,
   LoginAdminDto,
   LoginArtistDto,
+  ResetArtistPasswordDto,
 } from "./auth.dto";
 import { AuthService } from "./auth.service";
 
@@ -37,6 +39,16 @@ export class AuthController {
   @Post("artist/setup-password")
   completeArtistSetup(@Body() dto: CompleteArtistSetupDto) {
     return this.authService.completeArtistSetup(dto);
+  }
+
+  @Post("artist/forgot-password")
+  forgotArtistPassword(@Body() dto: ForgotArtistPasswordDto) {
+    return this.authService.requestArtistPasswordReset(dto);
+  }
+
+  @Post("artist/reset-password")
+  resetArtistPassword(@Body() dto: ResetArtistPasswordDto) {
+    return this.authService.resetArtistPassword(dto);
   }
 
   @UseGuards(ArtistAuthGuard)

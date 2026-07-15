@@ -16,7 +16,9 @@ export default async function ArtistDetailPage({ params }: ArtistDetailPageProps
 
   try {
     const artist = await getArtistBySlug(slug);
+    const backgroundArtwork = artist.artworks.find((artwork) => artwork.isBackground);
     const heroImage =
+      backgroundArtwork?.imageUrl ||
       artist.coverImageUrl ||
       artist.artworks[0]?.imageUrl ||
       artist.profileImageUrl ||

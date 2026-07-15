@@ -28,6 +28,13 @@ interface ArtistAccountSetupMailData {
   temporaryPassword: string;
 }
 
+interface ArtistPasswordResetMailData {
+  artistName: string;
+  email: string;
+  resetUrl: string;
+  expiresAt: Date;
+}
+
 /**
  * We keep the existing service name so the rest of the application does not
  * need to change, but the transport is the Resend API.
@@ -38,14 +45,20 @@ export class ResendMailService {
   private readonly client = env.resendApiKey ? new Resend(env.resendApiKey) : null;
 
   private assertConfigured() {
-    if (!this.client || !env.resendFromEmail || !env.adminNotificationEmail) {
+    if (!this.client || !env.resendFromEmail) {
       throw new InternalServerErrorException(
-        "Email notifications are not configured. Set RESEND_API_KEY, RESEND_FROM_EMAIL, and ADMIN_NOTIFICATION_EMAIL.",
+        "Email notifications are not configured. Set RESEND_API_KEY and RESEND_FROM_EMAIL.",
       );
     }
   }
 
   private getAdminRecipients() {
+    if (!env.adminNotificationEmail) {
+      throw new InternalServerErrorException(
+        "Admin email notifications are not configured. Set ADMIN_NOTIFICATION_EMAIL.",
+      );
+    }
+
     return Array.from(
       new Set([
         ...splitEmailList(env.adminNotificationEmail ?? ""),
@@ -117,6 +130,43 @@ export class ResendMailService {
     await this.sendWithLogging({
       mailType: "artist account setup",
       recipients: this.getAdminRecipients(),
+      subject,
+      text,
+      html,
+    });
+  }
+
+  async sendArtistPasswordResetEmail(data: ArtistPasswordResetMailData) {
+    this.assertConfigured();
+
+    const subject = "Promjena lozinke za ArtBoard nalog";
+    const text = [
+      `Pozdrav ${data.artistName},`,
+      "",
+      "Primili smo zahtjev za promjenu lozinke tvog ArtBoard naloga.",
+      `Nova lozinka moze se postaviti ovdje: ${data.resetUrl}`,
+      "",
+      `Link vazi do ${data.expiresAt.toISOString()}.`,
+      "Ako nijesi poslao/la ovaj zahtjev, slobodno ignorisi poruku.",
+    ].join("\n");
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #1f2430;">
+        <p>Pozdrav <strong>${escapeHtml(data.artistName)}</strong>,</p>
+        <p>Primili smo zahtjev za promjenu lozinke tvog ArtBoard naloga.</p>
+        <p>
+          <a href="${escapeHtml(data.resetUrl)}"
+             style="display:inline-block;padding:12px 20px;border-radius:999px;background:#182fc7;color:#ffffff;text-decoration:none;font-weight:700;">
+            Postavi novu lozinku
+          </a>
+        </p>
+        <p>Link vazi 60 minuta. Ako nijesi poslao/la ovaj zahtjev, slobodno ignorisi poruku.</p>
+      </div>
+    `;
+
+    await this.sendWithLogging({
+      mailType: "artist password reset",
+      recipients: [data.email],
       subject,
       text,
       html,

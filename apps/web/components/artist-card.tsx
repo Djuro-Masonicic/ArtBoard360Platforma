@@ -17,6 +17,19 @@ const FADE_DURATION_MS = 900;
  * with the artist name and profile thumbnail.
  */
 export function ArtistCard({ artist, compact = false }: ArtistCardProps) {
+  const featuredArtworkImages = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          artist.artworks
+            .filter((artwork) => artwork.isFeatured)
+            .map((artwork) => artwork.imageUrl)
+            .filter(Boolean),
+        ),
+      ),
+    [artist.artworks],
+  );
+
   const artworkImages = useMemo(
     () =>
       Array.from(
@@ -34,7 +47,9 @@ export function ArtistCard({ artist, compact = false }: ArtistCardProps) {
     null;
 
   const rotationImages =
-    artworkImages.length > 0
+    featuredArtworkImages.length > 0
+      ? featuredArtworkImages
+      : artworkImages.length > 0
       ? artworkImages
       : fallbackImageUrl
         ? [fallbackImageUrl]
@@ -136,14 +151,14 @@ export function ArtistCard({ artist, compact = false }: ArtistCardProps) {
           </div>
         </div>
 
-        <div className="flex items-end justify-between gap-5 pt-5">
+        <div className="grid min-h-[124px] grid-cols-[minmax(0,1fr)_68px] items-end gap-4 pt-5">
           <h3
-            className={`max-w-[72%] font-medium tracking-[-0.04em] text-[#2f3138] ${nameClassName}`}
+            className={`min-h-[2.45em] overflow-hidden font-medium tracking-[-0.04em] text-[#2f3138] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] ${nameClassName}`}
           >
             {artist.name}
           </h3>
 
-          <div className="flex h-[72px] w-[72px] flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#e9edf4]">
+          <div className="flex h-[64px] w-[64px] flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#e9edf4] sm:h-[68px] sm:w-[68px]">
             {avatarUrl ? (
               <img
                 alt={artist.name}

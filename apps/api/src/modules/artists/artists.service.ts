@@ -14,10 +14,15 @@ import {
 
 const artistListInclude = {
   artworks: {
-    orderBy: {
-      orderIndex: "asc",
-    },
-    take: 5,
+    orderBy: [
+      {
+        isFeatured: "desc",
+      },
+      {
+        orderIndex: "asc",
+      },
+    ],
+    take: 8,
   },
   socialLinks: {
     orderBy: {

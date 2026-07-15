@@ -108,4 +108,5 @@ export const env = {
   maxSignedUploadExpirySeconds: readNumberEnv("MAX_SIGNED_UPLOAD_EXPIRY_SECONDS", 900),
   artistsCsvPath: process.env.ARTISTS_CSV_PATH,
   testimonialsCsvPath: process.env.TESTIMONIALS_CSV_PATH,
+  faqsCsvPath: process.env.FAQS_CSV_PATH,
 } as const;

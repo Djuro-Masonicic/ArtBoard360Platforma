@@ -7,6 +7,7 @@ import {
 import { Prisma } from "@prisma/client";
 
 import { env } from "../../config/env";
+import { ResendMailService } from "../../mail/resend-mail.service";
 import { PrismaService } from "../../prisma/prisma.service";
 import {
   createOneTimeToken,
@@ -19,8 +20,10 @@ import {
 import {
   ChangeArtistPasswordDto,
   CompleteArtistSetupDto,
+  ForgotArtistPasswordDto,
   LoginAdminDto,
   LoginArtistDto,
+  ResetArtistPasswordDto,
 } from "./auth.dto";
 
 export interface AdminSessionUser {
@@ -39,6 +42,7 @@ export interface ArtistSessionUser {
   artistId: string;
   artistSlug: string;
   artistName: string;
+  mustChangePassword: boolean;
   createdAt: Date;
   updatedAt: Date;
   lastLoginAt: Date | null;
@@ -50,7 +54,10 @@ export interface ArtistSessionUser {
  */
 @Injectable()
 export class AuthService implements OnModuleInit {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mailService: ResendMailService,
+  ) {}
 
   async onModuleInit() {
     await this.ensureSeedAdminUser();
@@ -178,6 +185,7 @@ export class AuthService implements OnModuleInit {
         },
         data: {
           passwordHash: await hashPassword(dto.password),
+          mustChangePassword: false,
           lastLoginAt: new Date(),
         },
       });
@@ -252,12 +260,125 @@ export class AuthService implements OnModuleInit {
       },
       data: {
         passwordHash: await hashPassword(dto.newPassword),
+        mustChangePassword: false,
       },
     });
 
     return {
       success: true,
       message: "Lozinka je uspjesno promijenjena.",
+    };
+  }
+
+  async requestArtistPasswordReset(dto: ForgotArtistPasswordDto) {
+    const email = normalizeEmail(dto.email);
+    const artistAccount = await this.prisma.artistAccount.findUnique({
+      where: { email },
+      include: {
+        artist: true,
+      },
+    });
+
+    if (artistAccount?.isActive) {
+      const rawToken = createOneTimeToken();
+      const tokenHash = hashOneTimeToken(rawToken);
+      const expiresAt = new Date(Date.now() + 1000 * 60 * 60);
+
+      await this.prisma.$transaction(async (tx) => {
+        await tx.artistPasswordResetToken.updateMany({
+          where: {
+            artistAccountId: artistAccount.id,
+            usedAt: null,
+          },
+          data: {
+            usedAt: new Date(),
+          },
+        });
+
+        await tx.artistPasswordResetToken.create({
+          data: {
+            artistAccountId: artistAccount.id,
+            tokenHash,
+            expiresAt,
+          },
+        });
+      });
+
+      const resetUrl = new URL("/artist/reset-password", env.siteBaseUrl);
+      resetUrl.searchParams.set("token", rawToken);
+
+      try {
+        await this.mailService.sendArtistPasswordResetEmail({
+          artistName: artistAccount.artist.name,
+          email: artistAccount.email,
+          resetUrl: resetUrl.toString(),
+          expiresAt,
+        });
+      } catch (error) {
+        console.error("Artist password reset email failed.", error);
+      }
+    }
+
+    return {
+      success: true,
+      message: "Ako postoji aktivan artist nalog sa tim emailom, poslali smo link za promjenu lozinke.",
+    };
+  }
+
+  async resetArtistPassword(dto: ResetArtistPasswordDto) {
+    const tokenHash = hashOneTimeToken(dto.token);
+    const resetToken = await this.prisma.artistPasswordResetToken.findUnique({
+      where: {
+        tokenHash,
+      },
+      include: {
+        artistAccount: true,
+      },
+    });
+
+    if (
+      !resetToken ||
+      resetToken.usedAt ||
+      resetToken.expiresAt.getTime() <= Date.now() ||
+      !resetToken.artistAccount.isActive
+    ) {
+      throw new UnauthorizedException("Link za promjenu lozinke nije vazeci ili je istekao.");
+    }
+
+    const isSamePassword = await verifyPassword(
+      dto.password,
+      resetToken.artistAccount.passwordHash,
+    );
+
+    if (isSamePassword) {
+      throw new UnauthorizedException("Nova lozinka mora biti drugacija od prethodne.");
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.artistAccount.update({
+        where: {
+          id: resetToken.artistAccountId,
+        },
+        data: {
+          passwordHash: await hashPassword(dto.password),
+          mustChangePassword: false,
+        },
+      });
+
+      await tx.artistPasswordResetToken.updateMany({
+        where: {
+          artistAccountId: resetToken.artistAccountId,
+          usedAt: null,
+        },
+        data: {
+          usedAt: new Date(),
+        },
+      });
+    });
+
+    return {
+      success: true,
+      message: "Lozinka je uspjesno promijenjena. Sada se mozes prijaviti.",
     };
   }
 
@@ -423,6 +544,7 @@ export class AuthService implements OnModuleInit {
     id: string;
     email: string;
     name: string;
+    mustChangePassword: boolean;
     createdAt: Date;
     updatedAt: Date;
     lastLoginAt: Date | null;
@@ -439,6 +561,7 @@ export class AuthService implements OnModuleInit {
       artistId: artistAccount.artist.id,
       artistSlug: artistAccount.artist.slug,
       artistName: artistAccount.artist.name,
+      mustChangePassword: artistAccount.mustChangePassword,
       createdAt: artistAccount.createdAt,
       updatedAt: artistAccount.updatedAt,
       lastLoginAt: artistAccount.lastLoginAt,

@@ -11,7 +11,7 @@ interface ArtistsBrowserProps {
   artists: Artist[];
 }
 
-const PAGE_SIZE = 9;
+const PAGE_SIZE = 10;
 
 /**
  * The interactive browser keeps all list behavior in one client component:

@@ -10,6 +10,7 @@
     "start:prod": "dotenv -e ../../.env -- next start --port 3000"
   },
   "dependencies": {
+    "lottie-web": "^5.13.0",
     "next": "^16.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

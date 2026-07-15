@@ -65,6 +65,9 @@ export class R2StorageService {
     if (
       entityType === "artwork" ||
       entityType === "profile" ||
+      entityType === "portfolio-artwork" ||
+      entityType === "portfolio-collection-cover" ||
+      entityType === "portfolio-profile" ||
       entityType === "submission-artwork" ||
       entityType === "submission-profile"
     ) {
@@ -75,13 +78,24 @@ export class R2StorageService {
       }
     }
 
-    if (entityType === "submission-portfolio-pdf" && !this.allowedPdfMimeTypes.has(mimeType)) {
+    if (
+      (entityType === "submission-portfolio-pdf" || entityType === "portfolio-pdf") &&
+      !this.allowedPdfMimeTypes.has(mimeType)
+    ) {
       throw new BadRequestException("Unsupported file type. Portfolio uploads must be PDF files.");
     }
 
-    if (fileSizeBytes > env.maxUploadFileSizeBytes) {
+    // Generated portfolio PDFs can legitimately be larger than a single image
+    // because they may contain up to 30 works. User uploads still use the
+    // stricter shared upload limit.
+    const maxAllowedSize =
+      entityType === "portfolio-pdf"
+        ? Math.max(env.maxUploadFileSizeBytes, 50 * 1024 * 1024)
+        : env.maxUploadFileSizeBytes;
+
+    if (fileSizeBytes > maxAllowedSize) {
       throw new BadRequestException(
-        `File is too large. Maximum size is ${env.maxUploadFileSizeBytes} bytes.`,
+        `File is too large. Maximum size is ${maxAllowedSize} bytes.`,
       );
     }
   }
@@ -109,6 +123,22 @@ export class R2StorageService {
 
     if (entityType === "submission-profile") {
       return `artist-submissions/${recordId}/profile/${year}/${month}/${safeBaseName}-${randomUUID()}${normalizedExtension}`;
+    }
+
+    if (entityType === "portfolio-artwork") {
+      return `portfolio-projects/${recordId}/artworks/${year}/${month}/${safeBaseName}-${randomUUID()}${normalizedExtension}`;
+    }
+
+    if (entityType === "portfolio-profile") {
+      return `portfolio-projects/${recordId}/profile/${year}/${month}/${safeBaseName}-${randomUUID()}${normalizedExtension}`;
+    }
+
+    if (entityType === "portfolio-collection-cover") {
+      return `portfolio-projects/${recordId}/collection-cover/${year}/${month}/${safeBaseName}-${randomUUID()}${normalizedExtension}`;
+    }
+
+    if (entityType === "portfolio-pdf") {
+      return `portfolio-projects/${recordId}/pdf/${year}/${month}/${safeBaseName}-${randomUUID()}${normalizedExtension}`;
     }
 
     return `artist-submissions/${recordId}/portfolio-pdf/${year}/${month}/${safeBaseName}-${randomUUID()}${normalizedExtension}`;

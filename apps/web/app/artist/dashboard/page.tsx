@@ -6,5 +6,11 @@ export default async function ArtistDashboardPage() {
   const session = await requireArtistSession();
   const artist = await getArtistBySlug(session.user.artistSlug);
 
-  return <ArtistDashboardEditor artist={artist} sessionEmail={session.user.email} />;
+  return (
+    <ArtistDashboardEditor
+      artist={artist}
+      mustChangePassword={session.user.mustChangePassword}
+      sessionEmail={session.user.email}
+    />
+  );
 }

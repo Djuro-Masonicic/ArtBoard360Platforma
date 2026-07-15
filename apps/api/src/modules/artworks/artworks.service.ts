@@ -7,6 +7,7 @@ import {
   DeleteArtworkDto,
   ReorderArtworksDto,
   RequestUploadUrlDto,
+  UpdateArtworkDto,
   UploadArtworkFileDto,
 } from "./artworks.dto";
 
@@ -60,6 +61,8 @@ export class ArtworksService {
         altText: dto.altText,
         mimeType: file.mimetype,
         fileSizeBytes: file.size,
+        isFeatured: dto.isFeatured,
+        isBackground: dto.isBackground,
         orderIndex: dto.orderIndex,
       });
     } catch (error) {
@@ -81,37 +84,98 @@ export class ArtworksService {
       throw new BadRequestException("The provided storage path does not belong to the selected artist.");
     }
 
-    return this.prisma.artwork.upsert({
-      where: {
-        artistId_imageUrl: {
+    return this.prisma.$transaction(async (tx) => {
+      if (dto.isBackground) {
+        await tx.artwork.updateMany({
+          where: {
+            artistId: dto.artistId,
+            isBackground: true,
+          },
+          data: {
+            isBackground: false,
+          },
+        });
+      }
+
+      return tx.artwork.upsert({
+        where: {
+          artistId_imageUrl: {
+            artistId: dto.artistId,
+            imageUrl: dto.imageUrl,
+          },
+        },
+        update: {
+          storagePath: dto.storagePath ?? null,
+          title: dto.title?.trim() || null,
+          description: dto.description?.trim() || null,
+          altText: dto.altText?.trim() || null,
+          mimeType: dto.mimeType ?? null,
+          fileSizeBytes: dto.fileSizeBytes ?? null,
+          width: dto.width ?? null,
+          height: dto.height ?? null,
+          isFeatured: dto.isFeatured,
+          isBackground: dto.isBackground,
+          orderIndex: dto.orderIndex ?? 0,
+        },
+        create: {
           artistId: dto.artistId,
           imageUrl: dto.imageUrl,
+          storagePath: dto.storagePath ?? null,
+          title: dto.title?.trim() || null,
+          description: dto.description?.trim() || null,
+          altText: dto.altText?.trim() || null,
+          mimeType: dto.mimeType ?? null,
+          fileSizeBytes: dto.fileSizeBytes ?? null,
+          width: dto.width ?? null,
+          height: dto.height ?? null,
+          isFeatured: dto.isFeatured ?? false,
+          isBackground: dto.isBackground ?? false,
+          orderIndex: dto.orderIndex ?? 0,
         },
-      },
-      update: {
-        storagePath: dto.storagePath ?? null,
-        title: dto.title?.trim() || null,
-        description: dto.description?.trim() || null,
-        altText: dto.altText?.trim() || null,
-        mimeType: dto.mimeType ?? null,
-        fileSizeBytes: dto.fileSizeBytes ?? null,
-        width: dto.width ?? null,
-        height: dto.height ?? null,
-        orderIndex: dto.orderIndex ?? 0,
-      },
-      create: {
+      });
+    });
+  }
+
+  async updateArtwork(id: string, dto: UpdateArtworkDto) {
+    await this.assertArtistExists(dto.artistId);
+
+    const artwork = await this.prisma.artwork.findFirst({
+      where: {
+        id,
         artistId: dto.artistId,
-        imageUrl: dto.imageUrl,
-        storagePath: dto.storagePath ?? null,
-        title: dto.title?.trim() || null,
-        description: dto.description?.trim() || null,
-        altText: dto.altText?.trim() || null,
-        mimeType: dto.mimeType ?? null,
-        fileSizeBytes: dto.fileSizeBytes ?? null,
-        width: dto.width ?? null,
-        height: dto.height ?? null,
-        orderIndex: dto.orderIndex ?? 0,
       },
+    });
+
+    if (!artwork) {
+      throw new NotFoundException("The selected artwork was not found for this artist.");
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      if (dto.isBackground === true) {
+        await tx.artwork.updateMany({
+          where: {
+            artistId: dto.artistId,
+            isBackground: true,
+            id: {
+              not: id,
+            },
+          },
+          data: {
+            isBackground: false,
+          },
+        });
+      }
+
+      return tx.artwork.update({
+        where: { id },
+        data: {
+          title: dto.title !== undefined ? dto.title.trim() || null : undefined,
+          description: dto.description !== undefined ? dto.description.trim() || null : undefined,
+          altText: dto.altText !== undefined ? dto.altText.trim() || null : undefined,
+          isFeatured: dto.isFeatured,
+          isBackground: dto.isBackground,
+        },
+      });
     });
   }
 

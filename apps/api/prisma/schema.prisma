@@ -17,6 +17,67 @@ enum ArtistSubmissionStatus{
   REJECTED  
 }
 
+enum SubscriptionPlan {
+  BASIC
+  PLATINUM
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
+}
+
+enum PortfolioProjectSource {
+  ARTBOARD_PROFILE
+  GUEST
+}
+
+enum PortfolioProjectStatus {
+  DRAFT
+  READY
+  GENERATED
+  PAID
+}
+
+enum PortfolioTemplate {
+  INSTITUTIONAL_MINIMAL
+  ARTBOARD_EDITORIAL
+  SALES_PRO
+}
+
+enum PortfolioLanguage {
+  ME
+  EN
+}
+
+enum PortfolioPageFormat {
+  A4
+  US_LETTER
+}
+
+enum PortfolioFontStyle {
+  SANS
+  SERIF
+}
+
+enum PortfolioArtworkAvailability {
+  AVAILABLE
+  SOLD
+  NOT_FOR_SALE
+  UNKNOWN
+}
+
+enum PortfolioPaymentStatus {
+  NOT_REQUIRED
+  REQUIRED
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
 enum SocialPlatform {
   ARTSTATION
   BEHANCE
@@ -82,6 +143,7 @@ model Artist {
   disciplines        ArtistDiscipline[]
   testimonials       Testimonial[]
   account            ArtistAccount?
+  portfolioProjects  PortfolioProject[]
   approvedSubmission ArtistSubmission? @relation("ApprovedArtistSubmission")
 
   @@index([name])
@@ -95,13 +157,51 @@ model ArtistAccount {
   name        String
   passwordHash String?
   isActive    Boolean                 @default(true)
+  mustChangePassword Boolean          @default(false)
   lastLoginAt DateTime?
   createdAt   DateTime                @default(now())
   updatedAt   DateTime                @updatedAt
   artist      Artist                  @relation(fields: [artistId], references: [id], onDelete: Cascade)
   setupTokens ArtistAccountSetupToken[]
+  passwordResetTokens ArtistPasswordResetToken[]
+  subscription ArtistSubscription?
+  portfolioProjects PortfolioProject[]
 
   @@index([email])
+}
+
+model ArtistPasswordResetToken {
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  artistAccountId String        @db.Uuid
+  tokenHash       String        @unique
+  expiresAt       DateTime
+  usedAt          DateTime?
+  createdAt       DateTime      @default(now())
+  artistAccount   ArtistAccount @relation(fields: [artistAccountId], references: [id], onDelete: Cascade)
+
+  @@index([artistAccountId, expiresAt])
+}
+
+model ArtistSubscription {
+  id                     String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  artistAccountId        String             @unique @db.Uuid
+  plan                   SubscriptionPlan   @default(BASIC)
+  status                 SubscriptionStatus @default(ACTIVE)
+  requestedPlan          SubscriptionPlan?
+  requestedAt            DateTime?
+  currentPeriodStart     DateTime           @default(now())
+  currentPeriodEnd       DateTime?
+  cancelAtPeriodEnd      Boolean            @default(false)
+  canceledAt             DateTime?
+  provider               String?
+  providerCustomerId     String?            @unique
+  providerSubscriptionId String?            @unique
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+  artistAccount          ArtistAccount      @relation(fields: [artistAccountId], references: [id], onDelete: Cascade)
+
+  @@index([plan, status])
+  @@index([requestedPlan, requestedAt])
 }
 
 model ArtistAccountSetupToken {
@@ -151,13 +251,18 @@ model Artwork {
   fileSizeBytes Int?
   width         Int?
   height        Int?
+  isFeatured    Boolean  @default(false)
+  isBackground  Boolean  @default(false)
   orderIndex    Int      @default(0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   artist        Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  portfolioArtworks PortfolioArtwork[]
 
   @@unique([artistId, imageUrl])
   @@index([artistId, orderIndex])
+  @@index([artistId, isFeatured])
+  @@index([artistId, isBackground])
 }
 
 model SocialLink {
@@ -198,6 +303,136 @@ model Testimonial {
   @@index([artistId])
   @@index([author])
   @@index([isArchived, isDraft])
+}
+
+model FaqQuestion {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  question           String
+  answer             String   @db.Text
+  slug               String   @unique
+  orderIndex         Int      @default(0)
+  isArchived         Boolean  @default(false)
+  isDraft            Boolean  @default(false)
+  sourceItemId       String?  @unique
+  sourceCollectionId String?
+  sourceLocaleId     String?
+  sourceCreatedAt    DateTime?
+  sourceUpdatedAt    DateTime?
+  sourcePublishedAt  DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([orderIndex])
+  @@index([isArchived, isDraft, orderIndex])
+}
+
+model PortfolioProject {
+  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  artistAccountId      String?                @db.Uuid
+  sourceArtistId       String?                @db.Uuid
+  source               PortfolioProjectSource
+  status               PortfolioProjectStatus @default(DRAFT)
+  paymentStatus        PortfolioPaymentStatus @default(NOT_REQUIRED)
+  title                String                 @default("Portfolio")
+  artistName           String
+  discipline           String?
+  location             String?
+  email                String?
+  phone                String?
+  websiteUrl           String?
+  instagramUrl         String?
+  artboardProfileUrl   String?
+  profileImageUrl      String?
+  profileImageStoragePath String?
+  coverImageUrl        String?
+  collectionName       String?
+  collectionYear       String?
+  collectionDescription String?                @db.Text
+  collectionCoverUrl   String?
+  collectionCoverStoragePath String?
+  biography            String?                @db.Text
+  artistStatement      String?                @db.Text
+  cvSections           Json?
+  template             PortfolioTemplate      @default(INSTITUTIONAL_MINIMAL)
+  language             PortfolioLanguage      @default(ME)
+  pageFormat           PortfolioPageFormat    @default(A4)
+  fontStyle            PortfolioFontStyle     @default(SANS)
+  includeBranding      Boolean                @default(true)
+  includeCv            Boolean                @default(false)
+  includePrices        Boolean                @default(false)
+  publicShareToken     String?                @unique
+  latestPdfUrl         String?
+  latestPdfStoragePath String?
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  artistAccount        ArtistAccount?         @relation(fields: [artistAccountId], references: [id], onDelete: SetNull)
+  sourceArtist         Artist?                @relation(fields: [sourceArtistId], references: [id], onDelete: SetNull)
+  artworks             PortfolioArtwork[]
+  versions             PortfolioVersion[]
+  payments             PortfolioPayment[]
+
+  @@index([artistAccountId, createdAt])
+  @@index([sourceArtistId])
+  @@index([source, status])
+  @@index([paymentStatus])
+}
+
+model PortfolioArtwork {
+  id              String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  portfolioId     String                       @db.Uuid
+  sourceArtworkId String?                      @db.Uuid
+  imageUrl        String
+  storagePath     String?
+  title           String?
+  collectionName  String?
+  year            String?
+  technique       String?
+  dimensions      String?
+  description     String?                      @db.Text
+  availability    PortfolioArtworkAvailability @default(UNKNOWN)
+  price           String?
+  isSelected      Boolean                      @default(true)
+  orderIndex      Int                          @default(0)
+  createdAt       DateTime                     @default(now())
+  updatedAt       DateTime                     @updatedAt
+  portfolio       PortfolioProject             @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  sourceArtwork   Artwork?                     @relation(fields: [sourceArtworkId], references: [id], onDelete: SetNull)
+
+  @@index([portfolioId, orderIndex])
+  @@index([sourceArtworkId])
+}
+
+model PortfolioVersion {
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  portfolioId     String            @db.Uuid
+  versionNumber   Int
+  pdfUrl          String
+  storagePath     String
+  template        PortfolioTemplate
+  language        PortfolioLanguage
+  includeBranding Boolean
+  createdAt       DateTime          @default(now())
+  portfolio       PortfolioProject  @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  @@unique([portfolioId, versionNumber])
+  @@index([portfolioId, createdAt])
+}
+
+model PortfolioPayment {
+  id          String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  portfolioId String                 @db.Uuid
+  status      PortfolioPaymentStatus @default(PENDING)
+  amountCents Int
+  currency    String                 @default("EUR")
+  provider    String?
+  providerRef String?
+  paidAt      DateTime?
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+  portfolio   PortfolioProject       @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  @@index([portfolioId, status])
+  @@index([provider, providerRef])
 }
 
 model ArtistSubmission {

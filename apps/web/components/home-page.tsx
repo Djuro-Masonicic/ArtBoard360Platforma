@@ -1,15 +1,29 @@
+import { HomeAboutSection } from "@/components/home-about-section";
+import { HomeArtboardArtistsSection } from "@/components/home-artboard-artists-section";
+import { HomeBenefitsSection } from "@/components/home-benefits-section";
+import { HomeCosmosSection } from "@/components/home-cosmos-section";
+import { HomeFaqSection } from "@/components/home-faq-section";
+import { HomeFinalCtaSection } from "@/components/home-final-cta-section";
+import { HomeJoinSection } from "@/components/home-join-section";
 import { SiteCtaButton } from "@/components/site-cta-button";
+import { getArtists } from "@/services/artists";
+import { getFaqs } from "@/services/faqs";
 
 /**
  * Homepage hero and first media block.
  * We are building this page section-by-section so the structure stays easy to
  * adjust against the supplied design references.
  */
-export function HomePage() {
+export async function HomePage() {
+  const [artists, faqs] = await Promise.all([getHomepageArtists(), getHomepageFaqs()]);
+
   return (
-    <section className="home-page-frame min-h-screen -mx-5 -mt-8 sm:-mx-8 sm:-mt-10 lg:-mx-10 lg:-mt-12">
-      <div className="min-h-screen px-5 pb-16 pt-[27vh] sm:px-8 lg:px-10">
-        <div className="mx-auto flex max-w-[880px] flex-col items-center text-center">
+    <>
+      <section className="home-page-frame relative min-h-screen -mx-5 -mt-8 sm:-mx-8 sm:-mt-10 lg:-mx-10 lg:-mt-12">
+        <div aria-hidden="true" className="home-hero-background" />
+
+        <div className="relative z-10 min-h-screen px-5 pb-16 pt-[27vh] sm:px-8 lg:px-10">
+          <div className="mx-auto flex max-w-[880px] flex-col items-center text-center">
           <h1 className="max-w-[980px] text-[3.25rem] font-bold leading-[0.95] text-[#2f3138] sm:text-[3.25rem] lg:text-[3.25rem]">
             Digitalni dom
           </h1>
@@ -42,10 +56,10 @@ export function HomePage() {
               <span className="hero-more-link__label">Saznaj vise</span>
             </a>
           </div>
-        </div>
+          </div>
 
-        <div className="mx-auto mt-20 max-w-[1072px] overflow-hidden rounded-[18px] border border-black/10 bg-black shadow-[0_24px_70px_rgba(26,35,56,0.14)]">
-          <div className="relative aspect-[1072/552]">
+          <div className="mx-auto mt-20 max-w-[1072px] overflow-hidden rounded-[18px] border border-black/10 bg-black shadow-[0_24px_70px_rgba(26,35,56,0.14)]">
+            <div className="relative aspect-[1072/552]">
             <video
               autoPlay
               className="h-full w-full object-cover"
@@ -83,9 +97,38 @@ export function HomePage() {
                 </svg>
               </button>
             </div>
+            </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+
+      <HomeCosmosSection />
+      <HomeArtboardArtistsSection artists={artists} />
+      <HomeAboutSection />
+      <HomeBenefitsSection />
+      <HomeJoinSection />
+      <HomeFaqSection faqs={faqs} />
+      <HomeFinalCtaSection />
+    </>
   );
+}
+
+async function getHomepageArtists() {
+  try {
+    const artistsResponse = await getArtists({ includeNsfw: true, page: 1, pageSize: 30 });
+    return artistsResponse.items;
+  } catch (error) {
+    console.error("Homepage artists could not be loaded.", error);
+    return [];
+  }
+}
+
+async function getHomepageFaqs() {
+  try {
+    const faqsResponse = await getFaqs({ page: 1, pageSize: 20 });
+    return faqsResponse.items;
+  } catch (error) {
+    console.error("Homepage FAQs could not be loaded.", error);
+    return [];
+  }
 }

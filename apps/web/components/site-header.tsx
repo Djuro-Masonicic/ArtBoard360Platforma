@@ -16,6 +16,7 @@ const navigationItems = [
   { href: "#", label: "O nama" },
   { href: "#", label: "ArtBoard" },
   { href: "/artists", label: "Umjetnici", matchPrefix: "/artists" },
+  { href: "/portfolio-builder", label: "Portfolio builder", matchPrefix: "/portfolio-builder" },
   { href: "#", label: "Usluge" },
   { href: "/kontakt", label: "Kontakt", matchPrefix: "/kontakt" },
   { href: "#", label: "Blog" },
@@ -150,7 +151,6 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
   }
 
   const desktopNavLinkClass = isTransparentHeader ? "home-nav-link home-nav-link--light" : "home-nav-link";
-  const desktopLoginLinkClass = isTransparentHeader ? "site-header-login-link site-header-login-link--light" : "site-header-login-link";
   const desktopAvatarButtonClass = isTransparentHeader
     ? "flex h-[54px] w-[54px] items-center justify-center overflow-hidden rounded-full border border-white/35 bg-white/10 shadow-none backdrop-blur-sm transition-all duration-500 ease-out hover:scale-[1.02]"
     : "flex h-[54px] w-[54px] items-center justify-center overflow-hidden rounded-full border border-[#dde4ef] bg-[#fbfdff] shadow-[0_10px_24px_rgba(38,51,71,0.08)] transition-all duration-500 ease-out hover:scale-[1.02]";
@@ -181,7 +181,7 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
           {navigationItems.map((item, index) => (
             <Link
               key={item.label}
-              className={`${desktopNavLinkClass} h-full px-4 ${
+              className={`${desktopNavLinkClass} h-full px-2 xl:px-3 ${
                 item.matchPrefix && pathname.startsWith(item.matchPrefix) ? "home-nav-link--active" : ""
               }`}
               href={item.href}
@@ -193,11 +193,8 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
         </nav>
 
         {!isAuthenticated ? (
-          <div className="hidden items-center justify-end gap-4 lg:flex">
-            <Link className={desktopLoginLinkClass} href="/artist/login">
-              Login
-            </Link>
-            <SiteCtaButton href="/prijava" label="Prijavi se" />
+          <div className="hidden items-center justify-end lg:flex">
+            <SiteCtaButton href="/artist/login" label="Prijavi se" />
           </div>
         ) : (
           <div className="hidden justify-end lg:flex">
@@ -257,6 +254,16 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
                     <span aria-hidden="true">↗</span>
                   </Link>
 
+                  {session?.kind === "artist" ? (
+                    <Link
+                      className="flex items-center justify-between rounded-[16px] px-3 py-3 text-[14px] font-medium text-[#2f3138] transition hover:bg-[#f6f9ff] hover:text-[#182fc7]"
+                      href="/artist/subscription"
+                    >
+                      <span>Pretplata</span>
+                      <span aria-hidden="true">&rarr;</span>
+                    </Link>
+                  ) : null}
+
                   <form action={session?.kind === "admin" ? logoutAdminAction : logoutArtistAction}>
                     <button
                       className="flex w-full items-center justify-between rounded-[16px] px-3 py-3 text-left text-[14px] font-medium text-[#b4132c] transition hover:bg-[#fff1f4]"
@@ -310,14 +317,7 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
 
             {!isAuthenticated ? (
               <div className="site-mobile-menu__actions">
-                <Link
-                  className="site-mobile-menu__login-button"
-                  href="/artist/login"
-                  onClick={closeMobileMenu}
-                >
-                  Login
-                </Link>
-                <SiteCtaButton href="/prijava" label="Prijavi se" />
+                <SiteCtaButton href="/artist/login" label="Prijavi se" />
               </div>
             ) : (
               <div className="w-full max-w-[240px] rounded-[24px] border border-[#dde4ef] bg-white/95 px-4 py-4 text-center shadow-[0_14px_38px_rgba(38,51,71,0.08)]">
@@ -348,6 +348,16 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
                 >
                   {session?.primaryLabel}
                 </Link>
+
+                {session?.kind === "artist" ? (
+                  <Link
+                    className="mt-3 inline-flex h-10 items-center justify-center rounded-full border border-[#d9e1ed] px-4 text-[14px] font-medium text-[#2f3138] transition hover:border-[#182fc7] hover:text-[#182fc7]"
+                    href="/artist/subscription"
+                    onClick={closeMobileMenu}
+                  >
+                    Pretplata
+                  </Link>
+                ) : null}
 
                 <form
                   action={session?.kind === "admin" ? logoutAdminAction : logoutArtistAction}

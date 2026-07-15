@@ -3,8 +3,7 @@ import { DM_Sans } from "next/font/google";
 
 import { getAdminSessionUser } from "@/lib/admin-session";
 import { getArtistSessionUser } from "@/lib/artist-session";
-import { SiteFooter } from "@/components/site-footer";
-import { SiteHeader } from "@/components/site-header";
+import { SiteChrome } from "@/components/site-chrome";
 import { UiFeedbackProvider } from "@/components/ui-feedback-provider";
 import { getArtistBySlug } from "@/services/artists";
 
@@ -65,13 +64,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     <html lang="sr">
       <body className={dmSans.className}>
         <UiFeedbackProvider>
-          <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
-            <SiteHeader session={headerSession} />
-            <main className="mx-auto w-full max-w-[100vw] px-5 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
-              {children}
-            </main>
-            <SiteFooter />
-          </div>
+          <SiteChrome session={headerSession}>{children}</SiteChrome>
         </UiFeedbackProvider>
       </body>
     </html>

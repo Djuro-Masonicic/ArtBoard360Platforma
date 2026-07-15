@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useEffect } from "react";
 
 import { loginArtistAction } from "@/app/artist/login/actions";
@@ -54,6 +55,15 @@ export function ArtistLoginForm() {
         />
       </label>
 
+      <div className="flex justify-end">
+        <Link
+          className="text-[14px] font-semibold text-[#4f5967] underline underline-offset-4 transition hover:text-[#182fc7]"
+          href="/artist/forgot-password"
+        >
+          Zaboravili ste lozinku?
+        </Link>
+      </div>
+
       <button
         className="inline-flex h-12 w-full items-center justify-center rounded-full bg-[#182fc7] px-6 text-[16px] font-medium text-white transition hover:bg-[#1326a8] disabled:cursor-not-allowed disabled:bg-[#9aa6dd]"
         disabled={isPending}
@@ -61,6 +71,16 @@ export function ArtistLoginForm() {
       >
         {isPending ? "Prijava u toku..." : "Prijavi se"}
       </button>
+
+      <p className="text-center text-[14px] text-[#66707d]">
+        Nemas ArtBoard profil?{" "}
+        <Link
+          className="font-semibold text-[#dc1735] underline decoration-transparent underline-offset-4 transition hover:decoration-current"
+          href="/prijava"
+        >
+          Posalji prijavu.
+        </Link>
+      </p>
     </form>
   );
 }

@@ -49,3 +49,41 @@ export async function DELETE(_request: Request, context: RouteContext) {
     },
   });
 }
+
+export async function PATCH(request: Request, context: RouteContext) {
+  const [token, session] = await Promise.all([getArtistSessionToken(), getArtistSessionUser()]);
+
+  if (!token || !session) {
+    return NextResponse.json(
+      {
+        message: "Moras biti prijavljen kao umjetnik.",
+      },
+      { status: 401 },
+    );
+  }
+
+  const { id } = await context.params;
+  const payload = await request.json();
+
+  const response = await fetch(new URL(`/artworks/${id}`, serverEnv.apiBaseUrl), {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      ...payload,
+      artistId: session.user.artistId,
+    }),
+    cache: "no-store",
+  });
+
+  const responseText = await response.text();
+
+  return new NextResponse(responseText, {
+    status: response.status,
+    headers: {
+      "Content-Type": response.headers.get("content-type") ?? "application/json",
+    },
+  });
+}

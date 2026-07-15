@@ -22,7 +22,8 @@
     "prisma:migrate": "npm run prisma:migrate --workspace @artboard/api",
     "import:artists": "npm run import:artists --workspace @artboard/api",
     "import:testimonials": "npm run import:testimonials --workspace @artboard/api",
-    "import:all": "npm run import:artists && npm run import:testimonials",
+    "import:faqs": "npm run import:faqs --workspace @artboard/api",
+    "import:all": "npm run import:artists && npm run import:testimonials && npm run import:faqs",
     "storage:setup": "npm run storage:setup --workspace @artboard/api"
   },
   "devDependencies": {

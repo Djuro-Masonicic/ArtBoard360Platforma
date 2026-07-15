@@ -37,3 +37,17 @@ export class ChangeArtistPasswordDto {
   @MinLength(8)
   newPassword!: string;
 }
+
+export class ForgotArtistPasswordDto {
+  @IsEmail()
+  email!: string;
+}
+
+export class ResetArtistPasswordDto {
+  @IsString()
+  token!: string;
+
+  @IsString()
+  @MinLength(8)
+  password!: string;
+}

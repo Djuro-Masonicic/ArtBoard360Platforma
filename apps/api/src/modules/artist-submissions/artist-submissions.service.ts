@@ -779,6 +779,10 @@ export class ArtistSubmissionsService {
         email: normalizedEmail,
         name: input.dto.fullName.trim(),
         passwordHash: await hashPassword(temporaryPassword),
+        mustChangePassword: true,
+        subscription: {
+          create: {},
+        },
       },
     });
 

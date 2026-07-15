@@ -144,9 +144,9 @@ export function useUiLoadingState(isLoading: boolean) {
 }
 
 const defaultAlertTitleByKind: Record<UiAlertKind, string> = {
-  success: "Uspješno",
-  error: "Došlo je do greške",
-  info: "Obavještenje",
+  success: "Uspjesno",
+  error: "Doslo je do greske",
+  info: "Obavjestenje",
 };
 
 function GlobalUiLoader({ isVisible }: { isVisible: boolean }) {
@@ -156,14 +156,14 @@ function GlobalUiLoader({ isVisible }: { isVisible: boolean }) {
 
   return (
     <div className="ui-loader-overlay" aria-live="polite" aria-busy="true" role="status">
-      <div className="ui-loader-card">
-        <div className="ui-loader-dots" aria-hidden="true">
+      <div className="ui-loader-mark" aria-hidden="true">
+        <div className="ui-loader-dots">
           <span className="ui-loader-dot ui-loader-dot--blue" />
           <span className="ui-loader-dot ui-loader-dot--red" />
           <span className="ui-loader-dot ui-loader-dot--yellow" />
         </div>
-        <p className="ui-loader-label">Molimo sačekaj...</p>
       </div>
+      <span className="sr-only">Molimo sacekaj...</span>
     </div>
   );
 }

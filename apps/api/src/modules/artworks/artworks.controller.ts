@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Param, ParseUUIDPipe, Post, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { Body, Controller, Delete, Param, ParseUUIDPipe, Patch, Post, UploadedFile, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { memoryStorage } from "multer";
 
@@ -9,6 +9,7 @@ import {
   DeleteArtworkDto,
   ReorderArtworksDto,
   RequestUploadUrlDto,
+  UpdateArtworkDto,
   UploadArtworkFileDto,
 } from "./artworks.dto";
 
@@ -50,6 +51,14 @@ export class ArtworksController {
   @Post("reorder")
   reorderArtworks(@Body() dto: ReorderArtworksDto) {
     return this.artworksService.reorderArtworks(dto);
+  }
+
+  @Patch(":id")
+  updateArtwork(
+    @Param("id", new ParseUUIDPipe({ version: "4" })) id: string,
+    @Body() dto: UpdateArtworkDto,
+  ) {
+    return this.artworksService.updateArtwork(id, dto);
   }
 
   @Delete(":id")

@@ -15,11 +15,14 @@
     "prisma:deploy:railway": "prisma migrate deploy",
     "import:artists": "dotenv -e ../../.env -- tsx scripts/import-artists.ts",
     "import:testimonials": "dotenv -e ../../.env -- tsx scripts/import-testimonials.ts",
+    "import:faqs": "dotenv -e ../../.env -- tsx scripts/import-faqs.ts",
     "storage:setup": "dotenv -e ../../.env -- tsx scripts/setup-storage.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.883.0",
     "@aws-sdk/s3-request-presigner": "^3.883.0",
+    "@fontsource/dm-sans": "^5.2.8",
+    "@fontsource/libre-baskerville": "^5.2.10",
     "@nestjs/common": "^11.0.0",
     "@nestjs/core": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
@@ -28,17 +31,21 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
     "csv-parse": "^6.0.0",
+    "dejavu-fonts-ttf": "^2.37.3",
     "multer": "^2.0.2",
     "nodemailer": "^8.0.11",
+    "pdfkit": "^0.19.1",
     "pg": "^8.16.0",
     "reflect-metadata": "^0.2.2",
     "resend": "^6.12.4",
-    "rxjs": "^7.8.2"
+    "rxjs": "^7.8.2",
+    "sharp": "^0.35.3"
   },
   "devDependencies": {
     "@types/express": "^5.0.1",
     "@types/multer": "^2.0.0",
     "@types/node": "^24.0.0",
+    "@types/pdfkit": "^0.17.6",
     "@types/pg": "^8.15.0",
     "prisma": "^7.0.0",
     "ts-node": "^10.9.2",

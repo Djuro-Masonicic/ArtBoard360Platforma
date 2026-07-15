@@ -5,6 +5,10 @@
 export type UploadEntityType =
   | "artwork"
   | "profile"
+  | "portfolio-artwork"
+  | "portfolio-collection-cover"
+  | "portfolio-pdf"
+  | "portfolio-profile"
   | "submission-artwork"
   | "submission-portfolio-pdf"
   | "submission-profile";

@@ -8,6 +8,7 @@ interface PasswordInputProps {
   name?: string;
   onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
   placeholder?: string;
+  required?: boolean;
   value?: string;
 }
 
@@ -21,6 +22,7 @@ export function PasswordInput({
   name,
   onChange,
   placeholder,
+  required,
   value,
 }: PasswordInputProps) {
   const [isVisible, setIsVisible] = useState(false);
@@ -33,6 +35,7 @@ export function PasswordInput({
         name={name}
         onChange={onChange}
         placeholder={placeholder}
+        required={required}
         type={isVisible ? "text" : "password"}
         value={value}
       />

@@ -46,6 +46,8 @@ export async function uploadArtistArtwork(payload: {
   description?: string;
   altText?: string;
   orderIndex?: number;
+  isFeatured?: boolean;
+  isBackground?: boolean;
 }) {
   const formData = new FormData();
   formData.set("file", payload.file);
@@ -66,9 +68,39 @@ export async function uploadArtistArtwork(payload: {
     formData.set("orderIndex", String(payload.orderIndex));
   }
 
+  if (payload.isFeatured !== undefined) {
+    formData.set("isFeatured", String(payload.isFeatured));
+  }
+
+  if (payload.isBackground !== undefined) {
+    formData.set("isBackground", String(payload.isBackground));
+  }
+
   const response = await fetch("/api/artist/artworks/upload", {
     method: "POST",
     body: formData,
+    cache: "no-store",
+  });
+
+  return readRouteResponse<Artwork>(response);
+}
+
+export async function updateArtistArtwork(
+  artworkId: string,
+  payload: {
+    title?: string;
+    description?: string;
+    altText?: string;
+    isFeatured?: boolean;
+    isBackground?: boolean;
+  },
+) {
+  const response = await fetch(`/api/artist/artworks/${artworkId}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
     cache: "no-store",
   });
 

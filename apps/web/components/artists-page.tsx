@@ -62,21 +62,27 @@ export function ArtistsPage({ artists, totalArtists }: ArtistsPageProps) {
 
                 return (
                   <Link
-                    className="flex h-[66px] w-[66px] items-center justify-center overflow-hidden rounded-full border-[3px] border-[#f8fbff] bg-[#d7d7d7] transition duration-300 hover:z-10 hover:scale-110"
+                    className="group relative flex h-[66px] w-[66px] items-center justify-center overflow-visible rounded-full border-[3px] border-[#f8fbff] bg-[#d7d7d7] transition duration-300 hover:z-10 hover:scale-110"
                     href={`/artists/${artist.slug}`}
                     key={`${artist.id}-${index}`}
                   >
                     {avatarUrl ? (
-                      <img
-                        alt={artist.name}
-                        className="h-full w-full object-cover"
-                        src={avatarUrl}
-                      />
+                      <span className="block h-full w-full overflow-hidden rounded-full">
+                        <img
+                          alt={artist.name}
+                          className="h-full w-full rounded-full object-cover"
+                          src={avatarUrl}
+                        />
+                      </span>
                     ) : (
                       <span className="text-[24px] font-medium text-white">
                         {artist.name.slice(0, 1)}
                       </span>
                     )}
+
+                    <span className="pointer-events-none absolute -top-11 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#20242d] px-3 py-1.5 text-[12px] font-medium text-white opacity-0 shadow-[0_10px_22px_rgba(0,0,0,0.18)] transition duration-200 group-hover:-translate-y-1 group-hover:opacity-100">
+                      {artist.name}
+                    </span>
                   </Link>
                 );
               })}
