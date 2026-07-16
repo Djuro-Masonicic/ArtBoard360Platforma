@@ -1,5 +1,4 @@
-import Link from "next/link";
-
+import { NavigationButton } from "@/components/navigation-button";
 import { ResetPasswordForm } from "@/components/reset-password-form";
 
 interface ResetPasswordPageProps {
@@ -35,12 +34,12 @@ export default async function ResetPasswordPage({ searchParams }: ResetPasswordP
               <p className="mt-4 text-[16px] leading-[1.6] text-[#5f6772]">
                 Zatrazi novi link za promjenu lozinke.
               </p>
-              <Link
+              <NavigationButton
                 className="mt-7 inline-flex h-12 w-full items-center justify-center rounded-full border border-[#182fc7] px-6 text-[16px] font-medium text-[#182fc7] transition hover:bg-[#182fc7] hover:text-white"
                 href="/artist/forgot-password"
               >
                 Zatrazi novi link
-              </Link>
+              </NavigationButton>
             </div>
           )}
         </section>

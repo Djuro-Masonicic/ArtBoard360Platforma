@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
+import { NavigationButton } from "@/components/navigation-button";
 import { createGuestPortfolioProject } from "@/services/portfolio-projects";
 
 export function GuestPortfolioBuilderForm() {
@@ -119,12 +120,12 @@ export function GuestPortfolioBuilderForm() {
             </div>
 
             <div className="mt-7 flex items-center justify-end gap-3 border-t border-[#edf1f6] pt-5">
-              <Link
+              <NavigationButton
                 className="rounded-full border border-[#d7deea] px-5 py-2.5 text-[13px] font-bold text-[#4f5967]"
                 href="/portfolio-builder"
               >
                 Odustani
-              </Link>
+              </NavigationButton>
               <button
                 className="rounded-full bg-[#182fc7] px-5 py-2.5 text-[13px] font-bold text-white transition hover:bg-[#1326a8] disabled:cursor-wait disabled:opacity-70"
                 disabled={isSubmitting}

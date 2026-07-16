@@ -1,3 +1,5 @@
+import { NavigationButton } from "@/components/navigation-button";
+
 const FINAL_CTA_IMAGE_URL =
   "https://cdn.prod.website-files.com/681b5dac4415aa941af374fe/687ce08052c5ed751b10deca_Homepage%20Graphic%20Blue%20Card.webp";
 
@@ -15,15 +17,15 @@ export function HomeFinalCtaSection() {
             </h2>
 
             <div className="mt-9 flex flex-col items-start gap-5 sm:flex-row sm:items-center">
-              <a
+              <NavigationButton
                 className="inline-flex min-h-[50px] items-center gap-3 rounded-full border-2 border-[#ffc41d] bg-[#ffc41d] px-6 text-[1.05rem] font-bold text-[#252933] outline outline-1 outline-offset-2 outline-[#ffc41d] transition hover:bg-white"
                 href="/prijava"
               >
                 <span className="h-3.5 w-3.5 rounded-full bg-white" aria-hidden="true" />
                 Prijavi se
-              </a>
+              </NavigationButton>
 
-              <a
+              <NavigationButton
                 className="group inline-flex items-center gap-3 text-[1.05rem] font-bold text-white"
                 href="/kontakt"
               >
@@ -39,7 +41,7 @@ export function HomeFinalCtaSection() {
                   />
                 </svg>
                 Kontaktiraj nas
-              </a>
+              </NavigationButton>
             </div>
           </div>
 

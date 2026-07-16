@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useState, useTransition } from "react";
 
+import { NavigationButton } from "@/components/navigation-button";
 import { useUiFeedback, useUiLoadingState } from "@/components/ui-feedback-provider";
 import { requestArtistPasswordReset } from "@/services/password-reset";
 
@@ -43,12 +44,12 @@ export function ForgotPasswordForm() {
         <p className="mt-4 text-[16px] leading-[1.6] text-[#5f6772]">
           Ako postoji aktivan artist nalog za <strong>{email}</strong>, poslali smo link koji vazi 60 minuta.
         </p>
-        <Link
+        <NavigationButton
           className="mt-7 inline-flex h-12 w-full items-center justify-center rounded-full border border-[#182fc7] px-6 text-[16px] font-medium text-[#182fc7] transition hover:bg-[#182fc7] hover:text-white"
           href="/artist/login"
         >
           Nazad na prijavu
-        </Link>
+        </NavigationButton>
       </div>
     );
   }

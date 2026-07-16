@@ -194,7 +194,7 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
 
         {!isAuthenticated ? (
           <div className="hidden items-center justify-end lg:flex">
-            <SiteCtaButton href="/artist/login" label="Prijavi se" />
+            <SiteCtaButton asLink href="/artist/login" label="Prijavi se" />
           </div>
         ) : (
           <div className="hidden justify-end lg:flex">
@@ -317,7 +317,7 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
 
             {!isAuthenticated ? (
               <div className="site-mobile-menu__actions">
-                <SiteCtaButton href="/artist/login" label="Prijavi se" />
+                <SiteCtaButton asLink href="/artist/login" label="Prijavi se" />
               </div>
             ) : (
               <div className="w-full max-w-[240px] rounded-[24px] border border-[#dde4ef] bg-white/95 px-4 py-4 text-center shadow-[0_14px_38px_rgba(38,51,71,0.08)]">

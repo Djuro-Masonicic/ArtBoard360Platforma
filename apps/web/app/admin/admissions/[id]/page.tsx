@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { AdminAdmissionEditor } from "@/components/admin-admission-editor";
+import { NavigationButton } from "@/components/navigation-button";
 import { getAdminSessionToken } from "@/lib/admin-session";
 import { getArtistSubmissionById } from "@/services/artist-submissions";
 import { getArtists } from "@/services/artists";
@@ -56,12 +56,12 @@ export default async function AdmissionDetailPage({ params }: AdmissionDetailPag
               </p>
             </div>
 
-            <Link
+            <NavigationButton
               className="inline-flex h-12 items-center justify-center rounded-full border border-[#182fc7] px-5 text-[15px] font-medium text-[#182fc7] transition hover:bg-[#182fc7] hover:text-white"
               href="/admin/admissions"
             >
               Nazad na tabelu
-            </Link>
+            </NavigationButton>
           </div>
         </section>
 

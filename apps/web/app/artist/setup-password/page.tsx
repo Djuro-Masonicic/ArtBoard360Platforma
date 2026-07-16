@@ -1,6 +1,5 @@
-import Link from "next/link";
-
 import { ArtistSetupPasswordForm } from "@/components/artist-setup-password-form";
+import { NavigationButton } from "@/components/navigation-button";
 import { ApiError } from "@/services/api";
 import { inspectArtistSetupToken } from "@/services/auth";
 
@@ -75,12 +74,12 @@ function InvalidSetupState({ message }: { message: string }) {
           Link nije dostupan
         </h1>
         <p className="mt-5 text-[18px] leading-[1.5] text-[#4f5762]">{message}</p>
-        <Link
+        <NavigationButton
           className="mt-8 inline-flex h-12 items-center justify-center rounded-full border border-[#182fc7] px-6 text-[16px] font-medium text-[#182fc7] transition hover:bg-[#182fc7] hover:text-white"
           href="/artist/login"
         >
           Idi na artist login
-        </Link>
+        </NavigationButton>
       </section>
     </div>
   );

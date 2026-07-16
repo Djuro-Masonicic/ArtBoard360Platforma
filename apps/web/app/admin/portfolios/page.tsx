@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
+import { NavigationButton } from "@/components/navigation-button";
 import { getAdminSessionToken } from "@/lib/admin-session";
 import { getAdminPortfolioProjects } from "@/services/portfolio-projects";
 
@@ -129,18 +129,18 @@ export default async function AdminPortfoliosPage({ searchParams }: AdminPortfol
                     </td>
                     <td className="px-6 py-4 align-middle text-right">
                       <div className="flex justify-end gap-2">
-                        <Link
+                        <NavigationButton
                           className="inline-flex h-9 items-center justify-center rounded-full border border-[#d7dee9] px-4 text-[14px] font-medium text-[#4f5762] transition hover:border-[#182fc7] hover:text-[#182fc7]"
                           href={`/portfolio-builder/${project.id}/preview`}
                         >
                           Preview
-                        </Link>
-                        <Link
+                        </NavigationButton>
+                        <NavigationButton
                           className="inline-flex h-9 items-center justify-center rounded-full border border-[#182fc7] px-4 text-[14px] font-medium text-[#182fc7] transition hover:bg-[#182fc7] hover:text-white"
                           href={`/admin/portfolios/${project.id}`}
                         >
                           Detalji
-                        </Link>
+                        </NavigationButton>
                       </div>
                     </td>
                   </tr>

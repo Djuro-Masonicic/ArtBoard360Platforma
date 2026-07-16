@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from "react";
 
+import { NavigationButton } from "@/components/navigation-button";
+
 const ABOUT_LOTTIE_URL =
   "https://cdn.prod.website-files.com/681b5dac4415aa941af374fe/68f4f062fc3519b5434effe0_4281a7b7e680ccf7ad6814951320987a_home--about-us.json";
 
@@ -83,13 +85,13 @@ export function HomeAboutSection() {
             dijeljenje stvaralastva koje mijenja svakodnevicu.
           </p>
 
-          <a
+          <NavigationButton
             className="mt-9 inline-flex min-h-[52px] items-center gap-3 rounded-full border-2 border-[#182fc7] bg-[#182fc7] px-6 text-[18px] font-bold text-white outline outline-1 outline-offset-2 outline-[#182fc7] transition hover:bg-white hover:text-[#182fc7]"
             href="/about"
           >
             <span className="h-3.5 w-3.5 rounded-full bg-current" aria-hidden="true" />
             Saznaj vise o nama
-          </a>
+          </NavigationButton>
         </div>
 
         <div className="relative min-h-[360px] lg:min-h-[540px]">

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useState, useTransition } from "react";
 
+import { NavigationButton } from "@/components/navigation-button";
 import { PasswordInput } from "@/components/password-input";
 import { useUiFeedback, useUiLoadingState } from "@/components/ui-feedback-provider";
 import { resetArtistPassword } from "@/services/password-reset";
@@ -63,12 +64,12 @@ export function ResetPasswordForm({ token }: { token: string }) {
         <p className="mt-4 text-[16px] leading-[1.6] text-[#5f6772]">
           Sada se mozes prijaviti novom lozinkom.
         </p>
-        <Link
+        <NavigationButton
           className="mt-7 inline-flex h-12 w-full items-center justify-center rounded-full bg-[#182fc7] px-6 text-[16px] font-medium text-white transition hover:bg-[#1326a8]"
           href="/artist/login"
         >
           Idi na prijavu
-        </Link>
+        </NavigationButton>
       </div>
     );
   }

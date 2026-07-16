@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { NavigationButton } from "@/components/navigation-button";
 import type { FaqQuestion } from "@/types/api";
 
 interface FaqItem {
@@ -85,13 +86,13 @@ export function HomeFaqSection({ faqs = [] }: HomeFaqSectionProps) {
           </p>
 
           <div className="mt-7">
-            <a
+            <NavigationButton
               className="inline-flex min-h-[46px] items-center gap-3 rounded-full border-2 border-[#ffc41d] bg-[#ffc41d] px-5 text-[0.95rem] font-bold text-[#252933] outline outline-1 outline-offset-2 outline-[#ffc41d] transition hover:bg-white"
               href="/kontakt"
             >
               <span className="h-3 w-3 rounded-full bg-white" aria-hidden="true" />
               Kontaktiraj nas
-            </a>
+            </NavigationButton>
           </div>
         </div>
 

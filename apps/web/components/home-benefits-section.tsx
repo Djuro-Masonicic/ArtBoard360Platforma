@@ -2,6 +2,8 @@
 
 import { useRef, useState } from "react";
 
+import { NavigationButton } from "@/components/navigation-button";
+
 type BenefitTone = "blue" | "red" | "yellow";
 
 interface Benefit {
@@ -145,13 +147,13 @@ export function HomeBenefitsSection() {
       </div>
 
       <div className="mx-auto max-w-[1280px] px-5 sm:px-8 lg:px-10">
-        <a
+        <NavigationButton
           className="mt-8 inline-flex min-h-[46px] items-center gap-3 rounded-full border-2 border-[#ffc41d] bg-[#ffc41d] px-5 text-[16px] font-bold text-[#252933] outline outline-1 outline-offset-2 outline-[#ffc41d] transition hover:bg-white"
           href="/artists"
         >
           <span className="h-3 w-3 rounded-full bg-white" aria-hidden="true" />
           Saznaj sve o ArtBoardu
-        </a>
+        </NavigationButton>
       </div>
     </section>
   );

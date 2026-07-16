@@ -1,5 +1,4 @@
-import Link from "next/link";
-
+import { NavigationButton } from "@/components/navigation-button";
 import type { Artist } from "@/types/api";
 
 import { ArtistsBrowser } from "./artists-browser";
@@ -37,7 +36,7 @@ export function ArtistsPage({ artists, totalArtists }: ArtistsPageProps) {
           <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:gap-7">
             <SiteCtaButton href="/prijava" label="Prijavi se" />
 
-            <a className="hero-more-link" href="#artists-browser">
+            <NavigationButton className="hero-more-link" href="#artists-browser">
               <svg
                 aria-hidden="true"
                 className="hero-more-link__icon h-5 w-5 text-[#2440d8]"
@@ -51,7 +50,7 @@ export function ArtistsPage({ artists, totalArtists }: ArtistsPageProps) {
                 />
               </svg>
               <span className="hero-more-link__label">Saznaj vise</span>
-            </a>
+            </NavigationButton>
           </div>
 
           <div className="mt-14 flex items-center gap-4 rounded-full px-4 py-3">
@@ -61,7 +60,7 @@ export function ArtistsPage({ artists, totalArtists }: ArtistsPageProps) {
                   artist.profileThumbnailUrl || artist.profileImageUrl || artist.thumbnailUrl;
 
                 return (
-                  <Link
+                  <NavigationButton
                     className="group relative flex h-[66px] w-[66px] items-center justify-center overflow-visible rounded-full border-[3px] border-[#f8fbff] bg-[#d7d7d7] transition duration-300 hover:z-10 hover:scale-110"
                     href={`/artists/${artist.slug}`}
                     key={`${artist.id}-${index}`}
@@ -83,7 +82,7 @@ export function ArtistsPage({ artists, totalArtists }: ArtistsPageProps) {
                     <span className="pointer-events-none absolute -top-11 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#20242d] px-3 py-1.5 text-[12px] font-medium text-white opacity-0 shadow-[0_10px_22px_rgba(0,0,0,0.18)] transition duration-200 group-hover:-translate-y-1 group-hover:opacity-100">
                       {artist.name}
                     </span>
-                  </Link>
+                  </NavigationButton>
                 );
               })}
             </div>

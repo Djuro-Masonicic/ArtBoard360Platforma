@@ -104,9 +104,10 @@ export function PortfolioBuilderLanding({
                 </div>
               </button>
 
-              <Link
+              <button
                 className="group rounded-[28px] border border-[#cfd8e6] bg-white p-6 text-left shadow-[0_18px_50px_rgba(31,46,86,0.06)] transition hover:-translate-y-0.5 hover:border-[#ffc41d]"
-                href="/portfolio-builder/new"
+                onClick={() => router.push("/portfolio-builder/new")}
+                type="button"
               >
                 <div className="flex items-start justify-between gap-5">
                   <div>
@@ -125,7 +126,7 @@ export function PortfolioBuilderLanding({
                     New
                   </span>
                 </div>
-              </Link>
+              </button>
             </div>
 
             {isArtistLoggedIn ? (

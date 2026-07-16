@@ -5,6 +5,7 @@ import { HomeCosmosSection } from "@/components/home-cosmos-section";
 import { HomeFaqSection } from "@/components/home-faq-section";
 import { HomeFinalCtaSection } from "@/components/home-final-cta-section";
 import { HomeJoinSection } from "@/components/home-join-section";
+import { NavigationButton } from "@/components/navigation-button";
 import { SiteCtaButton } from "@/components/site-cta-button";
 import { getArtists } from "@/services/artists";
 import { getFaqs } from "@/services/faqs";
@@ -40,7 +41,7 @@ export async function HomePage() {
           <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:gap-7">
             <SiteCtaButton href="/prijava" label="Postani dio ArtBoarda" />
 
-            <a className="hero-more-link" href="#">
+            <NavigationButton className="hero-more-link" href="#home-cosmos">
               <svg
                 aria-hidden="true"
                 className="hero-more-link__icon h-5 w-5 text-[#2440d8]"
@@ -54,7 +55,7 @@ export async function HomePage() {
                 />
               </svg>
               <span className="hero-more-link__label">Saznaj vise</span>
-            </a>
+            </NavigationButton>
           </div>
           </div>
 

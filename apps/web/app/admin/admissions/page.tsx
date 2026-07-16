@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { NavigationButton } from "@/components/navigation-button";
 import { getAdminSessionToken } from "@/lib/admin-session";
 import { getArtistSubmissions } from "@/services/artist-submissions";
 import type { ArtistSubmissionStatus } from "@/types/api";
@@ -172,12 +172,12 @@ export default async function AdmissionsPage({ searchParams }: AdmissionsPagePro
                       {submission.counts.artworks}
                     </td>
                     <td className="px-6 py-4 align-middle text-right">
-                      <Link
+                      <NavigationButton
                         className="inline-flex h-10 items-center justify-center rounded-full border border-[#182fc7] px-5 text-[15px] font-medium text-[#182fc7] transition hover:bg-[#182fc7] hover:text-white"
                         href={`/admin/admissions/${submission.id}`}
                       >
                         Otvori
-                      </Link>
+                      </NavigationButton>
                     </td>
                   </tr>
                 ))
@@ -263,12 +263,12 @@ function PaginationLink({
   }
 
   return (
-    <Link
+    <NavigationButton
       className="inline-flex h-11 items-center rounded-full border border-[#182fc7] px-5 text-[15px] font-medium text-[#182fc7] transition hover:bg-[#182fc7] hover:text-white"
       href={`/admin/admissions?${params.toString()}`}
     >
       {children}
-    </Link>
+    </NavigationButton>
   );
 }
 

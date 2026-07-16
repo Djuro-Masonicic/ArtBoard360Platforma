@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { ArtistArtworkGallery } from "@/components/artist-artwork-gallery";
+import { NavigationButton } from "@/components/navigation-button";
 import { ApiError } from "@/services/api";
 import { getArtistBySlug } from "@/services/artists";
 import type { SocialPlatform } from "@/types/api";
@@ -129,7 +130,7 @@ export default async function ArtistDetailPage({ params }: ArtistDetailPageProps
               </div>
 
               <div className="flex items-end justify-start lg:justify-end">
-                <a
+                <NavigationButton
                   className="group inline-flex flex-col items-center gap-4 text-white transition hover:-translate-y-1"
                   href="#radovi"
                 >
@@ -160,7 +161,7 @@ export default async function ArtistDetailPage({ params }: ArtistDetailPageProps
                   <span className="text-[16px] font-semibold uppercase tracking-[0.12em] text-white/92">
                     Vidi radove
                   </span>
-                </a>
+                </NavigationButton>
               </div>
             </div>
           </div>

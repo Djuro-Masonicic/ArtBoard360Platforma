@@ -1,7 +1,12 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+
 type SiteCtaButtonProps = {
   href: string;
   label: string;
   className?: string;
+  asLink?: boolean;
 };
 
 /**
@@ -9,12 +14,11 @@ type SiteCtaButtonProps = {
  * The visual treatment is kept in one place so we can reuse it in the header
  * and later in hero/section call-to-actions without duplicating classes.
  */
-export function SiteCtaButton({ href, label, className = "" }: SiteCtaButtonProps) {
-  return (
-    <a
-      className={`site-cta-button inline-flex items-center justify-center whitespace-nowrap ${className}`.trim()}
-      href={href}
-    >
+export function SiteCtaButton({ asLink = false, href, label, className = "" }: SiteCtaButtonProps) {
+  const router = useRouter();
+  const classNames = `site-cta-button inline-flex items-center justify-center whitespace-nowrap ${className}`.trim();
+  const content = (
+    <>
       <span className="site-cta-button__icon-wrap" aria-hidden="true">
         <span className="site-cta-button__icon-dot" />
         <svg
@@ -37,6 +41,31 @@ export function SiteCtaButton({ href, label, className = "" }: SiteCtaButtonProp
         </svg>
       </span>
       <span className="site-cta-button__label">{label}</span>
-    </a>
+    </>
+  );
+
+  if (asLink) {
+    return (
+      <a className={classNames} href={href}>
+        {content}
+      </a>
+    );
+  }
+
+  return (
+    <button
+      className={classNames}
+      onClick={() => {
+        if (href.startsWith("#")) {
+          document.querySelector(href)?.scrollIntoView({ behavior: "smooth" });
+          return;
+        }
+
+        router.push(href);
+      }}
+      type="button"
+    >
+      {content}
+    </button>
   );
 }

@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 
 import { DemoCardCheckout } from "@/components/demo-card-checkout";
+import { NavigationButton } from "@/components/navigation-button";
 import type { ArtistSubscription } from "@/types/api";
 
 interface ArtistSubscriptionPanelProps {
@@ -91,20 +91,20 @@ export function ArtistSubscriptionPanel({
           </p>
 
           {mode === "manage" && !isPlatinum ? (
-            <Link
+            <NavigationButton
               className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-full bg-[#dc1735] px-5 text-[14px] font-semibold text-white transition hover:bg-[#bd102a] disabled:opacity-60"
               href="/artist/subscribe"
             >
               Aktiviraj Platinum
-            </Link>
+            </NavigationButton>
           ) : null}
 
-          <Link
+          <NavigationButton
             className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-full border border-[#d7dee9] px-5 text-[14px] font-semibold text-[#4f5967] transition hover:bg-[#f8fbff]"
             href={mode === "manage" ? "/artist/dashboard" : "/artist/subscription"}
           >
             {mode === "manage" ? "Nazad na dashboard" : "Upravljaj pretplatom"}
-          </Link>
+          </NavigationButton>
         </aside>
       </section>
     </main>

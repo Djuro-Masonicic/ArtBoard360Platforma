@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
+import { NavigationButton } from "@/components/navigation-button";
 import { SiteCtaButton } from "@/components/site-cta-button";
 
 /**
@@ -109,6 +110,7 @@ export function HomeCosmosSection() {
   return (
     <section
       className="relative min-h-screen bg-[#f8fbff] py-10 sm:py-14 lg:py-16"
+      id="home-cosmos"
       ref={sectionRef}
     >
       <div className="relative flex min-h-[124vh] items-center justify-center overflow-hidden">
@@ -142,13 +144,13 @@ export function HomeCosmosSection() {
               <p className="max-w-[230px] text-[15px] leading-[1.4] text-[#555b64]">
                 Art Studio 360 nudi sirok spektar kreativnih usluga.
               </p>
-              <a
+              <NavigationButton
                 className="mt-5 inline-flex min-h-12 items-center gap-3 rounded-full border-2 border-[#182fc7] bg-[#182fc7] px-5 text-[14px] font-bold text-white outline outline-1 outline-offset-2 outline-[#182fc7] transition hover:bg-white hover:text-[#182fc7]"
-                href="#"
+                href="/kontakt"
               >
                 <span className="h-3 w-3 rounded-full bg-current" aria-hidden="true" />
                 Istrazite nase usluge
-              </a>
+              </NavigationButton>
             </div>
           </div>
         </div>

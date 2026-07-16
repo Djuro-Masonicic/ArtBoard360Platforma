@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
+import { NavigationButton } from "@/components/navigation-button";
 import { PortfolioGeneratePdfButton } from "@/components/portfolio-generate-pdf-button";
 import { PortfolioPdfPreview } from "@/components/portfolio-pdf-preview";
 import { getAdminSessionToken } from "@/lib/admin-session";
@@ -88,12 +89,12 @@ export default async function AdminPortfolioDetailPage({ params }: AdminPortfoli
               }
             />
             {project.sourceArtist ? (
-              <Link
+              <NavigationButton
                 className="mt-2 inline-flex h-10 items-center justify-center rounded-full border border-[#182fc7] px-4 text-[14px] font-semibold text-[#182fc7] transition hover:bg-[#182fc7] hover:text-white"
                 href={`/artists/${project.sourceArtist.slug}`}
               >
                 Otvori javni artist profil
-              </Link>
+              </NavigationButton>
             ) : null}
           </InfoPanel>
 
@@ -135,27 +136,25 @@ export default async function AdminPortfolioDetailPage({ params }: AdminPortfoli
                 portfolioId={project.id}
               />
               {project.latestPdfUrl ? (
-                <a
+                <NavigationButton
                   className="inline-flex h-10 items-center justify-center rounded-full border border-[#ffc41d] bg-[#fff7d9] px-4 text-[14px] font-semibold text-[#8a5c00] transition hover:bg-[#ffc41d]"
                   href={project.latestPdfUrl}
-                  rel="noreferrer"
-                  target="_blank"
                 >
                   Otvori zadnji PDF
-                </a>
+                </NavigationButton>
               ) : null}
-              <Link
+              <NavigationButton
                 className="inline-flex h-10 items-center justify-center rounded-full border border-[#d7dee9] bg-white px-4 text-[14px] font-semibold text-[#4f5762] transition hover:border-[#182fc7] hover:text-[#182fc7]"
                 href={`/portfolio-builder/${project.id}/preview`}
               >
                 Otvori preview
-              </Link>
-              <Link
+              </NavigationButton>
+              <NavigationButton
                 className="inline-flex h-10 items-center justify-center rounded-full border border-[#182fc7] bg-[#182fc7] px-4 text-[14px] font-semibold text-white transition hover:bg-[#1225a3]"
                 href={`/portfolio-builder/${project.id}`}
               >
                 Otvori builder
-              </Link>
+              </NavigationButton>
             </div>
           </div>
           <div className="max-h-[760px] overflow-auto px-4 py-6">

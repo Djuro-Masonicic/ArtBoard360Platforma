@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 import { PasswordInput } from "@/components/password-input";
@@ -65,6 +65,7 @@ export function ArtistDashboardEditor({
   portfolioProjects: initialPortfolioProjects,
   sessionEmail,
 }: ArtistDashboardEditorProps) {
+  const router = useRouter();
   const { showAlert } = useUiFeedback();
   const [artist, setArtist] = useState(initialArtist);
   const [bio, setBio] = useState(initialArtist.bio ?? "");
@@ -482,12 +483,13 @@ export function ArtistDashboardEditor({
             </div>
 
             <div className="mt-5 grid gap-2">
-              <Link
+              <button
                 className="inline-flex h-11 items-center justify-center rounded-full bg-[#dc1735] px-5 text-[14px] font-semibold text-white transition hover:bg-[#bd102a]"
-                href={`/artists/${artist.slug}`}
+                onClick={() => router.push(`/artists/${artist.slug}`)}
+                type="button"
               >
                 Pogledaj javni profil
-              </Link>
+              </button>
               <button
                 className="inline-flex h-11 items-center justify-center rounded-full border border-[#cfd8e6] bg-white px-5 text-[14px] font-semibold text-[#182fc7] transition hover:border-[#182fc7]"
                 disabled={isUploadingProfileImage}
@@ -496,12 +498,13 @@ export function ArtistDashboardEditor({
               >
                 {isUploadingProfileImage ? "Upload..." : "Promijeni sliku"}
               </button>
-              <Link
+              <button
                 className="inline-flex h-11 items-center justify-center rounded-full border border-[#cfd8e6] bg-white px-5 text-[14px] font-semibold text-[#4f5967] transition hover:border-[#182fc7] hover:text-[#182fc7]"
-                href="/artist/subscription"
+                onClick={() => router.push("/artist/subscription")}
+                type="button"
               >
                 Upravljaj pretplatom
-              </Link>
+              </button>
             </div>
           </div>
         </div>
@@ -573,12 +576,13 @@ export function ArtistDashboardEditor({
                     Pregledaj kako profil izgleda posjetiocima ili brzo nastavi na uredjivanje osnovnih podataka.
                   </p>
                   <div className="mt-5 flex flex-wrap gap-3">
-                    <Link
+                    <button
                       className="inline-flex h-10 items-center justify-center rounded-full bg-[#dc1735] px-4 text-[13px] font-semibold text-white transition hover:bg-[#bd102a]"
-                      href={`/artists/${artist.slug}`}
+                      onClick={() => router.push(`/artists/${artist.slug}`)}
+                      type="button"
                     >
                       Pogledaj profil
-                    </Link>
+                    </button>
                     <button
                       className="inline-flex h-10 items-center justify-center rounded-full border border-[#d3dbe8] bg-white px-4 text-[13px] font-semibold text-[#2f3138] transition hover:border-[#182fc7] hover:text-[#182fc7]"
                       onClick={() => setActiveSection("profile")}
@@ -824,12 +828,13 @@ export function ArtistDashboardEditor({
             <Panel>
               <SectionHeader
                 action={
-                  <Link
+                  <button
                     className="inline-flex h-11 items-center justify-center rounded-full bg-[#dc1735] px-5 text-[14px] font-semibold text-white transition hover:bg-[#bd102a]"
-                    href="/portfolio-builder"
+                    onClick={() => router.push("/portfolio-builder")}
+                    type="button"
                   >
                     Novi portfolio
-                  </Link>
+                  </button>
                 }
                 eyebrow="Portfolio builder"
                 title="Draftovi i istorija"
@@ -1192,6 +1197,7 @@ function PortfolioProjectCard({
   onDeleteDraft: (projectId: string) => void;
   project: PortfolioProject;
 }) {
+  const router = useRouter();
   const selectedArtworkCount = project.artworks.filter((artwork) => artwork.isSelected).length;
   const canDeleteDraft = project.status === "DRAFT";
 
@@ -1231,19 +1237,21 @@ function PortfolioProjectCard({
       </div>
 
       <div className="mt-4 grid gap-2 sm:grid-cols-2">
-        <Link
+        <button
           className="inline-flex h-10 items-center justify-center rounded-full border border-[#cfd8e6] bg-white px-4 text-[13px] font-semibold text-[#2f3138] transition hover:border-[#182fc7] hover:text-[#182fc7]"
-          href={`/portfolio-builder/${project.id}`}
+          onClick={() => router.push(`/portfolio-builder/${project.id}`)}
+          type="button"
         >
           {project.status === "DRAFT" ? "Nastavi draft" : "Otvori portfolio"}
-        </Link>
+        </button>
 
-        <Link
+        <button
           className="inline-flex h-10 items-center justify-center rounded-full border border-[#cfd8e6] bg-white px-4 text-[13px] font-semibold text-[#2f3138] transition hover:border-[#182fc7] hover:text-[#182fc7]"
-          href={`/portfolio-builder/${project.id}/preview`}
+          onClick={() => router.push(`/portfolio-builder/${project.id}/preview`)}
+          type="button"
         >
           Preview
-        </Link>
+        </button>
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
