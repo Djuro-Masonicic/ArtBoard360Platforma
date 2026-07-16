@@ -1665,14 +1665,7 @@ function ExportWorkspace({
                 Otvori preview
               </button>
 
-              <button
-                className="rounded-full border border-white/20 px-4 py-2 text-[12px] font-black text-white transition hover:bg-white hover:text-[#10131b] disabled:cursor-not-allowed disabled:opacity-60"
-                disabled={isDownloadingCoverTest}
-                onClick={onDownloadCoverTest}
-                type="button"
-              >
-                {isDownloadingCoverTest ? "Generisem cover..." : "Download cover test"}
-              </button>
+            
 
               {canGenerateCleanPdf ? (
                 <button
