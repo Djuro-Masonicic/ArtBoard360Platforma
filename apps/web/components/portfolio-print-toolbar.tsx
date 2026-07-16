@@ -54,14 +54,13 @@ export function PortfolioPrintToolbar({
                 Cisti PDF je otkljucan. Pregledaj ga i preuzmi fajl.
               </p>
               {latestPdfUrl ? (
-                <a
+                <button
                   className="rounded-full bg-[#dc1735] px-5 py-2 text-[12px] font-bold text-white transition hover:bg-[#bd102a]"
-                  href={latestPdfUrl}
-                  rel="noreferrer"
-                  target="_blank"
+                  onClick={() => window.open(latestPdfUrl, "_blank", "noopener,noreferrer")}
+                  type="button"
                 >
                   Download PDF
-                </a>
+                </button>
               ) : (
                 <PortfolioGeneratePdfButton
                   className="rounded-full bg-[#dc1735] px-5 py-2 text-[12px] font-bold text-white transition hover:bg-[#bd102a] disabled:cursor-not-allowed disabled:opacity-60"

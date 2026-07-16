@@ -1,6 +1,6 @@
 import type { PortfolioArtwork, PortfolioProject } from "@/types/api";
-import { getPortfolioPreviewPdfUrl } from "@/services/portfolio-projects";
 
+import { PortfolioPdfCanvasViewer } from "./portfolio-pdf-canvas-viewer";
 import { PortfolioPrintToolbar } from "./portfolio-print-toolbar";
 
 type PortfolioPdfPreviewProps = {
@@ -22,10 +22,10 @@ const PAPER = "#fbfbfa";
 
 export function PortfolioPdfPreview({ mode = "preview", project }: PortfolioPdfPreviewProps) {
   if (mode === "preview") {
-    const previewPdfUrl = `${getPortfolioPreviewPdfUrl(project.id)}#toolbar=0&navpanes=0&scrollbar=1`;
+    const previewPdfUrl = `/api/portfolio-projects/${project.id}/pdf?mode=preview`;
 
     return (
-      <main className="min-h-screen bg-[#dfe4ec] px-4 pb-10 pt-20 text-[#20242d]">
+      <main className="min-h-screen bg-[#eef2f7] px-3 pb-3 pt-16 text-[#20242d]">
         <PortfolioPrintToolbar
           canDownload={project.access.canDownloadCleanPdf}
           latestPdfUrl={project.latestPdfUrl}
@@ -33,43 +33,36 @@ export function PortfolioPdfPreview({ mode = "preview", project }: PortfolioPdfP
           projectId={project.id}
         />
 
-        <section className="mx-auto max-w-6xl">
-          <div className="mb-4 rounded-[26px] border border-[#c4ccd9] bg-white/80 px-5 py-4 shadow-[0_18px_55px_rgba(20,31,56,0.12)]">
-            <p className="text-[11px] font-black uppercase tracking-[0.35em] text-[#7c8494]">
-              PDF preview
-            </p>
-            <h1 className="mt-1 text-xl font-black text-[#20242d]">
-              Watermark verzija portfolija
-            </h1>
-            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#5f6776]">
-              Ovo je stvarni PDF koji korisnik moze pregledati prije placanja.
-              Download ciste verzije ostaje zakljucan dok portfolio nije placen
-              ili dok korisnik nema premium pristup.
+        <section className="mx-auto max-w-7xl">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#d5deec] bg-white/80 px-4 py-3 shadow-[0_12px_35px_rgba(20,31,56,0.08)]">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.35em] text-[#7c8494]">
+                PDF preview
+              </p>
+              <h1 className="mt-0.5 text-base font-black text-[#20242d]">
+                Watermark verzija portfolija
+              </h1>
+            </div>
+            <p className="max-w-xl text-right text-xs font-semibold leading-relaxed text-[#667085]">
+              Stvarni PDF za pregled. Cista verzija ostaje zakljucana dok ne postoji pristup.
             </p>
           </div>
 
-          <div className="h-[calc(100vh-260px)] min-h-[620px] overflow-hidden rounded-[28px] border border-[#b9c2d1] bg-[#10141d] shadow-[0_28px_80px_rgba(13,22,40,0.28)]">
-            <iframe
-              className="h-full w-full bg-[#10141d]"
-              src={previewPdfUrl}
-              title={`${project.artistName} portfolio PDF preview`}
-            />
-          </div>
+          <PdfViewerFrame
+            src={previewPdfUrl}
+            title={`${project.artistName} portfolio PDF preview`}
+          />
         </section>
       </main>
     );
   }
 
-  const hasWatermark = false;
-  const selectedArtworks = project.artworks
-    .filter((artwork) => artwork.isSelected)
-    .sort((first, second) => first.orderIndex - second.orderIndex)
-    .slice(0, 30);
-  const featuredArtwork = selectedArtworks[0];
-  const contactPageNumber = 4 + selectedArtworks.length;
+  const cleanPdfUrl = project.latestPdfUrl
+    ? `/api/portfolio-projects/${project.id}/pdf?mode=download`
+    : null;
 
   return (
-    <main className="min-h-screen bg-[#dfe4ec] px-4 pb-12 pt-20 text-[#20242d] print:bg-white print:p-0">
+    <main className="min-h-screen bg-[#eef2f7] px-3 pb-3 pt-16 text-[#20242d]">
       <PortfolioPrintToolbar
         canDownload={project.access.canDownloadCleanPdf}
         latestPdfUrl={project.latestPdfUrl}
@@ -77,60 +70,59 @@ export function PortfolioPdfPreview({ mode = "preview", project }: PortfolioPdfP
         projectId={project.id}
       />
 
-      <div className="mx-auto flex max-w-5xl flex-col gap-8 print:max-w-none print:gap-0">
-        <CoverPreviewPage
-          artwork={featuredArtwork}
-          project={project}
-          watermark={hasWatermark}
-        />
+      <section className="mx-auto max-w-7xl">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#d5deec] bg-white/80 px-4 py-3 shadow-[0_12px_35px_rgba(20,31,56,0.08)]">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.35em] text-[#7c8494]">
+              PDF download
+            </p>
+            <h1 className="mt-0.5 text-base font-black text-[#20242d]">
+              Cista verzija portfolija
+            </h1>
+          </div>
+          <p className="max-w-xl text-right text-xs font-semibold leading-relaxed text-[#667085]">
+            Stvarni PDF generisan na backendu. Dugme u traci preuzima isti fajl.
+          </p>
+        </div>
 
-        <ProfilePreviewPage project={project} watermark={hasWatermark} />
-
-        <CollectionPreviewPage
-          artwork={featuredArtwork}
-          pageNumber={3}
-          project={project}
-          watermark={hasWatermark}
-        />
-
-        {selectedArtworks.map((artwork, index) => (
-          <ArtworkPreviewPage
-            artwork={artwork}
-            key={artwork.id}
-            pageNumber={index + 4}
-            project={project}
-            watermark={hasWatermark}
+        {cleanPdfUrl ? (
+          <PdfViewerFrame
+            src={cleanPdfUrl}
+            title={`${project.artistName} clean portfolio PDF`}
           />
-        ))}
-
-        <ContactPreviewPage
-          artwork={featuredArtwork}
-          pageNumber={contactPageNumber}
-          project={project}
-          watermark={hasWatermark}
-        />
-      </div>
-
-      <style>{`
-        @page {
-          size: A4;
-          margin: 0;
-        }
-
-        @media print {
-          html,
-          body {
-            background: white !important;
-          }
-
-          .pdf-preview-page {
-            box-shadow: none !important;
-            margin: 0 !important;
-            page-break-after: always;
-          }
-        }
-      `}</style>
+        ) : (
+          <div className="grid min-h-[520px] place-items-center rounded-[28px] border border-dashed border-[#b9c2d1] bg-white/75 p-8 text-center shadow-[0_28px_80px_rgba(13,22,40,0.12)]">
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-[0.35em] text-[#7c8494]">
+                PDF jos nije generisan
+              </p>
+              <h2 className="mt-3 text-2xl font-black text-[#20242d]">
+                Generisi cisti PDF da bi se prikazao ovdje.
+              </h2>
+              <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-[#667085]">
+                Kada kliknes dugme za generisanje u gornjoj traci, backend ce
+                napraviti finalni portfolio, sacuvati ga i ova stranica ce ga
+                prikazati kao pravi PDF preview.
+              </p>
+            </div>
+          </div>
+        )}
+      </section>
     </main>
+  );
+}
+
+function PdfViewerFrame({
+  src,
+  title,
+}: {
+  src: string;
+  title: string;
+}) {
+  return (
+    <div aria-label={title} className="mx-auto w-full bg-transparent">
+      <PortfolioPdfCanvasViewer src={src} />
+    </div>
   );
 }
 

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -178,5 +179,11 @@ export class PortfolioProjectsController {
   @Get("me/:id")
   getMyProject(@Req() request: ArtistRequest, @Param("id") id: string) {
     return this.portfolioProjectsService.getForArtist(request.artistUser!.id, id);
+  }
+
+  @UseGuards(ArtistAuthGuard)
+  @Delete("me/:id")
+  deleteMyDraft(@Req() request: ArtistRequest, @Param("id") id: string) {
+    return this.portfolioProjectsService.deleteDraftForArtist(request.artistUser!.id, id);
   }
 }

@@ -385,10 +385,19 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
     }
   }
 
+  function openPreviewPage() {
+    router.push(`/portfolio-builder/${currentProject.id}/preview`);
+  }
+
+  function openPaymentPage() {
+    router.push(`/portfolio-builder/${currentProject.id}/payment`);
+  }
+
   return (
     <main className="flex h-screen min-h-screen flex-col overflow-hidden bg-[#e7ecf4] text-[#1f2430]">
       <StudioTopbar
         isSaving={isSaving}
+        onOpenPreview={openPreviewPage}
         onSave={() => void saveProject()}
         project={currentProject}
         template={selectedTemplate}
@@ -483,6 +492,8 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
                 onDownloadCoverTest={() => void downloadCoverTestPdf()}
                 onGeneratePdf={() => void generatePdfVersion()}
                 onOpenCleanPdf={() => void generateAndOpenCleanPdf()}
+                onOpenPayment={openPaymentPage}
+                onOpenPreview={openPreviewPage}
                 project={currentProject}
               />
             ) : null}
@@ -512,11 +523,13 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
 
 function StudioTopbar({
   isSaving,
+  onOpenPreview,
   onSave,
   project,
   template,
 }: {
   isSaving: boolean;
+  onOpenPreview: () => void;
   onSave: () => void;
   project: PortfolioProject;
   template: PortfolioTemplate;
@@ -554,12 +567,13 @@ function StudioTopbar({
         >
           {isSaving ? "Cuvam..." : "Sacuvaj draft"}
         </button>
-        <Link
+        <button
           className="rounded-md border border-[#dc1735] bg-[#dc1735] px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-[#bd102a]"
-          href={`/portfolio-builder/${project.id}/preview`}
+          onClick={onOpenPreview}
+          type="button"
         >
           Otvori preview
-        </Link>
+        </button>
       </div>
     </header>
   );
@@ -1598,6 +1612,8 @@ function ExportWorkspace({
   onDownloadCoverTest,
   onGeneratePdf,
   onOpenCleanPdf,
+  onOpenPayment,
+  onOpenPreview,
   project,
 }: {
   isDownloadingCoverTest: boolean;
@@ -1605,6 +1621,8 @@ function ExportWorkspace({
   onDownloadCoverTest: () => void;
   onGeneratePdf: () => void;
   onOpenCleanPdf: () => void;
+  onOpenPayment: () => void;
+  onOpenPreview: () => void;
   project: PortfolioProject;
 }) {
  
@@ -1639,12 +1657,13 @@ function ExportWorkspace({
             </p>
 
             <div className="mt-5 flex flex-wrap gap-2">
-              <Link
+              <button
                 className="rounded-full border border-white/20 px-4 py-2 text-[12px] font-black text-white transition hover:bg-white hover:text-[#10131b]"
-                href={`/portfolio-builder/${project.id}/preview`}
+                onClick={onOpenPreview}
+                type="button"
               >
                 Otvori preview
-              </Link>
+              </button>
 
               <button
                 className="rounded-full border border-white/20 px-4 py-2 text-[12px] font-black text-white transition hover:bg-white hover:text-[#10131b] disabled:cursor-not-allowed disabled:opacity-60"
@@ -1665,23 +1684,23 @@ function ExportWorkspace({
                   {isGeneratingPdf ? "Generisem..." : "Generisi novu PDF verziju"}
                 </button>
               ) : (
-                <Link
+                <button
                   className="rounded-full bg-[#e91435] px-4 py-2 text-[12px] font-black text-white transition hover:-translate-y-0.5"
-                  href={`/portfolio-builder/${project.id}/payment`}
+                  onClick={onOpenPayment}
+                  type="button"
                 >
                   Plati i otkljucaj PDF
-                </Link>
+                </button>
               )}
 
               {project.latestPdfUrl ? (
-                <a
-                  className="rounded-full bg-white px-4 py-2 text-[12px] font-black text-[#10131b] transition hover:-translate-y-0.5"
-                  href={project.latestPdfUrl}
-                  rel="noreferrer"
-                  target="_blank"
+                <button
+                  className="rounded-full bg-[#ffc41d] px-4 py-2 text-[12px] font-black text-[#10131b] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                  onClick={() => window.open(project.latestPdfUrl!, "_blank", "noopener,noreferrer")}
+                  type="button"
                 >
                   Download zadnje verzije
-                </a>
+                </button>
               ) : null}
             </div>
           </div>
@@ -1702,7 +1721,7 @@ function ExportWorkspace({
           title="PDF preview"
           text="Otvori pregled portfolija sa ArtBoard watermarkom."
           action="Otvori preview"
-          href={`/portfolio-builder/${project.id}/preview`}
+          onClick={onOpenPreview}
         />
         <ExportBox title="Share link" text="Posalji privatni link galeriji ili kupcu." action="Kopiraj" />
         <ExportBox
@@ -1720,10 +1739,7 @@ function ExportWorkspace({
               : "Plati i otkljucaj"
           }
           disabled={project.access.canDownloadCleanPdf ? isGeneratingPdf : false}
-          href={
-            project.access.canDownloadCleanPdf ? undefined : `/portfolio-builder/${project.id}/payment`
-          }
-          onClick={project.access.canDownloadCleanPdf ? onOpenCleanPdf : undefined}
+          onClick={project.access.canDownloadCleanPdf ? onOpenCleanPdf : onOpenPayment}
         />
       </div>
 
@@ -1732,12 +1748,11 @@ function ExportWorkspace({
           {project.versions.length > 0 ? (
             <div className="space-y-2">
               {project.versions.map((version) => (
-                <a
-                  className="flex items-center justify-between gap-3 rounded-xl border border-[#dbe3ef] bg-white px-4 py-3 text-[12px] transition hover:-translate-y-0.5 hover:border-[#182fc7]"
-                  href={version.pdfUrl}
+                <button
+                  className="flex w-full items-center justify-between gap-3 rounded-xl border border-[#dbe3ef] bg-white px-4 py-3 text-left text-[12px] transition hover:-translate-y-0.5 hover:border-[#182fc7]"
                   key={version.id}
-                  rel="noreferrer"
-                  target="_blank"
+                  onClick={() => window.open(version.pdfUrl, "_blank", "noopener,noreferrer")}
+                  type="button"
                 >
                   <span>
                     <strong className="block text-[13px] text-[#1f2430]">
@@ -1750,7 +1765,7 @@ function ExportWorkspace({
                   <span className="rounded-full bg-[#eef3ff] px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-[#182fc7]">
                     PDF
                   </span>
-                </a>
+                </button>
               ))}
             </div>
           ) : (
@@ -2314,39 +2329,31 @@ function OptionBox({ label, value }: { label: string; value: string }) {
 function ExportBox({
   action,
   disabled = false,
-  href,
   onClick,
   text,
   title,
 }: {
   action: string;
   disabled?: boolean;
-  href?: string;
   onClick?: () => void;
   text: string;
   title: string;
 }) {
   const actionClassName =
-    "mt-4 inline-flex rounded-md border border-[#dc1735] px-3 py-2 text-[11px] font-bold text-[#dc1735] transition hover:bg-[#dc1735] hover:text-white";
+    "mt-4 inline-flex rounded-md border border-[#10131b] bg-[#10131b] px-3 py-2 text-[11px] font-bold text-white transition hover:-translate-y-0.5 hover:border-[#dc1735] hover:bg-[#dc1735]";
 
   return (
     <article className="rounded-xl border border-[#d8e0ec] bg-white p-4 shadow-[0_10px_30px_rgba(31,46,86,0.04)]">
       <h2 className="text-[16px] font-bold">{title}</h2>
       <p className="mt-2 min-h-10 text-[12px] leading-5 text-[#667085]">{text}</p>
-      {href ? (
-        <Link className={actionClassName} href={href}>
-          {action}
-        </Link>
-      ) : (
-        <button
-          className={`${actionClassName} disabled:cursor-wait disabled:opacity-60`}
-          disabled={disabled}
-          onClick={onClick}
-          type="button"
-        >
-          {action}
-        </button>
-      )}
+      <button
+        className={`${actionClassName} disabled:cursor-wait disabled:opacity-60`}
+        disabled={disabled}
+        onClick={onClick}
+        type="button"
+      >
+        {action}
+      </button>
     </article>
   );
 }

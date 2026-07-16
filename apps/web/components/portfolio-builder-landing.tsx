@@ -5,15 +5,18 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { createPortfolioProjectFromProfile } from "@/services/portfolio-projects";
+import type { PortfolioProject } from "@/types/api";
 
 type PortfolioBuilderLandingProps = {
   isArtistLoggedIn: boolean;
   artistName?: string;
+  recentProjects?: PortfolioProject[];
 };
 
 export function PortfolioBuilderLanding({
   isArtistLoggedIn,
   artistName,
+  recentProjects = [],
 }: PortfolioBuilderLandingProps) {
   const router = useRouter();
   const [isCreating, setIsCreating] = useState(false);
@@ -124,11 +127,69 @@ export function PortfolioBuilderLanding({
                 </div>
               </Link>
             </div>
+
+            {isArtistLoggedIn ? (
+              <section className="mt-5 rounded-[28px] border border-[#cfd8e6] bg-white p-5 shadow-[0_18px_50px_rgba(31,46,86,0.06)]">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#808999]">
+                      Sacuvani draftovi
+                    </p>
+                    <h2 className="mt-2 text-[22px] font-bold tracking-[-0.03em] text-[#20242d]">
+                      Nastavi gdje si stao
+                    </h2>
+                  </div>
+                  <span className="rounded-full bg-[#eef3ff] px-3 py-1 text-[12px] font-bold text-[#182fc7]">
+                    {recentProjects.length}
+                  </span>
+                </div>
+
+                {recentProjects.length > 0 ? (
+                  <div className="mt-4 grid gap-2">
+                    {recentProjects.map((project) => (
+                      <button
+                        className="group flex items-center justify-between gap-4 rounded-2xl border border-[#dbe3ef] bg-[#f8fbff] px-4 py-3 text-left transition hover:border-[#182fc7] hover:bg-white"
+                        key={project.id}
+                        onClick={() => router.push(`/portfolio-builder/${project.id}`)}
+                        type="button"
+                      >
+                        <div className="min-w-0">
+                          <div className="truncate text-[14px] font-bold text-[#20242d]">
+                            {project.title || `${project.artistName} Portfolio`}
+                          </div>
+                          <div className="mt-1 flex flex-wrap gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8b94a7]">
+                            <span>{project.template.replaceAll("_", " ")}</span>
+                            <span>{project.counts.selectedArtworks} radova</span>
+                            <span>{formatPortfolioDate(project.updatedAt)}</span>
+                          </div>
+                        </div>
+                        <span className="shrink-0 rounded-full border border-[#182fc7] px-3 py-1 text-[12px] font-bold text-[#182fc7] transition group-hover:bg-[#182fc7] group-hover:text-white">
+                          Otvori
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-4 rounded-2xl border border-dashed border-[#d4ddeb] bg-[#f8fbff] px-4 py-4 text-[13px] leading-6 text-[#667085]">
+                    Jos nemas sacuvan portfolio draft. Kada prvi put sacuvas
+                    builder, taj draft ce se pojaviti ovdje.
+                  </p>
+                )}
+              </section>
+            ) : null}
           </div>
         </div>
       </section>
     </main>
   );
+}
+
+function formatPortfolioDate(value: string) {
+  return new Intl.DateTimeFormat("sr-Latn-ME", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(new Date(value));
 }
 
 function PortfolioBuilderTopbar() {

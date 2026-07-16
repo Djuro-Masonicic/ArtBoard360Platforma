@@ -13,10 +13,12 @@ import {
   uploadArtistArtwork,
   uploadArtistProfileImage,
 } from "@/services/artist-profile";
-import type { Artist, Artwork, SocialPlatform } from "@/types/api";
+import { deleteCurrentArtistPortfolioDraft } from "@/services/portfolio-projects";
+import type { Artist, Artwork, PortfolioProject, SocialPlatform } from "@/types/api";
 
 interface ArtistDashboardEditorProps {
   artist: Artist;
+  portfolioProjects: PortfolioProject[];
   sessionEmail: string;
   mustChangePassword: boolean;
 }
@@ -33,7 +35,7 @@ interface ArtworkDraft {
   description: string;
 }
 
-type DashboardSection = "overview" | "profile" | "links" | "artworks" | "security";
+type DashboardSection = "overview" | "profile" | "links" | "artworks" | "portfolio" | "security";
 
 const socialPlatformOptions: Array<{ value: SocialPlatform; label: string }> = [
   { value: "INSTAGRAM", label: "Instagram" },
@@ -53,12 +55,14 @@ const dashboardSections: Array<{
   { id: "profile", label: "Profil", helper: "Bio, moto i cover slika" },
   { id: "links", label: "Linkovi", helper: "Drustvene mreze i kontakt" },
   { id: "artworks", label: "Radovi", helper: "Upload, featured i hero" },
+  { id: "portfolio", label: "Portfolio", helper: "Draftovi i PDF istorija" },
   { id: "security", label: "Lozinka", helper: "Promjena lozinke" },
 ];
 
 export function ArtistDashboardEditor({
   artist: initialArtist,
   mustChangePassword: initialMustChangePassword,
+  portfolioProjects: initialPortfolioProjects,
   sessionEmail,
 }: ArtistDashboardEditorProps) {
   const { showAlert } = useUiFeedback();
@@ -93,6 +97,8 @@ export function ArtistDashboardEditor({
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [mustChangePassword, setMustChangePassword] = useState(initialMustChangePassword);
   const [activeSection, setActiveSection] = useState<DashboardSection>("overview");
+  const [portfolioProjects, setPortfolioProjects] = useState(initialPortfolioProjects);
+  const [deletingPortfolioId, setDeletingPortfolioId] = useState<string | null>(null);
   const profileImageInputRef = useRef<HTMLInputElement | null>(null);
   const artworkInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -103,7 +109,8 @@ export function ArtistDashboardEditor({
     isUploadingArtworks ||
     deletingArtworkId !== null ||
     updatingArtworkId !== null ||
-    savingArtworkId !== null;
+    savingArtworkId !== null ||
+    deletingPortfolioId !== null;
 
   useUiLoadingState(hasPendingAction);
 
@@ -115,6 +122,16 @@ export function ArtistDashboardEditor({
   const backgroundArtwork = useMemo(
     () => artist.artworks.find((artwork) => artwork.isBackground) ?? null,
     [artist.artworks],
+  );
+
+  const draftPortfolioProjects = useMemo(
+    () => portfolioProjects.filter((project) => project.status === "DRAFT"),
+    [portfolioProjects],
+  );
+
+  const finishedPortfolioProjects = useMemo(
+    () => portfolioProjects.filter((project) => project.status !== "DRAFT"),
+    [portfolioProjects],
   );
 
   useEffect(() => {
@@ -319,6 +336,29 @@ export function ArtistDashboardEditor({
       setErrorMessage(error instanceof Error ? error.message : "Rad nije mogao biti obrisan.");
     } finally {
       setDeletingArtworkId(null);
+    }
+  }
+
+  async function handleDeletePortfolioDraft(projectId: string) {
+    const shouldDelete = window.confirm("Da li zelis da obrises ovaj portfolio draft?");
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    clearMessages();
+    setDeletingPortfolioId(projectId);
+
+    try {
+      await deleteCurrentArtistPortfolioDraft(projectId);
+      setPortfolioProjects((currentProjects) =>
+        currentProjects.filter((project) => project.id !== projectId),
+      );
+      setFeedbackMessage("Portfolio draft je obrisan.");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Portfolio draft nije mogao biti obrisan.");
+    } finally {
+      setDeletingPortfolioId(null);
     }
   }
 
@@ -780,6 +820,46 @@ export function ArtistDashboardEditor({
           </Panel>
           ) : null}
 
+          {activeSection === "portfolio" ? (
+            <Panel>
+              <SectionHeader
+                action={
+                  <Link
+                    className="inline-flex h-11 items-center justify-center rounded-full bg-[#dc1735] px-5 text-[14px] font-semibold text-white transition hover:bg-[#bd102a]"
+                    href="/portfolio-builder"
+                  >
+                    Novi portfolio
+                  </Link>
+                }
+                eyebrow="Portfolio builder"
+                title="Draftovi i istorija"
+              />
+
+              <div className="mt-6 grid gap-4 md:grid-cols-3">
+                <StatusTile label="Ukupno" value={String(portfolioProjects.length)} tone="blue" />
+                <StatusTile label="Draftovi" value={String(draftPortfolioProjects.length)} tone="yellow" />
+                <StatusTile label="Generisani" value={String(finishedPortfolioProjects.length)} tone="red" />
+              </div>
+
+              <div className="mt-7 grid gap-6 xl:grid-cols-2">
+                <PortfolioProjectList
+                  deletingPortfolioId={deletingPortfolioId}
+                  emptyMessage="Jos nemas sacuvanih draftova. Kreiraj novi portfolio i sacuvaj draft da bi se pojavio ovdje."
+                  onDeleteDraft={handleDeletePortfolioDraft}
+                  projects={draftPortfolioProjects}
+                  title="Sacuvani draftovi"
+                />
+                <PortfolioProjectList
+                  deletingPortfolioId={deletingPortfolioId}
+                  emptyMessage="Generisani i placeni portfoliji ce se pojaviti ovdje kada zavrsis prvi PDF."
+                  onDeleteDraft={handleDeletePortfolioDraft}
+                  projects={finishedPortfolioProjects}
+                  title="Istorija portfolija"
+                />
+              </div>
+            </Panel>
+          ) : null}
+
           {activeSection === "security" ? (
           <Panel>
             <SectionHeader eyebrow="Sigurnost" title="Promjena lozinke" />
@@ -1059,6 +1139,169 @@ function ModeToggle({
       </span>
     </button>
   );
+}
+
+function PortfolioProjectList({
+  deletingPortfolioId,
+  emptyMessage,
+  onDeleteDraft,
+  projects,
+  title,
+}: {
+  deletingPortfolioId: string | null;
+  emptyMessage: string;
+  onDeleteDraft: (projectId: string) => void;
+  projects: PortfolioProject[];
+  title: string;
+}) {
+  return (
+    <section className="min-w-0 rounded-[16px] border border-[#e2e8f0] bg-[#f8fbff] p-4">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-[18px] font-semibold text-[#2f3138]">{title}</h3>
+        <span className="rounded-full bg-white px-3 py-1 text-[12px] font-semibold text-[#7b8593]">
+          {projects.length}
+        </span>
+      </div>
+
+      {projects.length > 0 ? (
+        <div className="mt-4 space-y-3">
+          {projects.map((project) => (
+            <PortfolioProjectCard
+              deletingPortfolioId={deletingPortfolioId}
+              key={project.id}
+              onDeleteDraft={onDeleteDraft}
+              project={project}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="mt-4 rounded-[14px] border border-dashed border-[#d5dfec] bg-white px-4 py-7 text-[14px] leading-6 text-[#687382]">
+          {emptyMessage}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function PortfolioProjectCard({
+  deletingPortfolioId,
+  onDeleteDraft,
+  project,
+}: {
+  deletingPortfolioId: string | null;
+  onDeleteDraft: (projectId: string) => void;
+  project: PortfolioProject;
+}) {
+  const selectedArtworkCount = project.artworks.filter((artwork) => artwork.isSelected).length;
+  const canDeleteDraft = project.status === "DRAFT";
+
+  return (
+    <article className="rounded-[16px] border border-[#dde7f3] bg-white p-4 shadow-[0_10px_26px_rgba(31,46,86,0.04)]">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-[#eef2ff] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-[#182fc7]">
+              {portfolioStatusLabel(project.status)}
+            </span>
+            <span className="rounded-full bg-[#fff8e4] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-[#9b6b00]">
+              {portfolioPaymentLabel(project.paymentStatus)}
+            </span>
+          </div>
+
+          <h4 className="mt-3 line-clamp-2 text-[18px] font-semibold leading-tight text-[#2f3138]">
+            {project.title || `${project.artistName} portfolio`}
+          </h4>
+          <p className="mt-2 text-[13px] leading-5 text-[#6b7584]">
+            {selectedArtworkCount} radova · {project.template.replaceAll("_", " ").toLowerCase()} ·{" "}
+            {formatPortfolioDate(project.updatedAt)}
+          </p>
+        </div>
+
+        {project.profileImageUrl ? (
+          <img
+            alt={project.artistName}
+            className="h-16 w-16 shrink-0 rounded-[14px] object-cover"
+            src={project.profileImageUrl}
+          />
+        ) : (
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[14px] bg-[#edf2f8] text-[18px] font-bold text-[#7b8593]">
+            {project.artistName.slice(0, 1)}
+          </div>
+        )}
+      </div>
+
+      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+        <Link
+          className="inline-flex h-10 items-center justify-center rounded-full border border-[#cfd8e6] bg-white px-4 text-[13px] font-semibold text-[#2f3138] transition hover:border-[#182fc7] hover:text-[#182fc7]"
+          href={`/portfolio-builder/${project.id}`}
+        >
+          {project.status === "DRAFT" ? "Nastavi draft" : "Otvori portfolio"}
+        </Link>
+
+        <Link
+          className="inline-flex h-10 items-center justify-center rounded-full border border-[#cfd8e6] bg-white px-4 text-[13px] font-semibold text-[#2f3138] transition hover:border-[#182fc7] hover:text-[#182fc7]"
+          href={`/portfolio-builder/${project.id}/preview`}
+        >
+          Preview
+        </Link>
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        {project.latestPdfUrl ? (
+          <button
+            className="inline-flex h-9 items-center justify-center rounded-full bg-[#182fc7] px-4 text-[12px] font-semibold text-white transition hover:bg-[#0f249f]"
+            onClick={() => window.open(project.latestPdfUrl ?? undefined, "_blank", "noopener,noreferrer")}
+            type="button"
+          >
+            Otvori PDF
+          </button>
+        ) : null}
+
+        {canDeleteDraft ? (
+          <button
+            className="inline-flex h-9 items-center justify-center rounded-full border border-[#f0cbd3] bg-white px-4 text-[12px] font-semibold text-[#b4132c] transition hover:bg-[#fff3f6] disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={deletingPortfolioId === project.id}
+            onClick={() => onDeleteDraft(project.id)}
+            type="button"
+          >
+            {deletingPortfolioId === project.id ? "Brisanje..." : "Obrisi draft"}
+          </button>
+        ) : null}
+      </div>
+    </article>
+  );
+}
+
+function portfolioStatusLabel(status: PortfolioProject["status"]) {
+  const labels: Record<PortfolioProject["status"], string> = {
+    DRAFT: "Draft",
+    GENERATED: "Generisan",
+    PAID: "Placen",
+    READY: "Spreman",
+  };
+
+  return labels[status] ?? status;
+}
+
+function portfolioPaymentLabel(status: PortfolioProject["paymentStatus"]) {
+  const labels: Record<PortfolioProject["paymentStatus"], string> = {
+    FAILED: "Neuspjelo",
+    NOT_REQUIRED: "Premium",
+    PAID: "Placeno",
+    PENDING: "Na cekanju",
+    REFUNDED: "Refundirano",
+    REQUIRED: "Potrebno placanje",
+  };
+
+  return labels[status] ?? status;
+}
+
+function formatPortfolioDate(value: string) {
+  return new Intl.DateTimeFormat("sr-Latn-ME", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(new Date(value));
 }
 
 function buildArtworkDraftMap(artworks: Artwork[]) {

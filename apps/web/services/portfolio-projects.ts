@@ -78,6 +78,57 @@ export function getArtistPortfolioProjects(token: string, query?: PortfolioProje
   );
 }
 
+export async function getCurrentArtistPortfolioProjects(query?: PortfolioProjectQuery) {
+  const response = await fetch(`/api/artist/portfolio-projects${buildQueryString(query)}`, {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    let payload: unknown;
+
+    try {
+      payload = await response.json();
+    } catch {
+      payload = undefined;
+    }
+
+    const message =
+      typeof payload === "object" && payload !== null && "message" in payload
+        ? String((payload as { message: string }).message)
+        : "Portfolio projekti nijesu mogli biti ucitani.";
+
+    throw new ApiError(message, response.status, payload);
+  }
+
+  return response.json() as Promise<PaginatedResponse<PortfolioProject>>;
+}
+
+export async function deleteCurrentArtistPortfolioDraft(id: string) {
+  const response = await fetch(`/api/artist/portfolio-projects/${id}`, {
+    method: "DELETE",
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    let payload: unknown;
+
+    try {
+      payload = await response.json();
+    } catch {
+      payload = undefined;
+    }
+
+    const message =
+      typeof payload === "object" && payload !== null && "message" in payload
+        ? String((payload as { message: string }).message)
+        : "Portfolio draft nije mogao biti obrisan.";
+
+    throw new ApiError(message, response.status, payload);
+  }
+
+  return response.json() as Promise<{ id: string; deleted: boolean }>;
+}
+
 export function getAdminPortfolioProjects(token: string, query?: PortfolioProjectQuery) {
   return apiFetch<PaginatedResponse<PortfolioProject>>(
     `/admin/portfolio-projects${buildQueryString(query)}`,

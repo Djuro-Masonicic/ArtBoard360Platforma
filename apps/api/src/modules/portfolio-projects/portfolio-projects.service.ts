@@ -244,6 +244,50 @@ export class PortfolioProjectsService {
     return this.serialize(portfolioProject);
   }
 
+  async deleteDraftForArtist(artistAccountId: string, id: string) {
+    const portfolioProject = await this.prisma.portfolioProject.findUnique({
+      where: {
+        id,
+      },
+      include: portfolioProjectInclude,
+    });
+
+    if (!portfolioProject) {
+      throw new NotFoundException("Portfolio project was not found.");
+    }
+
+    if (portfolioProject.artistAccountId !== artistAccountId) {
+      throw new ForbiddenException("You can only delete your own portfolio drafts.");
+    }
+
+    if (portfolioProject.status !== PortfolioProjectStatus.DRAFT) {
+      throw new BadRequestException("Only draft portfolios can be deleted.");
+    }
+
+    const storagePaths = [
+      portfolioProject.profileImageStoragePath,
+      portfolioProject.collectionCoverStoragePath,
+      portfolioProject.latestPdfStoragePath,
+      ...portfolioProject.artworks.map((artwork) => artwork.storagePath),
+      ...portfolioProject.versions.map((version) => version.storagePath),
+    ].filter((path): path is string => Boolean(path));
+
+    await this.prisma.portfolioProject.delete({
+      where: {
+        id,
+      },
+    });
+
+    await Promise.allSettled(
+      storagePaths.map((storagePath) => this.storageService.deleteFile(storagePath)),
+    );
+
+    return {
+      id,
+      deleted: true,
+    };
+  }
+
   async getForAdmin(id: string) {
     const portfolioProject = await this.prisma.portfolioProject.findUnique({
       where: {
