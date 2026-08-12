@@ -81,6 +81,7 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
   const isArtStudioUnit = pathname === "/" || pathname.startsWith(siteRoutes.services) || pathname.startsWith(siteRoutes.contact);
   const isArtBoardUnit =
     pathname === siteRoutes.artboard ||
+    pathname.startsWith("/admin") ||
     pathname.startsWith(siteRoutes.artists) ||
     pathname.startsWith(siteRoutes.artistProfileBase) ||
     pathname.startsWith("/artists") ||
