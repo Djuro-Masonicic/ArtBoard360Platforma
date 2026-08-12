@@ -1,4 +1,4 @@
-import { PrijavaForm } from "@/components/prijava-form";
+import { PrijavaFlow } from "@/components/prijava-flow";
 import { getArtists } from "@/services/artists";
 
 export default async function PrijavaPage() {
@@ -33,9 +33,10 @@ export default async function PrijavaPage() {
           Forma je sada vodjena i preglednija. Prolazis pitanje po pitanje, uz dovoljno prostora da
           pripremis portfolio, drustvene mreze i materijale za selekciju.
         </p>
+
       </section>
 
-      <PrijavaForm disciplines={disciplines} />
+      <PrijavaFlow disciplines={disciplines} />
     </div>
   );
 }

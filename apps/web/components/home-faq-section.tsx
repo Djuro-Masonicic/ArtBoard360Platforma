@@ -87,10 +87,10 @@ export function HomeFaqSection({ faqs = [] }: HomeFaqSectionProps) {
 
           <div className="mt-7">
             <NavigationButton
-              className="inline-flex min-h-[46px] items-center gap-3 rounded-full border-2 border-[#ffc41d] bg-[#ffc41d] px-5 text-[0.95rem] font-bold text-[#252933] outline outline-1 outline-offset-2 outline-[#ffc41d] transition hover:bg-white"
+              className="group inline-flex min-h-[46px] items-center gap-3 rounded-full border-2 border-[#ffc41d] bg-[#ffc41d] px-5 text-[0.95rem] font-bold text-[#252933] outline outline-1 outline-offset-2 outline-[#ffc41d] transition hover:bg-white hover:text-[#ffc41d]"
               href="/kontakt"
             >
-              <span className="h-3 w-3 rounded-full bg-white" aria-hidden="true" />
+              <span className="h-3 w-3 rounded-full bg-white transition group-hover:bg-[#ffc41d]" aria-hidden="true" />
               Kontaktiraj nas
             </NavigationButton>
           </div>

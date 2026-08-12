@@ -70,7 +70,7 @@ export function HomeAboutSection() {
   }, []);
 
   return (
-    <section className="relative bg-[#f8fbff] px-5 py-16 sm:px-8 sm:py-20 lg:px-10 lg:py-24">
+    <section id="o-nama" className="relative bg-[#f8fbff] px-5 py-16 sm:px-8 sm:py-20 lg:px-10 lg:py-24">
       <div className="mx-auto grid min-h-[520px] max-w-[1180px] items-center gap-8 rounded-[46px] bg-[#f8fbff] lg:grid-cols-[0.9fr_1.1fr]">
         <div className="relative z-10 max-w-[460px] lg:pl-2">
           <h2 className="text-[2.55rem] font-bold leading-[0.96] tracking-[-0.055em] text-[#2f3138] sm:text-[3.25rem] lg:text-[3.8rem]">

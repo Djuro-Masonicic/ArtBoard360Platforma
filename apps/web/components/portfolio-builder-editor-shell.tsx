@@ -15,7 +15,14 @@ import {
   type UpdatePortfolioArtworkPayload,
   type UpdatePortfolioProjectPayload,
 } from "@/services/portfolio-projects";
-import type { PortfolioArtworkAvailability, PortfolioProject, PortfolioTemplate } from "@/types/api";
+import type {
+  PortfolioArtworkAvailability,
+  PortfolioDesignConfig,
+  PortfolioDesignPageKey,
+  PortfolioFooterTemplate,
+  PortfolioProject,
+  PortfolioTemplate,
+} from "@/types/api";
 
 type PortfolioBuilderEditorShellProps = {
   project: PortfolioProject;
@@ -40,12 +47,65 @@ const templateLabels: Record<PortfolioTemplate, string> = {
   SALES_PRO: "Sales / Pro",
 };
 
+const pageDesignLabels: Record<PortfolioDesignPageKey, string> = {
+  cover: "Cover",
+  profile: "Profile / Bio",
+  collection: "Collection",
+  artwork: "Artwork pages",
+  contact: "Contact",
+};
+
+const footerLabels: Record<PortfolioFooterTemplate, string> = {
+  MINIMAL: "Minimal",
+  ARTBOARD: "ArtBoard",
+  SALES: "Sales",
+};
+
+function createPresetDesignConfig(template: PortfolioTemplate): PortfolioDesignConfig {
+  return {
+    mode: "PRESET",
+    pages: {
+      cover: template,
+      profile: template,
+      collection: template,
+      artwork: template,
+      contact: template,
+    },
+    footer:
+      template === "ARTBOARD_EDITORIAL"
+        ? "ARTBOARD"
+        : template === "SALES_PRO"
+          ? "SALES"
+          : "MINIMAL",
+  };
+}
+
+function normalizeDesignConfig(project: PortfolioProject, fallbackTemplate: PortfolioTemplate) {
+  return project.designConfig ?? createPresetDesignConfig(fallbackTemplate);
+}
+
+function isPremiumProject(project: PortfolioProject) {
+  return project.access.reason === "PREMIUM";
+}
+
+const studioCardClassName =
+  "rounded-2xl border border-white/[0.08] bg-[#0e1522]/88 shadow-[0_18px_48px_rgba(0,0,0,0.24)] backdrop-blur-xl";
+
+const studioInputClassName =
+  "h-10 rounded-xl border border-[#3b4658] bg-[#121b2a] px-3 text-[13px] font-semibold text-[#f8fafc] shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_0_1px_rgba(255,255,255,0.02)] outline-none transition placeholder:text-[#8490a4] hover:border-[#566276] hover:bg-[#162033] focus:border-[#d6a94f]/90 focus:bg-[#172235] focus:ring-4 focus:ring-[#d6a94f]/18 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d6a94f]/70";
+
+const studioTextareaClassName =
+  "resize-y rounded-xl border border-[#3b4658] bg-[#121b2a] px-3 py-3 text-[13px] font-semibold leading-6 text-[#f8fafc] shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_0_1px_rgba(255,255,255,0.02)] outline-none transition placeholder:text-[#8490a4] hover:border-[#566276] hover:bg-[#162033] focus:border-[#d6a94f]/90 focus:bg-[#172235] focus:ring-4 focus:ring-[#d6a94f]/18 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d6a94f]/70";
+
 export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorShellProps) {
   const router = useRouter();
   const [currentProject, setCurrentProject] = useState(project);
   const [activeStep, setActiveStep] = useState<BuilderStep>("profile");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<PortfolioTemplate>(project.template);
+  const [designConfig, setDesignConfig] = useState<PortfolioDesignConfig>(() =>
+    normalizeDesignConfig(project, project.template),
+  );
   const [artistName, setArtistName] = useState(project.artistName);
   const [discipline, setDiscipline] = useState(project.discipline ?? "");
   const [email, setEmail] = useState(project.email ?? "");
@@ -97,6 +157,10 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
         collectionCoverUrl,
         biography: bio,
         template: selectedTemplate,
+        designConfig:
+          designConfig.mode === "CUSTOM"
+            ? designConfig
+            : createPresetDesignConfig(selectedTemplate),
         ...overrides,
       });
 
@@ -106,6 +170,7 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
       setCollectionYear(savedProject.collectionYear ?? "");
       setCollectionDescription(savedProject.collectionDescription ?? "");
       setCollectionCoverUrl(savedProject.collectionCoverUrl ?? "");
+      setDesignConfig(normalizeDesignConfig(savedProject, savedProject.template));
       setSaveMessage("Draft je sacuvan.");
       return savedProject;
     } catch (error) {
@@ -393,8 +458,24 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
     router.push(`/portfolio-builder/${currentProject.id}/payment`);
   }
 
+  function changePresetTemplate(template: PortfolioTemplate) {
+    setSelectedTemplate(template);
+
+    if (designConfig.mode === "PRESET") {
+      setDesignConfig(createPresetDesignConfig(template));
+    }
+  }
+
   return (
-    <main className="flex h-screen min-h-screen flex-col overflow-hidden bg-[#e7ecf4] text-[#1f2430]">
+    <main className="relative flex h-screen min-h-screen flex-col overflow-hidden bg-[#080d16] text-[#f3f5f8]">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_8%,rgba(139,92,246,0.08),transparent_24%),radial-gradient(circle_at_88%_18%,rgba(59,130,246,0.055),transparent_22%),linear-gradient(135deg,#080d16_0%,#0b111d_54%,#070b13_100%)]"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 opacity-[0.025] [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:56px_56px]"
+      />
       <StudioTopbar
         isSaving={isSaving}
         onOpenPreview={openPreviewPage}
@@ -404,10 +485,10 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
       />
 
       <div
-        className={`grid min-h-0 flex-1 grid-cols-1 ${
+        className={`relative z-10 grid min-h-0 flex-1 grid-cols-1 ${
           isSidebarCollapsed
-            ? "xl:grid-cols-[72px_minmax(0,1fr)_460px]"
-            : "xl:grid-cols-[280px_minmax(0,1fr)_460px]"
+            ? "xl:grid-cols-[72px_minmax(650px,1fr)_minmax(410px,470px)]"
+            : "xl:grid-cols-[290px_minmax(650px,1fr)_minmax(410px,470px)]"
         }`}
       >
         <StudioSidebar
@@ -419,10 +500,10 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
           setActiveStep={setActiveStep}
         />
 
-        <section className="min-h-0 overflow-y-auto border-x border-[#cfd8e6]/80 bg-[#f5f7fb]">
+        <section className="portfolio-builder-scroll min-h-0 overflow-y-auto border-x border-white/[0.07] bg-[#080d16]/42">
           <MobileSteps activeStep={activeStep} setActiveStep={setActiveStep} />
 
-          <div className="mx-auto grid w-full max-w-[1160px] gap-4 px-4 py-4 lg:px-6">
+          <div className="mx-auto grid w-full max-w-[1240px] gap-5 px-4 py-5 lg:px-6">
             <SaveNotice error={saveError} message={saveMessage} />
 
             {activeStep === "profile" ? (
@@ -465,6 +546,7 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
                 artworks={currentProject.artworks}
                 coverImageUrl={currentProject.coverImageUrl}
                 isBusy={isSaving || isUploadingArtwork}
+                isSidebarCollapsed={isSidebarCollapsed}
                 isUploadingArtwork={isUploadingArtwork}
                 onMoveArtwork={moveArtwork}
                 onReorderArtwork={reorderArtwork}
@@ -478,10 +560,13 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
 
             {activeStep === "design" ? (
               <DesignWorkspace
+                designConfig={designConfig}
                 isSaving={isSaving}
+                isPremium={isPremiumProject(currentProject)}
                 onSave={() => void saveProject()}
+                onDesignConfigChange={setDesignConfig}
                 selectedTemplate={selectedTemplate}
-                onTemplateChange={setSelectedTemplate}
+                onTemplateChange={changePresetTemplate}
               />
             ) : null}
 
@@ -512,6 +597,7 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
           email={email}
           profileImageUrl={profileImageUrl}
           project={currentProject}
+          designConfig={designConfig}
           selectedArtworks={selectedArtworks.length}
           selectedArtworkItems={selectedArtworks}
           template={selectedTemplate}
@@ -535,15 +621,18 @@ function StudioTopbar({
   template: PortfolioTemplate;
 }) {
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between border-b border-[#202a3a] bg-[#0b1220] px-4 text-white">
+    <header className="relative z-20 flex h-16 shrink-0 items-center justify-between border-b border-white/[0.08] bg-[#080d16]/94 px-5 text-[#f3f5f8] backdrop-blur-xl">
       <div className="flex min-w-0 items-center gap-3">
-        <Link className="flex shrink-0 items-center gap-3" href="/portfolio-builder">
+        <Link
+          className="flex shrink-0 items-center gap-3 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#8b5cf6]/80"
+          href="/portfolio-builder"
+        >
           <img
             alt="Art Studio 360"
             className="h-5 w-auto"
             src="https://cdn.prod.website-files.com/681b5dac4415aa941af374fe/68c978c51b6638fa49b92f6b_360%20Logo%20White.svg"
           />
-          <span className="hidden text-[10px] font-bold uppercase tracking-[0.22em] text-white/55 md:inline">
+          <span className="hidden text-[10px] font-bold uppercase tracking-[0.34em] text-[#a3adbd] md:inline">
             Portfolio Builder
           </span>
         </Link>
@@ -551,16 +640,22 @@ function StudioTopbar({
         <div className="hidden h-5 w-px bg-white/15 md:block" />
 
         <div className="min-w-0">
-          <p className="truncate text-[12px] font-bold leading-none">{project.title}</p>
-          <p className="mt-1 truncate text-[10px] text-white/50">
+          <p className="truncate text-[14px] font-black leading-none tracking-[-0.02em] text-white">{project.title}</p>
+          <p className="mt-1 truncate text-[10px] font-semibold uppercase tracking-[0.08em] text-[#6f7a8c]">
             {templateLabels[template]} / {project.status} / {project.paymentStatus}
           </p>
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
+        <Link
+          className="hidden rounded-xl border border-white/[0.11] bg-white/[0.035] px-5 py-3 text-[12px] font-black !text-[#f3f5f8] transition hover:-translate-y-0.5 hover:border-white/[0.2] hover:!bg-white/[0.075] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b5cf6]/80 md:inline-flex"
+          href={project.sourceArtist?.slug ? `/artists/${project.sourceArtist.slug}` : "/"}
+        >
+          {project.sourceArtist?.slug ? "Nazad na profil" : "Nazad na sajt"}
+        </Link>
         <button
-          className="hidden rounded-md border border-[#ffc41d] bg-[#ffc41d] px-3 py-1.5 text-[11px] font-bold text-[#141923] transition hover:bg-[#ffd65b] disabled:cursor-wait disabled:opacity-70 sm:inline-flex"
+          className="hidden rounded-xl border border-white/[0.11] bg-white/[0.035] px-5 py-3 text-[12px] font-black text-[#f3f5f8] transition hover:-translate-y-0.5 hover:border-white/[0.2] hover:bg-white/[0.075] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b5cf6]/80 disabled:cursor-wait disabled:opacity-70 sm:inline-flex"
           disabled={isSaving}
           onClick={onSave}
           type="button"
@@ -568,7 +663,7 @@ function StudioTopbar({
           {isSaving ? "Cuvam..." : "Sacuvaj draft"}
         </button>
         <button
-          className="rounded-md border border-[#dc1735] bg-[#dc1735] px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-[#bd102a]"
+          className="rounded-xl border border-[#8b5cf6]/70 bg-[#8b5cf6] px-5 py-3 text-[12px] font-black text-white shadow-[0_14px_38px_rgba(139,92,246,0.18)] transition hover:-translate-y-0.5 hover:border-[#9c72f8] hover:bg-[#9c72f8] hover:shadow-[0_18px_48px_rgba(139,92,246,0.26)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b5cf6]/80"
           onClick={onOpenPreview}
           type="button"
         >
@@ -596,18 +691,22 @@ function StudioSidebar({
 }) {
   return (
     <aside
-      className={`hidden min-h-0 bg-[#0b1220] text-white transition-[width] duration-300 xl:flex xl:flex-col ${
+      className={`relative hidden min-h-0 overflow-hidden border-r border-white/[0.07] bg-[#090f19]/95 text-[#f3f5f8] shadow-[18px_0_60px_rgba(0,0,0,0.3)] transition-[width] duration-300 xl:flex xl:flex-col ${
         isCollapsed ? "items-center" : ""
       }`}
     >
       <div
-        className={`w-full border-b border-white/10 ${
+        aria-hidden="true"
+        className="pointer-events-none absolute -left-28 top-8 h-72 w-72 rounded-full bg-[#8b5cf6]/4 blur-3xl"
+      />
+      <div
+        className={`relative w-full border-b border-white/10 ${
           isCollapsed ? "flex flex-col items-center gap-3 p-3" : "p-4"
         }`}
       >
         <button
           aria-label={isCollapsed ? "Rasiri sidebar" : "Skupi sidebar"}
-          className={`grid h-9 w-9 place-items-center rounded-full border border-white/10 bg-white/[0.06] text-white/70 transition hover:bg-white hover:text-[#0b1220] ${
+          className={`grid h-10 w-10 place-items-center rounded-full border border-white/[0.11] bg-white/[0.04] text-[#a3adbd] shadow-[0_12px_34px_rgba(0,0,0,0.2)] transition hover:bg-white/[0.09] hover:text-white ${
             isCollapsed ? "" : "ml-auto"
           }`}
           onClick={onToggleCollapsed}
@@ -630,15 +729,15 @@ function StudioSidebar({
         </button>
 
         {isCollapsed ? (
-          <div className="grid h-9 w-9 place-items-center rounded-full bg-white/[0.06] text-[10px] font-black uppercase tracking-[0.12em] text-white/70">
+          <div className="grid h-10 w-10 place-items-center rounded-full border border-white/[0.11] bg-white/[0.045] text-[10px] font-black uppercase tracking-[0.12em] text-[#a78bfa]">
             AB
           </div>
         ) : (
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.26em] text-white/40">
+            <p className="text-[10px] font-black uppercase tracking-[0.32em] text-[#a78bfa]">
               Project
             </p>
-            <h1 className="mt-2 truncate text-[17px] font-bold">{project.artistName}</h1>
+            <h1 className="mt-2 truncate text-[18px] font-black tracking-[-0.03em]">{project.artistName}</h1>
             <p className="mt-1 text-[11px] text-white/45">
               {project.source === "ARTBOARD_PROFILE" ? "Iz ArtBoard profila" : "Guest portfolio"}
             </p>
@@ -658,19 +757,19 @@ function StudioSidebar({
         )}
       </div>
 
-      <nav className={`flex-1 ${isCollapsed ? "w-full px-2 py-3" : "p-3"}`}>
+      <nav className={`relative flex-1 ${isCollapsed ? "w-full px-2 py-3" : "p-3"}`}>
         <div className="space-y-1">
           {steps.map((step) => {
             const isActive = activeStep === step.id;
 
             return (
               <button
-                className={`group relative grid w-full rounded-xl text-left transition ${
+                className={`group relative grid w-full rounded-2xl text-left transition ${
                   isCollapsed ? "place-items-center px-0 py-3" : "grid-cols-[28px_1fr] gap-3 px-3 py-3"
                 } ${
                   isActive
-                    ? "bg-white text-[#101827] shadow-[0_16px_40px_rgba(0,0,0,0.18)]"
-                    : "text-white/68 hover:bg-white/8 hover:text-white"
+                    ? "border border-[#8b5cf6]/24 bg-[#8b5cf6]/[0.075] text-white before:absolute before:bottom-3 before:left-0 before:top-3 before:w-[3px] before:rounded-r-full before:bg-[#8b5cf6]"
+                    : "border border-transparent text-[#a3adbd] hover:border-white/[0.1] hover:bg-white/[0.045] hover:text-white"
                 }`}
                 key={step.id}
                 onClick={() => setActiveStep(step.id)}
@@ -679,15 +778,15 @@ function StudioSidebar({
                 <span
                   className={`flex h-8 w-8 items-center justify-center rounded-full border ${
                     isActive
-                      ? "border-[#101827] bg-[#101827] text-white"
-                      : "border-white/20 text-white/55"
+                      ? "border-[#8b5cf6]/55 bg-[#8b5cf6]/14 text-[#c4b5fd]"
+                      : "border-white/[0.12] bg-white/[0.03] text-[#a3adbd]"
                   }`}
                 >
                   <BuilderStepIcon step={step.id} />
                 </span>
 
                 {isCollapsed ? (
-                  <span className="pointer-events-none absolute left-[calc(100%+10px)] top-1/2 z-50 min-w-[170px] -translate-y-1/2 rounded-xl border border-white/10 bg-[#111827] px-3 py-2 text-left opacity-0 shadow-[0_18px_45px_rgba(0,0,0,0.35)] transition group-hover:opacity-100">
+                  <span className="pointer-events-none absolute left-[calc(100%+10px)] top-1/2 z-50 min-w-[170px] -translate-y-1/2 rounded-xl border border-white/[0.1] bg-[#0e1522] px-3 py-2 text-left opacity-0 shadow-[0_18px_45px_rgba(0,0,0,0.35)] transition group-hover:opacity-100">
                     <span className="block text-[12px] font-black text-white">{step.label}</span>
                     <span className="mt-0.5 block text-[10px] font-semibold text-white/55">
                       {step.helper}
@@ -705,15 +804,15 @@ function StudioSidebar({
         </div>
       </nav>
 
-      <div className={`w-full border-t border-white/10 ${isCollapsed ? "p-2" : "p-3"}`}>
+      <div className={`relative w-full border-t border-white/10 ${isCollapsed ? "p-2" : "p-3"}`}>
         {isCollapsed ? (
           <div className="grid gap-2">
             <CollapsedMetric label="Odabrani radovi" value={String(selectedArtworks)} />
             <CollapsedMetric label="PDF verzije" value={String(project.counts.versions)} />
           </div>
         ) : (
-          <div className="rounded-xl bg-white/[0.06] p-3">
-            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/35">
+          <div className="rounded-2xl border border-white/[0.08] bg-white/[0.025] p-3 shadow-[0_18px_50px_rgba(0,0,0,0.2)]">
+            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#a78bfa]">
               Status
             </p>
             <div className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
@@ -785,9 +884,9 @@ function BuilderStepIcon({ step }: { step: BuilderStep }) {
 
 function CollapsedMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="group relative grid h-10 place-items-center rounded-xl bg-white/[0.06] text-[12px] font-black text-white/75">
+    <div className="group relative grid h-10 place-items-center rounded-xl border border-white/[0.09] bg-white/[0.045] text-[12px] font-black text-[#c4b5fd]">
       {value}
-      <span className="pointer-events-none absolute left-[calc(100%+10px)] top-1/2 z-50 min-w-[140px] -translate-y-1/2 rounded-xl border border-white/10 bg-[#111827] px-3 py-2 text-[10px] font-bold text-white/70 opacity-0 shadow-[0_18px_45px_rgba(0,0,0,0.35)] transition group-hover:opacity-100">
+      <span className="pointer-events-none absolute left-[calc(100%+10px)] top-1/2 z-50 min-w-[140px] -translate-y-1/2 rounded-xl border border-white/[0.1] bg-[#0e1522] px-3 py-2 text-[10px] font-bold text-[#c4b5fd] opacity-0 shadow-[0_18px_45px_rgba(0,0,0,0.35)] transition group-hover:opacity-100">
         {label}
       </span>
     </div>
@@ -802,14 +901,14 @@ function MobileSteps({
   setActiveStep: (step: BuilderStep) => void;
 }) {
   return (
-    <div className="border-b border-[#d8e0ec] bg-white px-3 py-2 xl:hidden">
+    <div className="border-b border-white/[0.08] bg-[#080d16]/94 px-3 py-2 backdrop-blur-xl xl:hidden">
       <div className="flex gap-2 overflow-x-auto">
         {steps.map((step, index) => (
           <button
             className={`shrink-0 rounded-full px-3 py-2 text-[11px] font-bold ${
               activeStep === step.id
-                ? "bg-[#182fc7] text-white"
-                : "border border-[#d8e0ec] text-[#667085]"
+                ? "bg-[#8b5cf6] text-white shadow-[0_10px_28px_rgba(139,92,246,0.18)]"
+                : "border border-white/[0.1] text-[#a3adbd]"
             }`}
             key={step.id}
             onClick={() => setActiveStep(step.id)}
@@ -909,9 +1008,42 @@ function ProfileWorkspace({
         }
       />
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
+      <section className={`${studioCardClassName} p-5`}>
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#a78bfa]">
+            Readiness
+          </p>
+          <p className="mt-1 text-[12px] font-semibold text-[#a3adbd]">
+            Brza provjera da li portfolio ima osnovne podatke prije preview-a i exporta.
+          </p>
+        </div>
+
+        <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
+          {checks.map((check) => (
+            <div
+              className="flex min-h-12 items-center justify-between gap-3 rounded-xl border border-white/[0.08] bg-[#0b121e]/72 px-3 py-2"
+              key={check.label}
+            >
+              <span className="min-w-0 text-[12px] font-semibold leading-4 text-[#cbd5e1]">
+                {check.label}
+              </span>
+              <span
+                className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                  check.done
+                    ? "bg-[#4cc98a]/14 text-[#9df0c2]"
+                    : "bg-[#ef6471]/12 text-[#ff9aa5]"
+                }`}
+              >
+                {check.done ? "OK" : "Popuni"}
+              </span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <div className="grid gap-4">
         <Panel title="Artist profile">
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="grid gap-3 lg:grid-cols-3">
             <BuilderInput label="Ime umjetnika" value={artistName} onChange={onArtistNameChange} />
             <BuilderInput label="Disciplina" value={discipline} onChange={onDisciplineChange} />
             <BuilderInput label="Email" value={email} onChange={onEmailChange} />
@@ -920,153 +1052,131 @@ function ProfileWorkspace({
             <BuilderInput label="Instagram" value={instagramUrl} onChange={onInstagramUrlChange} />
           </div>
 
-          <label className="mt-4 grid gap-1.5 text-[11px] font-bold text-[#4c5566]">
+          <label className="mt-4 grid gap-1.5 text-[11px] font-bold text-[#a3adbd]">
             Biografija / artist statement
             <textarea
-              className="min-h-48 resize-y rounded-lg border border-[#cfd8e6] bg-white px-3 py-2 text-[13px] font-normal leading-6 text-[#1f2430] outline-none transition focus:border-[#182fc7] focus:ring-4 focus:ring-[#182fc7]/8"
+              className={`${studioTextareaClassName} min-h-48`}
               onChange={(event) => onBioChange(event.target.value)}
               value={bio}
             />
           </label>
 
-          <div className="mt-4 rounded-xl border border-[#d8e0ec] bg-[#f8fafc] p-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6a7280]">
-                  Profilna slika
-                </p>
-                <p className="mt-1 text-[12px] leading-5 text-[#667085]">
-                  Ova slika se koristi na cover strani i kontakt strani portfolija.
-                </p>
+          <div className="mt-4 grid gap-4 xl:grid-cols-2">
+            <div className="rounded-2xl border border-white/[0.08] bg-[#0b121e]/70 p-4">
+              <div className="grid gap-4 sm:grid-cols-[88px_minmax(0,1fr)]">
+                <div className="h-20 w-20 overflow-hidden rounded-2xl border border-white/[0.1] bg-white/[0.05] shadow-[0_14px_36px_rgba(0,0,0,0.22)]">
+                  {profileImageUrl ? (
+                    <img alt="" className="h-full w-full object-cover" src={profileImageUrl} />
+                  ) : null}
+                </div>
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-[#a78bfa]">
+                    Profilna slika
+                  </p>
+                  <p className="mt-1 text-[12px] leading-5 text-[#a3adbd]">
+                    Ova slika se koristi na cover strani i kontakt strani portfolija.
+                  </p>
+                </div>
               </div>
-              <div className="h-16 w-16 overflow-hidden rounded-full border border-[#cfd8e6] bg-white">
-                {profileImageUrl ? (
-                  <img alt="" className="h-full w-full object-cover" src={profileImageUrl} />
-                ) : null}
-              </div>
-            </div>
 
-            <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto]">
-              <BuilderInput
-                label="URL profilne slike"
-                value={profileImageUrl}
-                onChange={onProfileImageChange}
-              />
-              <div className="flex items-end">
-                <input
-                  accept="image/jpeg,image/png,image/webp,image/avif"
-                  className="hidden"
-                  onChange={(event) => {
-                    onProfileImageUpload(event.target.files);
-                    event.target.value = "";
-                  }}
-                  ref={profileImageInputRef}
-                  type="file"
+              <div className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+                <BuilderInput
+                  label="URL profilne slike"
+                  value={profileImageUrl}
+                  onChange={onProfileImageChange}
                 />
-                <SecondaryStudioButton
-                  disabled={isUploadingProfileImage}
-                  onClick={() => profileImageInputRef.current?.click()}
-                >
-                  {isUploadingProfileImage ? "Upload..." : "Upload sliku"}
-                </SecondaryStudioButton>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-4 rounded-xl border border-[#d8e0ec] bg-[#f8fafc] p-3">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6a7280]">
-                  Kolekcija
-                </p>
-                <p className="mt-1 max-w-xl text-[12px] leading-5 text-[#667085]">
-                  Ovi podaci pune uvodnu stranu kolekcije u PDF-u: naziv, godina, opis i cover.
-                </p>
-              </div>
-              <div className="h-16 w-24 overflow-hidden rounded-xl border border-[#cfd8e6] bg-white">
-                {collectionCoverUrl ? (
-                  <img alt="" className="h-full w-full object-cover" src={collectionCoverUrl} />
-                ) : (
-                  <div className="flex h-full items-center justify-center px-2 text-center text-[9px] font-bold uppercase tracking-[0.14em] text-[#8b94a7]">
-                    Cover
-                  </div>
-                )}
+                <div className="flex items-end">
+                  <input
+                    accept="image/jpeg,image/png,image/webp,image/avif"
+                    className="hidden"
+                    onChange={(event) => {
+                      onProfileImageUpload(event.target.files);
+                      event.target.value = "";
+                    }}
+                    ref={profileImageInputRef}
+                    type="file"
+                  />
+                  <SecondaryStudioButton
+                    disabled={isUploadingProfileImage}
+                    onClick={() => profileImageInputRef.current?.click()}
+                  >
+                    {isUploadingProfileImage ? "Upload..." : "Upload sliku"}
+                  </SecondaryStudioButton>
+                </div>
               </div>
             </div>
 
-            <div className="mt-3 grid gap-3 md:grid-cols-2">
-              <BuilderInput
-                label="Ime kolekcije"
-                value={collectionName}
-                onChange={onCollectionNameChange}
-              />
-              <BuilderInput
-                label="Godina"
-                value={collectionYear}
-                onChange={onCollectionYearChange}
-              />
-            </div>
+            <div className="rounded-2xl border border-white/[0.08] bg-[#0b121e]/70 p-4">
+              <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_128px]">
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-[#a78bfa]">
+                    Kolekcija
+                  </p>
+                  <p className="mt-1 max-w-xl text-[12px] leading-5 text-[#a3adbd]">
+                    Ovi podaci pune uvodnu stranu kolekcije u PDF-u: naziv, godina, opis i cover.
+                  </p>
+                </div>
+                <div className="h-20 w-full overflow-hidden rounded-xl border border-white/[0.1] bg-white/[0.05]">
+                  {collectionCoverUrl ? (
+                    <img alt="" className="h-full w-full object-cover" src={collectionCoverUrl} />
+                  ) : (
+                    <div className="flex h-full items-center justify-center px-2 text-center text-[9px] font-bold uppercase tracking-[0.14em] text-[#6f7a8c]">
+                      Cover
+                    </div>
+                  )}
+                </div>
+              </div>
 
-            <label className="mt-3 grid gap-1.5 text-[11px] font-bold text-[#4c5566]">
-              Opis kolekcije
-              <textarea
-                className="min-h-28 resize-y rounded-lg border border-[#cfd8e6] bg-white px-3 py-2 text-[13px] font-normal leading-6 text-[#1f2430] outline-none transition focus:border-[#182fc7] focus:ring-4 focus:ring-[#182fc7]/8"
-                onChange={(event) => onCollectionDescriptionChange(event.target.value)}
-                value={collectionDescription}
-              />
-            </label>
-
-            <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto]">
-              <BuilderInput
-                label="URL cover slike"
-                value={collectionCoverUrl}
-                onChange={onCollectionCoverChange}
-              />
-              <div className="flex items-end">
-                <input
-                  accept="image/jpeg,image/png,image/webp,image/avif"
-                  className="hidden"
-                  onChange={(event) => {
-                    onCollectionCoverUpload(event.target.files);
-                    event.target.value = "";
-                  }}
-                  ref={collectionCoverInputRef}
-                  type="file"
+              <div className="mt-3 grid gap-3 md:grid-cols-2">
+                <BuilderInput
+                  label="Ime kolekcije"
+                  value={collectionName}
+                  onChange={onCollectionNameChange}
                 />
-                <SecondaryStudioButton
-                  disabled={isUploadingCollectionCover}
-                  onClick={() => collectionCoverInputRef.current?.click()}
-                >
-                  {isUploadingCollectionCover ? "Upload..." : "Upload cover"}
-                </SecondaryStudioButton>
+                <BuilderInput
+                  label="Godina"
+                  value={collectionYear}
+                  onChange={onCollectionYearChange}
+                />
+              </div>
+
+              <label className="mt-3 grid gap-1.5 text-[11px] font-bold text-[#a3adbd]">
+                Opis kolekcije
+                <textarea
+                  className={`${studioTextareaClassName} min-h-28`}
+                  onChange={(event) => onCollectionDescriptionChange(event.target.value)}
+                  value={collectionDescription}
+                />
+              </label>
+
+              <div className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+                <BuilderInput
+                  label="URL cover slike"
+                  value={collectionCoverUrl}
+                  onChange={onCollectionCoverChange}
+                />
+                <div className="flex items-end">
+                  <input
+                    accept="image/jpeg,image/png,image/webp,image/avif"
+                    className="hidden"
+                    onChange={(event) => {
+                      onCollectionCoverUpload(event.target.files);
+                      event.target.value = "";
+                    }}
+                    ref={collectionCoverInputRef}
+                    type="file"
+                  />
+                  <SecondaryStudioButton
+                    disabled={isUploadingCollectionCover}
+                    onClick={() => collectionCoverInputRef.current?.click()}
+                  >
+                    {isUploadingCollectionCover ? "Upload..." : "Upload cover"}
+                  </SecondaryStudioButton>
+                </div>
               </div>
             </div>
           </div>
         </Panel>
-
-        <div className="grid gap-4">
-          <Panel title="Readiness">
-            <div className="space-y-2">
-            {checks.map((check) => (
-              <div
-                className="flex items-center justify-between rounded-lg border border-[#e1e7f0] bg-[#f8fafc] px-3 py-2"
-                key={check.label}
-              >
-                <span className="text-[12px] font-semibold text-[#4c5566]">{check.label}</span>
-                <span
-                  className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                    check.done
-                      ? "bg-[#e9f8ef] text-[#137a3a]"
-                      : "bg-[#fff3d8] text-[#9a6a00]"
-                  }`}
-                >
-                  {check.done ? "OK" : "Needs work"}
-                </span>
-              </div>
-            ))}
-            </div>
-          </Panel>
-        </div>
       </div>
     </>
   );
@@ -1076,6 +1186,7 @@ function WorksWorkspace({
   artworks,
   coverImageUrl,
   isBusy,
+  isSidebarCollapsed,
   isUploadingArtwork,
   onMoveArtwork,
   onReorderArtwork,
@@ -1088,6 +1199,7 @@ function WorksWorkspace({
   artworks: PortfolioProject["artworks"];
   coverImageUrl?: string | null;
   isBusy: boolean;
+  isSidebarCollapsed: boolean;
   isUploadingArtwork: boolean;
   onMoveArtwork: (artworkId: string, direction: "up" | "down") => void;
   onReorderArtwork: (draggedArtworkId: string, targetArtworkId: string) => void;
@@ -1135,42 +1247,44 @@ function WorksWorkspace({
       />
 
       <Panel title={`Radovi (${selectedArtworks}/${artworks.length})`}>
-        <div className="mb-4 rounded-xl border border-[#dbe3ef] bg-[#f8fafc] p-3 text-[12px] leading-5 text-[#667085]">
+        <div className="mb-5 rounded-2xl border border-white/[0.08] bg-[#080d16]/72 p-4 text-[12px] leading-5 text-[#a3adbd]">
           Biraj 10-30 radova za finalni PDF. MVP trenutno cuva izbor rada, a redosljed je vezan
           za broj rada iz drafta.
         </div>
         {orderedArtworks.length > 0 ? (
-          <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
-            {orderedArtworks.map((artwork, index) => (
-              <ArtworkEditorCard
-                artwork={artwork}
-                canMoveDown={index < orderedArtworks.length - 1}
-                canMoveUp={index > 0}
-                isCoverArtwork={coverImageUrl === artwork.imageUrl}
-                isDragTarget={dragOverArtworkId === artwork.id && draggedArtworkId !== artwork.id}
-                isDragging={draggedArtworkId === artwork.id}
-                isBusy={isBusy}
-                key={artwork.id}
-                onMove={onMoveArtwork}
-                onDragEnd={() => {
-                  setDraggedArtworkId(null);
-                  setDragOverArtworkId(null);
-                }}
-                onDragOver={() => setDragOverArtworkId(artwork.id)}
-                onDragStart={() => setDraggedArtworkId(artwork.id)}
-                onDrop={() => {
-                  if (draggedArtworkId) {
-                    onReorderArtwork(draggedArtworkId, artwork.id);
-                  }
+          <div className="-mx-1 pb-3">
+            <div className={`grid gap-4 px-1 ${isSidebarCollapsed ? "grid-cols-3" : "grid-cols-2"}`}>
+              {orderedArtworks.map((artwork, index) => (
+                <ArtworkEditorCard
+                  artwork={artwork}
+                  canMoveDown={index < orderedArtworks.length - 1}
+                  canMoveUp={index > 0}
+                  isCoverArtwork={coverImageUrl === artwork.imageUrl}
+                  isDragTarget={dragOverArtworkId === artwork.id && draggedArtworkId !== artwork.id}
+                  isDragging={draggedArtworkId === artwork.id}
+                  isBusy={isBusy}
+                  key={artwork.id}
+                  onMove={onMoveArtwork}
+                  onDragEnd={() => {
+                    setDraggedArtworkId(null);
+                    setDragOverArtworkId(null);
+                  }}
+                  onDragOver={() => setDragOverArtworkId(artwork.id)}
+                  onDragStart={() => setDraggedArtworkId(artwork.id)}
+                  onDrop={() => {
+                    if (draggedArtworkId) {
+                      onReorderArtwork(draggedArtworkId, artwork.id);
+                    }
 
-                  setDraggedArtworkId(null);
-                  setDragOverArtworkId(null);
-                }}
-                onToggle={onToggleArtwork}
-                onSetCover={onSetCoverArtwork}
-                onUpdate={onUpdateArtwork}
-              />
-            ))}
+                    setDraggedArtworkId(null);
+                    setDragOverArtworkId(null);
+                  }}
+                  onToggle={onToggleArtwork}
+                  onSetCover={onSetCoverArtwork}
+                  onUpdate={onUpdateArtwork}
+                />
+              ))}
+            </div>
           </div>
         ) : (
           <EmptyState text="Jos nema radova u ovom draftu." />
@@ -1262,12 +1376,12 @@ function ArtworkEditorCard({
   return (
     <>
       <article
-        className={`overflow-hidden rounded-xl border bg-white transition ${
+        className={`group flex min-h-[432px] min-w-0 flex-col overflow-hidden rounded-[18px] border bg-[#0b121e]/94 shadow-[0_18px_44px_rgba(0,0,0,0.28)] transition duration-200 hover:-translate-y-0.5 hover:border-white/[0.16] hover:bg-[#101827] ${
           artwork.isSelected
-            ? "border-[#182fc7]/35 shadow-[0_16px_38px_rgba(24,47,199,0.08)]"
-            : "border-[#dbe3ef]"
+            ? "border-[#8b5cf6]/55 ring-1 ring-[#8b5cf6]/16"
+            : "border-white/[0.09]"
         } ${isDragging ? "scale-[0.98] opacity-45" : ""} ${
-          isDragTarget ? "border-[#182fc7] bg-[#f3f6ff] ring-2 ring-[#182fc7]/20" : ""
+          isDragTarget ? "border-[#8b5cf6] bg-[#111a2b] ring-2 ring-[#8b5cf6]/20" : ""
         }`}
         draggable={!isBusy}
         onDragEnd={onDragEnd}
@@ -1285,74 +1399,111 @@ function ArtworkEditorCard({
           onDrop();
         }}
       >
-        <div className="grid grid-cols-[116px_1fr]">
+        <div className="relative aspect-[4/3] overflow-hidden bg-[#050912]">
           <img
             alt={artwork.title || "Portfolio artwork"}
-            className="h-full min-h-[132px] w-full object-cover"
+            className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.035]"
             src={artwork.imageUrl}
           />
-          <div className="min-w-0 p-3">
-            <div className="flex items-start justify-between gap-2">
-              <h3 className="truncate text-[13px] font-bold">{artwork.title || "Bez naziva"}</h3>
-              <span className="rounded-full bg-[#eef2f7] px-2 py-0.5 text-[10px] font-bold text-[#667085]">
-                {artwork.orderIndex + 1}
-              </span>
-            </div>
-            <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#a0a8b5]">
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#0b121e] via-[#0b121e]/45 to-transparent" />
+          <span className="absolute left-3 top-3 grid h-7 min-w-7 place-items-center rounded-md bg-[#8b5cf6] px-2 text-[12px] font-black text-white shadow-[0_10px_26px_rgba(139,92,246,0.24)]">
+            {artwork.orderIndex + 1}
+          </span>
+          <button
+            aria-label="Uredi detalje rada"
+            className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-lg border border-white/15 bg-black/55 text-white shadow-[0_10px_26px_rgba(0,0,0,0.32)] backdrop-blur transition hover:bg-[#f3f5f8] hover:text-[#0b121e] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b5cf6]/80"
+            onClick={() => setIsEditing(true)}
+            type="button"
+          >
+            <span className="text-lg leading-none">...</span>
+          </button>
+        </div>
+
+        <div className="flex flex-1 flex-col space-y-3 p-4">
+          <div>
+            <h3 className="truncate text-[14px] font-black text-white">
+              {artwork.title || `Rad ${artwork.orderIndex + 1}`}
+            </h3>
+            <p className="mt-1 text-[10px] font-black uppercase tracking-[0.16em] text-[#6f7a8c]">
               Prevuci za promjenu redosljeda
             </p>
-            <p className="mt-1 truncate text-[11px] text-[#7a8494]">
+            <p className="mt-2 truncate text-[12px] text-[#a3adbd]">
               {artwork.technique || artwork.year || "Detalji rada nisu uneseni"}
             </p>
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              <button
-                className={`rounded-full px-2 py-1 text-[10px] font-bold transition ${
-                  artwork.isSelected
-                    ? "bg-[#eef2ff] text-[#182fc7] hover:bg-[#dfe6ff]"
-                    : "bg-[#f2f4f7] text-[#7a8494] hover:bg-[#e9edf3]"
-                }`}
-                disabled={isBusy}
-                onClick={() => onToggle(artwork.id, !artwork.isSelected)}
-                type="button"
-              >
-                {artwork.isSelected ? "U PDF-u" : "Van PDF-a"}
-              </button>
-              <button
-                className={`rounded-full px-2 py-1 text-[10px] font-bold transition ${
-                  isCoverArtwork
-                    ? "bg-[#fff3d8] text-[#9a6a00] ring-1 ring-[#ffc41d]"
-                    : "bg-[#f2f4f7] text-[#7a8494] hover:bg-[#fff3d8] hover:text-[#9a6a00]"
-                }`}
-                disabled={isBusy || isCoverArtwork}
-                onClick={() => onSetCover(artwork)}
-                type="button"
-              >
-                {isCoverArtwork ? "Pocetni rad" : "Postavi pocetni"}
-              </button>
-              <button
-                className="rounded-full border border-[#dbe3ef] px-2 py-1 text-[10px] font-bold text-[#4f5967] transition hover:border-[#182fc7] hover:text-[#182fc7]"
-                disabled={isBusy || !canMoveUp}
-                onClick={() => onMove(artwork.id, "up")}
-                type="button"
-              >
-                Gore
-              </button>
-              <button
-                className="rounded-full border border-[#dbe3ef] px-2 py-1 text-[10px] font-bold text-[#4f5967] transition hover:border-[#182fc7] hover:text-[#182fc7]"
-                disabled={isBusy || !canMoveDown}
-                onClick={() => onMove(artwork.id, "down")}
-                type="button"
-              >
-                Dolje
-              </button>
-              <button
-                className="ml-auto rounded-full bg-[#10131b] px-3 py-1 text-[10px] font-black text-white transition hover:-translate-y-0.5 hover:bg-[#182fc7]"
-                onClick={() => setIsEditing(true)}
-                type="button"
-              >
-                Uredi detalje
-              </button>
-            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              className={`min-h-10 rounded-lg border px-3 py-2 text-[11px] font-black transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b5cf6]/80 ${
+                artwork.isSelected
+                  ? "border-[#8b5cf6]/70 bg-[#8b5cf6] text-white shadow-[0_10px_22px_rgba(139,92,246,0.16)]"
+                  : "border-white/10 bg-white/[0.045] text-[#a3adbd] hover:border-[#8b5cf6]/60 hover:text-white"
+              }`}
+              disabled={isBusy}
+              onClick={() => onToggle(artwork.id, !artwork.isSelected)}
+              type="button"
+            >
+              {artwork.isSelected ? "U PDF-u" : "Van PDF-a"}
+            </button>
+
+            <button
+              className={`min-h-10 rounded-lg border px-3 py-2 text-[11px] font-black transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b5cf6]/80 ${
+                isCoverArtwork
+                  ? "border-[#4cc98a]/70 bg-[#4cc98a]/16 text-[#b9f7d4]"
+                  : "border-white/10 bg-white/[0.045] text-[#a3adbd] hover:border-[#4cc98a]/60 hover:bg-[#4cc98a]/12 hover:text-[#dfffea]"
+              }`}
+              disabled={isBusy || isCoverArtwork}
+              onClick={() => onSetCover(artwork)}
+              type="button"
+            >
+              {isCoverArtwork ? "Pocetni" : "Pocetni"}
+            </button>
+          </div>
+
+          <div className="mt-auto flex items-center gap-2 border-t border-white/10 pt-3">
+            <button
+              className="rounded-lg border border-white/10 bg-white/[0.045] px-3 py-2 text-[11px] font-black text-white transition hover:border-white/[0.18] hover:bg-white/[0.09] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b5cf6]/80"
+              onClick={() => setIsEditing(true)}
+              type="button"
+            >
+              Detalji
+              <span aria-hidden="true" className="ml-2">
+                -&gt;
+              </span>
+            </button>
+            <button
+              aria-label="Pomjeri rad gore"
+              className="ml-auto grid h-8 w-8 place-items-center rounded-full border border-white/[0.12] bg-white/[0.035] text-[10px] font-black text-[#a3adbd] transition hover:border-[#8b5cf6] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b5cf6]/80 disabled:cursor-not-allowed disabled:opacity-30"
+              disabled={isBusy || !canMoveUp}
+              onClick={() => onMove(artwork.id, "up")}
+              type="button"
+            >
+              <svg aria-hidden="true" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
+                <path d="m6 14 6-6 6 6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.4" />
+              </svg>
+            </button>
+            <button
+              aria-label="Pomjeri rad dolje"
+              className="grid h-8 w-8 place-items-center rounded-full border border-white/[0.12] bg-white/[0.035] text-[10px] font-black text-[#a3adbd] transition hover:border-[#8b5cf6] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b5cf6]/80 disabled:cursor-not-allowed disabled:opacity-30"
+              disabled={isBusy || !canMoveDown}
+              onClick={() => onMove(artwork.id, "down")}
+              type="button"
+            >
+              <svg aria-hidden="true" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
+                <path d="m6 10 6 6 6-6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.4" />
+              </svg>
+            </button>
+            <button
+              aria-label="Ukloni iz PDF-a"
+              className="grid h-8 w-8 place-items-center rounded-full border border-[#dc1735]/35 bg-[#dc1735]/[0.08] text-[#ff6f83] transition hover:bg-[#dc1735] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#dc1735]/80 disabled:cursor-not-allowed disabled:opacity-40"
+              disabled={isBusy || !artwork.isSelected}
+              onClick={() => onToggle(artwork.id, false)}
+              type="button"
+            >
+              <svg aria-hidden="true" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
+                <path d="m6 6 12 12M18 6 6 18" stroke="currentColor" strokeLinecap="round" strokeWidth="2.4" />
+              </svg>
+            </button>
           </div>
         </div>
       </article>
@@ -1429,10 +1580,10 @@ function ArtworkEditModal({
   year: string;
 }) {
   return (
-    <div className="fixed inset-0 z-[120] grid place-items-center bg-[#090b10]/80 px-4 py-5 backdrop-blur-sm">
-      <section className="grid max-h-[92vh] w-full max-w-[1180px] overflow-hidden rounded-3xl border border-white/10 bg-[#f6f8fc] shadow-[0_40px_120px_rgba(0,0,0,0.45)] lg:grid-cols-[minmax(0,0.95fr)_minmax(420px,1.05fr)]">
-        <div className="relative min-h-[300px] bg-[#10131b] p-4 lg:min-h-0">
-          <div className="absolute left-4 top-4 z-10 rounded-full bg-white/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white backdrop-blur">
+    <div className="fixed inset-0 z-[120] grid place-items-center bg-black/88 px-4 py-5 backdrop-blur-md">
+      <section className="grid max-h-[92vh] w-full max-w-[1180px] overflow-hidden rounded-3xl border border-white/[0.09] bg-[#080d16] text-white shadow-[0_40px_120px_rgba(0,0,0,0.65)] lg:grid-cols-[minmax(0,0.95fr)_minmax(420px,1.05fr)]">
+        <div className="relative min-h-[300px] bg-[#050912] p-4 lg:min-h-0">
+          <div className="absolute left-4 top-4 z-10 rounded-full border border-white/[0.12] bg-black/45 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-[#a78bfa] backdrop-blur">
             Preview rada
           </div>
           <img
@@ -1442,26 +1593,26 @@ function ArtworkEditModal({
           />
         </div>
 
-        <div className="min-h-0 overflow-y-auto p-5 sm:p-7">
+        <div className="portfolio-builder-scroll min-h-0 overflow-y-auto p-5 sm:p-7">
           <header className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#8b94a7]">
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#a78bfa]">
                 Detalji za PDF
               </p>
-              <h2 className="mt-2 text-[30px] font-black leading-tight tracking-[-0.05em] text-[#1f2430]">
+              <h2 className="mt-2 text-[30px] font-black leading-tight tracking-[-0.05em] text-white">
                 {title || "Bez naziva"}
               </h2>
-              <p className="mt-2 text-[13px] leading-5 text-[#667085]">
+              <p className="mt-2 text-[13px] leading-5 text-white/[0.58]">
                 Ovi podaci ulaze u PDF stranicu rada i kasnije mogu da se koriste za sales
                 template, katalog ili price list.
               </p>
             </div>
             <button
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-[#dbe3ef] bg-white text-[22px] font-light text-[#4f5967] transition hover:border-[#e91435] hover:text-[#e91435]"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-white/[0.12] bg-white/[0.04] text-[18px] font-black text-white/70 transition hover:border-white hover:bg-white hover:text-[#0b121e]"
               onClick={onClose}
               type="button"
             >
-              ×
+              x
             </button>
           </header>
 
@@ -1476,10 +1627,10 @@ function ArtworkEditModal({
             <BuilderInput label="Tehnika" value={technique} onChange={onTechniqueChange} />
             <BuilderInput label="Dimenzije" value={dimensions} onChange={onDimensionsChange} />
             <BuilderInput label="Cijena" value={price} onChange={onPriceChange} />
-            <label className="grid gap-1.5 text-[11px] font-bold text-[#4c5566]">
+            <label className="grid gap-1.5 text-[11px] font-bold text-white/[0.62]">
               Status dostupnosti
               <select
-                className="h-10 rounded-lg border border-[#cfd8e6] bg-white px-3 text-[13px] font-normal text-[#1f2430] outline-none transition focus:border-[#182fc7] focus:ring-4 focus:ring-[#182fc7]/8"
+                className={studioInputClassName}
                 onChange={(event) =>
                   onAvailabilityChange(event.target.value as PortfolioArtworkAvailability)
                 }
@@ -1494,18 +1645,18 @@ function ArtworkEditModal({
             </label>
           </div>
 
-          <label className="mt-4 grid gap-1.5 text-[11px] font-bold text-[#4c5566]">
+          <label className="mt-4 grid gap-1.5 text-[11px] font-bold text-white/[0.62]">
             Opis rada
             <textarea
-              className="min-h-36 resize-y rounded-lg border border-[#cfd8e6] bg-white px-3 py-2 text-[13px] font-normal leading-5 text-[#1f2430] outline-none transition focus:border-[#182fc7] focus:ring-4 focus:ring-[#182fc7]/8"
+              className={`${studioTextareaClassName} min-h-36`}
               onChange={(event) => onDescriptionChange(event.target.value)}
               value={description}
             />
           </label>
 
-          <div className="mt-6 flex flex-wrap justify-end gap-2 border-t border-[#dbe3ef] pt-4">
+          <div className="mt-6 flex flex-wrap justify-end gap-2 border-t border-white/10 pt-4">
             <button
-              className="rounded-full border border-[#dbe3ef] bg-white px-5 py-2 text-[12px] font-black text-[#4f5967] transition hover:border-[#10131b] hover:text-[#10131b]"
+              className="rounded-full border border-white/[0.12] bg-white/[0.04] px-5 py-2 text-[12px] font-black text-white/70 transition hover:border-white hover:bg-white hover:text-[#0b121e]"
               onClick={onClose}
               type="button"
             >
@@ -1522,12 +1673,18 @@ function ArtworkEditModal({
 }
 
 function DesignWorkspace({
+  designConfig,
   isSaving,
+  isPremium,
+  onDesignConfigChange,
   onSave,
   selectedTemplate,
   onTemplateChange,
 }: {
+  designConfig: PortfolioDesignConfig;
   isSaving: boolean;
+  isPremium: boolean;
+  onDesignConfigChange: (config: PortfolioDesignConfig) => void;
   onSave: () => void;
   selectedTemplate: PortfolioTemplate;
   onTemplateChange: (template: PortfolioTemplate) => void;
@@ -1554,6 +1711,33 @@ function DesignWorkspace({
     },
   ];
 
+  function setDesignMode(mode: PortfolioDesignConfig["mode"]) {
+    if (mode === "CUSTOM" && !isPremium) {
+      return;
+    }
+
+    onDesignConfigChange(mode === "CUSTOM" ? { ...designConfig, mode } : createPresetDesignConfig(selectedTemplate));
+  }
+
+  function updatePageTemplate(page: PortfolioDesignPageKey, template: PortfolioTemplate) {
+    onDesignConfigChange({
+      ...designConfig,
+      mode: "CUSTOM",
+      pages: {
+        ...designConfig.pages,
+        [page]: template,
+      },
+    });
+  }
+
+  function updateFooterTemplate(footer: PortfolioFooterTemplate) {
+    onDesignConfigChange({
+      ...designConfig,
+      mode: "CUSTOM",
+      footer,
+    });
+  }
+
   return (
     <>
       <WorkspaceHeader
@@ -1570,26 +1754,44 @@ function DesignWorkspace({
       <div className="grid gap-4 lg:grid-cols-3">
         {templates.map((template) => (
           <button
-            className={`rounded-xl border bg-white p-3 text-left transition hover:-translate-y-0.5 ${
+            className={`relative overflow-hidden rounded-2xl border p-5 text-left transition duration-200 hover:-translate-y-0.5 ${
               selectedTemplate === template.id
-                ? "border-[#182fc7] shadow-[0_18px_44px_rgba(24,47,199,0.12)]"
-                : "border-[#dbe3ef] shadow-[0_10px_28px_rgba(31,46,86,0.04)]"
+                ? "border-[#8b5cf6]/80 bg-[#8b5cf6]/[0.075] shadow-[0_18px_44px_rgba(0,0,0,0.26)]"
+                : "border-white/[0.09] bg-[#0b121e]/78 shadow-[0_16px_42px_rgba(0,0,0,0.22)] hover:border-white/[0.17] hover:bg-[#121b2a]"
             }`}
             key={template.id}
             onClick={() => onTemplateChange(template.id)}
             type="button"
           >
-            <div className="aspect-[4/3] rounded-lg border border-[#e2e8f2] bg-[#f8fafc] p-3">
-              <div className="h-2 w-20 rounded-full bg-[#20242d]" />
-              <div className="mt-4 h-20 rounded-md bg-white shadow-inner" />
-              <div className="mt-3 grid grid-cols-3 gap-2">
-                <span className="h-8 rounded bg-[#dfe7f2]" />
-                <span className="h-8 rounded bg-[#dfe7f2]" />
-                <span className="h-8 rounded bg-[#dfe7f2]" />
+            {selectedTemplate === template.id ? (
+              <span className="absolute left-4 top-4 grid h-7 w-7 place-items-center rounded-full bg-[#8b5cf6] text-white shadow-[0_12px_30px_rgba(139,92,246,0.2)]">
+                <svg aria-hidden="true" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
+                  <path d="m5 12 4 4L19 6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.6" />
+                </svg>
+              </span>
+            ) : (
+              <span className="absolute left-4 top-4 h-7 w-7 rounded-full border border-white/20 bg-black/30" />
+            )}
+
+            <div className="aspect-[4/3] rounded-xl border border-white/[0.08] bg-[#050912] p-4">
+              <div className="h-full rounded-lg bg-[#f3f4f6] p-4 text-black/70 shadow-[0_14px_34px_rgba(0,0,0,0.25)]">
+                <div className="h-1.5 w-16 rounded-full bg-black/45" />
+                <div className="mt-4 grid h-[70%] grid-cols-[1fr_0.7fr] gap-3">
+                  <div className="rounded bg-black/12" />
+                  <div className="grid gap-2">
+                    <span className="rounded bg-black/18" />
+                    <span className="rounded bg-black/10" />
+                    <span className="rounded bg-black/16" />
+                  </div>
+                </div>
+                <div className="mt-3 flex gap-1">
+                  <span className="h-1.5 w-8 rounded-full bg-black/25" />
+                  <span className="h-1.5 w-4 rounded-full bg-[#8b5cf6]" />
+                </div>
               </div>
             </div>
-            <h3 className="mt-3 text-[14px] font-bold">{template.title}</h3>
-            <p className="mt-1 text-[12px] leading-5 text-[#667085]">{template.description}</p>
+            <h3 className="mt-4 text-[16px] font-black text-white">{template.title}</h3>
+            <p className="mt-2 text-[12px] leading-5 text-white/[0.52]">{template.description}</p>
           </button>
         ))}
       </div>
@@ -1600,6 +1802,100 @@ function DesignWorkspace({
           <OptionBox label="Jezik" value="ME" />
           <OptionBox label="Font" value="Sans" />
           <OptionBox label="Branding" value="ArtBoard" />
+        </div>
+      </Panel>
+
+      <Panel title="Premium custom design">
+        <div className="grid gap-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-[13px] font-black text-white">Mix stranica iz razlicitih template-a</p>
+              <p className="mt-1 max-w-2xl text-[12px] leading-5 text-white/[0.52]">
+                Preset mode koristi jedan kompletan template. Custom mode dozvoljava Platinum korisniku da
+                izabere poseban dizajn za cover, bio, kolekciju, radove, kontakt i footer.
+              </p>
+            </div>
+
+            <div className="flex rounded-full border border-white/[0.1] bg-black/25 p-1">
+              <button
+                className={`rounded-full px-4 py-2 text-[11px] font-black transition ${
+                  designConfig.mode === "PRESET"
+                    ? "bg-white text-[#080d16]"
+                    : "text-white/58 hover:text-white"
+                }`}
+                onClick={() => setDesignMode("PRESET")}
+                type="button"
+              >
+                Preset
+              </button>
+              <button
+                className={`rounded-full px-4 py-2 text-[11px] font-black transition ${
+                  designConfig.mode === "CUSTOM"
+                    ? "bg-[#d6a94f] text-[#080d16]"
+                    : "text-white/58 hover:text-white"
+                } ${!isPremium ? "cursor-not-allowed opacity-45" : ""}`}
+                disabled={!isPremium}
+                onClick={() => setDesignMode("CUSTOM")}
+                type="button"
+              >
+                Custom mix
+              </button>
+            </div>
+          </div>
+
+          {!isPremium ? (
+            <div className="rounded-2xl border border-[#d6a94f]/22 bg-[#d6a94f]/[0.07] p-4 text-[12px] leading-5 text-[#f6e3ad]">
+              Custom kombinovanje stranica je zakljucano za Basic plan. Korisnik moze i dalje birati
+              jedan kompletan template, a nakon prelaska na Platinum dobija page-by-page izbor.
+            </div>
+          ) : null}
+
+          <div
+            className={`grid gap-3 transition ${
+              designConfig.mode !== "CUSTOM" ? "pointer-events-none opacity-45" : ""
+            }`}
+          >
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {(Object.keys(pageDesignLabels) as PortfolioDesignPageKey[]).map((page) => (
+                <label
+                  className="grid gap-2 rounded-2xl border border-white/[0.08] bg-[#0b121e]/72 p-4"
+                  key={page}
+                >
+                  <span className="text-[10px] font-black uppercase tracking-[0.24em] text-[#d6a94f]">
+                    {pageDesignLabels[page]}
+                  </span>
+                  <select
+                    className={studioInputClassName}
+                    onChange={(event) => updatePageTemplate(page, event.target.value as PortfolioTemplate)}
+                    value={designConfig.pages[page]}
+                  >
+                    {templates.map((template) => (
+                      <option key={template.id} value={template.id}>
+                        {template.title}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ))}
+
+              <label className="grid gap-2 rounded-2xl border border-white/[0.08] bg-[#0b121e]/72 p-4">
+                <span className="text-[10px] font-black uppercase tracking-[0.24em] text-[#d6a94f]">
+                  Footer
+                </span>
+                <select
+                  className={studioInputClassName}
+                  onChange={(event) => updateFooterTemplate(event.target.value as PortfolioFooterTemplate)}
+                  value={designConfig.footer}
+                >
+                  {(Object.keys(footerLabels) as PortfolioFooterTemplate[]).map((footer) => (
+                    <option key={footer} value={footer}>
+                      {footerLabels[footer]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </div>
         </div>
       </Panel>
     </>
@@ -1642,34 +1938,41 @@ function ExportWorkspace({
         description="Preview uvijek ima ArtBoard watermark. Cisti PDF se otkljucava placanjem ili premium statusom."
       />
 
-      <section className="overflow-hidden rounded-2xl border border-[#131722] bg-[#10131b] text-white shadow-[0_24px_70px_rgba(16,19,27,0.18)]">
+      <section className={`${studioCardClassName} overflow-hidden text-white`}>
         <div className="grid gap-5 p-5 lg:grid-cols-[1fr_320px]">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/45">
+            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#a78bfa]">
               PDF status
             </p>
             <h2 className="mt-3 max-w-2xl text-[26px] font-black leading-tight tracking-[-0.05em]">
               {accessLabel}
             </h2>
-            <p className="mt-3 max-w-2xl text-[13px] leading-6 text-white/65">
+            <p className="mt-3 max-w-2xl text-[13px] leading-6 text-white/[0.65]">
               Preview ostaje dostupan sa velikim ArtBoard watermarkom. Clean PDF se generise i
               cuva kao verzija tek kada je portfolio placen ili kada je umjetnik premium clan.
             </p>
 
             <div className="mt-5 flex flex-wrap gap-2">
               <button
-                className="rounded-full border border-white/20 px-4 py-2 text-[12px] font-black text-white transition hover:bg-white hover:text-[#10131b]"
+              className="rounded-full border border-white/[0.12] bg-white/[0.035] px-4 py-2 text-[12px] font-black text-white transition hover:border-white hover:bg-white hover:text-[#0b121e]"
                 onClick={onOpenPreview}
                 type="button"
               >
                 Otvori preview
               </button>
 
-            
+              <button
+                className="rounded-full border border-white/[0.12] bg-white/[0.035] px-4 py-2 text-[12px] font-black text-white transition hover:border-white hover:bg-white hover:text-[#0b121e] disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={isDownloadingCoverTest}
+                onClick={onDownloadCoverTest}
+                type="button"
+              >
+                {isDownloadingCoverTest ? "Generisem test..." : "Download cover test"}
+              </button>
 
               {canGenerateCleanPdf ? (
                 <button
-                  className="rounded-full bg-[#ffc41d] px-4 py-2 text-[12px] font-black text-[#10131b] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-full border border-[#8b5cf6]/70 bg-[#8b5cf6] px-4 py-2 text-[12px] font-black text-white transition hover:-translate-y-0.5 hover:bg-[#9c72f8] disabled:cursor-not-allowed disabled:opacity-60"
                   disabled={isGeneratingPdf}
                   onClick={onGeneratePdf}
                   type="button"
@@ -1678,7 +1981,7 @@ function ExportWorkspace({
                 </button>
               ) : (
                 <button
-                  className="rounded-full bg-[#e91435] px-4 py-2 text-[12px] font-black text-white transition hover:-translate-y-0.5"
+                  className="rounded-full border border-[#8b5cf6]/70 bg-[#8b5cf6] px-4 py-2 text-[12px] font-black text-white transition hover:-translate-y-0.5 hover:bg-[#9c72f8]"
                   onClick={onOpenPayment}
                   type="button"
                 >
@@ -1688,7 +1991,7 @@ function ExportWorkspace({
 
               {project.latestPdfUrl ? (
                 <button
-                  className="rounded-full bg-[#ffc41d] px-4 py-2 text-[12px] font-black text-[#10131b] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-full border border-[#8b5cf6]/70 bg-[#8b5cf6] px-4 py-2 text-[12px] font-black text-white transition hover:-translate-y-0.5 hover:bg-[#9c72f8] disabled:cursor-not-allowed disabled:opacity-60"
                   onClick={() => window.open(project.latestPdfUrl!, "_blank", "noopener,noreferrer")}
                   type="button"
                 >
@@ -1742,20 +2045,20 @@ function ExportWorkspace({
             <div className="space-y-2">
               {project.versions.map((version) => (
                 <button
-                  className="flex w-full items-center justify-between gap-3 rounded-xl border border-[#dbe3ef] bg-white px-4 py-3 text-left text-[12px] transition hover:-translate-y-0.5 hover:border-[#182fc7]"
+                  className="flex w-full items-center justify-between gap-3 rounded-2xl border border-white/[0.08] bg-[#0b121e]/70 px-4 py-3 text-left text-[12px] transition hover:-translate-y-0.5 hover:border-[#8b5cf6]/45"
                   key={version.id}
                   onClick={() => window.open(version.pdfUrl, "_blank", "noopener,noreferrer")}
                   type="button"
                 >
                   <span>
-                    <strong className="block text-[13px] text-[#1f2430]">
+                    <strong className="block text-[13px] text-white">
                       Verzija {version.versionNumber}
                     </strong>
-                    <span className="text-[#667085]">
+                    <span className="text-white/50">
                       {formatBuilderDate(version.createdAt)} - {templateLabels[version.template]}
                     </span>
                   </span>
-                  <span className="rounded-full bg-[#eef3ff] px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-[#182fc7]">
+                  <span className="rounded-full border border-[#8b5cf6]/30 bg-[#8b5cf6]/12 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-[#c4b5fd]">
                     PDF
                   </span>
                 </button>
@@ -1771,18 +2074,18 @@ function ExportWorkspace({
             <div className="space-y-2">
               {project.payments.map((payment) => (
                 <div
-                  className="rounded-xl border border-[#dbe3ef] bg-white px-4 py-3"
+                  className="rounded-2xl border border-white/[0.08] bg-[#0b121e]/70 px-4 py-3"
                   key={payment.id}
                 >
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-[13px] font-black text-[#1f2430]">
+                    <p className="text-[13px] font-black text-white">
                       {formatBuilderEnum(payment.status)}
                     </p>
-                    <p className="text-[13px] font-black text-[#182fc7]">
+                    <p className="text-[13px] font-black text-[#c4b5fd]">
                       {formatBuilderMoney(payment.amountCents, payment.currency)}
                     </p>
                   </div>
-                  <p className="mt-1 text-[11px] text-[#667085]">
+                  <p className="mt-1 text-[11px] text-white/50">
                     {payment.paidAt
                       ? `Placeno: ${formatBuilderDate(payment.paidAt)}`
                       : `Kreirano: ${formatBuilderDate(payment.createdAt)}`}
@@ -1801,9 +2104,9 @@ function ExportWorkspace({
 
 function ExportMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.06] p-3">
+    <div className="rounded-xl border border-white/[0.08] bg-[#0b121e]/70 p-3">
       <p className="text-[20px] font-black text-white">{value}</p>
-      <p className="mt-1 text-[9px] font-black uppercase tracking-[0.2em] text-white/45">
+      <p className="mt-1 text-[9px] font-black uppercase tracking-[0.2em] text-[#a78bfa]">
         {label}
       </p>
     </div>
@@ -1812,7 +2115,7 @@ function ExportMetric({ label, value }: { label: string; value: string }) {
 
 function EmptyExportState({ text }: { text: string }) {
   return (
-    <div className="rounded-xl border border-dashed border-[#d8e0ec] bg-[#f8fbff] px-4 py-5 text-[12px] font-semibold leading-5 text-[#667085]">
+    <div className="rounded-2xl border border-dashed border-white/[0.12] bg-white/[0.025] px-4 py-5 text-[12px] font-semibold leading-5 text-[#a3adbd]">
       {text}
     </div>
   );
@@ -1848,6 +2151,7 @@ function PreviewPanel({
   collectionName,
   collectionYear,
   coverImage,
+  designConfig,
   discipline,
   email,
   profileImageUrl,
@@ -1863,6 +2167,7 @@ function PreviewPanel({
   collectionName: string;
   collectionYear: string;
   coverImage?: string | null;
+  designConfig: PortfolioDesignConfig;
   discipline: string;
   email: string;
   profileImageUrl: string;
@@ -1880,26 +2185,31 @@ function PreviewPanel({
   const trueCoverImage = coverImage || featuredArtwork?.imageUrl || trueProfileImage;
   const trueCollectionCover = collectionCoverUrl || project.collectionCoverUrl || project.coverImageUrl;
   const estimatedPages = Math.max(4, selectedItems.length + 4);
+  const previewTemplateLabel =
+    designConfig.mode === "CUSTOM" ? "Custom mix" : templateLabels[template];
 
   return (
-    <aside className="hidden min-h-0 bg-[#dfe5ef] xl:flex xl:flex-col">
-      <div className="flex h-14 items-center justify-between border-b border-[#c5cfdd] px-4">
+    <aside className="hidden min-h-0 border-l border-[#d6a94f]/14 bg-[radial-gradient(circle_at_10%_0%,rgba(214,169,79,0.09),transparent_32%),linear-gradient(180deg,#090e18_0%,#05080e_100%)] xl:flex xl:flex-col">
+      <div className="flex h-[70px] items-center justify-between border-b border-[#d6a94f]/14 px-5 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#6a7280]">
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#d6a94f]">
             Live preview
           </p>
-          <p className="text-[11px] font-semibold text-[#1f2430]">A4 document map</p>
+          <p className="mt-1 text-[12px] font-bold text-[#f8fafc]">A4 document map</p>
         </div>
         <div className="text-right">
-          <span className="rounded-md bg-white px-2.5 py-1 text-[10px] font-bold text-[#4f5967]">
-            {templateLabels[template]}
+          <span className="rounded-lg border border-[#d6a94f]/22 bg-[#15110a]/70 px-2.5 py-1 text-[10px] font-bold text-[#f3d998] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+            {previewTemplateLabel}
           </span>
-          <p className="mt-1 text-[10px] font-bold text-[#6a7280]">{estimatedPages} strana</p>
+          <p className="mt-1 text-[10px] font-bold text-[#9aa4b5]">
+            {estimatedPages} strana
+            {designConfig.mode === "CUSTOM" ? ` / footer ${footerLabels[designConfig.footer]}` : ""}
+          </p>
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
-        <div className="grid grid-cols-3 gap-2">
+      <div className="portfolio-builder-scroll min-h-0 flex-1 overflow-y-auto px-5 py-5">
+        <div className="mb-4 grid grid-cols-3 gap-2">
           <PreviewMetric label="Radovi" value={String(selectedItems.length)} />
           <PreviewMetric label="Strane" value={String(estimatedPages)} />
           <PreviewMetric
@@ -1908,7 +2218,53 @@ function PreviewPanel({
           />
         </div>
 
-        <div className="mt-5 space-y-5">
+        {designConfig.mode === "CUSTOM" ? (
+          <CustomMixMiniPreview
+            artistName={artistName}
+            bio={bio}
+            collectionCoverUrl={trueCollectionCover}
+            collectionDescription={collectionDescription}
+            collectionName={collectionName}
+            collectionYear={collectionYear}
+            coverImage={trueCoverImage}
+            designConfig={designConfig}
+            discipline={discipline}
+            email={email}
+            project={project}
+            profileImageUrl={trueProfileImage}
+            selectedItems={selectedItems}
+          />
+        ) : template === "ARTBOARD_EDITORIAL" ? (
+          <EditorialMiniPreview
+            artistName={artistName}
+            bio={bio}
+            collectionCoverUrl={trueCollectionCover}
+            collectionDescription={collectionDescription}
+            collectionName={collectionName}
+            collectionYear={collectionYear}
+            coverImage={trueCoverImage}
+            discipline={discipline}
+            email={email}
+            project={project}
+            profileImageUrl={trueProfileImage}
+            selectedItems={selectedItems}
+          />
+        ) : template === "SALES_PRO" ? (
+          <SalesMiniPreview
+            artistName={artistName}
+            collectionCoverUrl={trueCollectionCover}
+            collectionDescription={collectionDescription}
+            collectionName={collectionName}
+            collectionYear={collectionYear}
+            coverImage={trueCoverImage}
+            discipline={discipline}
+            email={email}
+            project={project}
+            profileImageUrl={trueProfileImage}
+            selectedItems={selectedItems}
+          />
+        ) : (
+          <div className="space-y-5 rounded-[24px] border border-[#d6a94f]/16 bg-[linear-gradient(145deg,rgba(17,24,39,0.94),rgba(5,8,14,0.96))] p-4 shadow-[0_26px_70px_rgba(0,0,0,0.42),inset_0_1px_0_rgba(255,255,255,0.04)]">
           <MiniPdfPage label="01 / Cover">
             <div className="flex h-full flex-col">
               <div className="h-[64%] bg-[#eef2f7]">
@@ -2102,8 +2458,1049 @@ function PreviewPanel({
             </div>
           </MiniPdfPage>
         </div>
+        )}
       </div>
     </aside>
+  );
+}
+
+function CustomMixMiniPreview({
+  artistName,
+  bio,
+  collectionCoverUrl,
+  collectionDescription,
+  collectionName,
+  collectionYear,
+  coverImage,
+  designConfig,
+  discipline,
+  email,
+  profileImageUrl,
+  project,
+  selectedItems,
+}: {
+  artistName: string;
+  bio: string;
+  collectionCoverUrl?: string | null;
+  collectionDescription: string;
+  collectionName: string;
+  collectionYear: string;
+  coverImage?: string | null;
+  designConfig: PortfolioDesignConfig;
+  discipline: string;
+  email: string;
+  profileImageUrl?: string | null;
+  project: PortfolioProject;
+  selectedItems: PortfolioProject["artworks"];
+}) {
+  const firstArtwork = selectedItems[0];
+  const collectionImage = collectionCoverUrl || project.collectionCoverUrl || coverImage;
+
+  return (
+    <div className="mt-5 space-y-5">
+      <CustomPreviewPage
+        footer={designConfig.footer}
+        label="01 / Cover"
+        template={designConfig.pages.cover}
+      >
+        <TemplateCoverPreview
+          artistName={artistName}
+          coverImage={coverImage}
+          discipline={discipline}
+          profileImageUrl={profileImageUrl}
+          project={project}
+          template={designConfig.pages.cover}
+        />
+      </CustomPreviewPage>
+
+      <CustomPreviewPage
+        footer={designConfig.footer}
+        label="02 / Profil"
+        template={designConfig.pages.profile}
+      >
+        <TemplateProfilePreview
+          artistName={artistName}
+          bio={bio}
+          discipline={discipline}
+          selectedItems={selectedItems}
+          template={designConfig.pages.profile}
+        />
+      </CustomPreviewPage>
+
+      <CustomPreviewPage
+        footer={designConfig.footer}
+        label="03 / Kolekcija"
+        template={designConfig.pages.collection}
+      >
+        <TemplateCollectionPreview
+          collectionDescription={collectionDescription}
+          collectionImage={collectionImage}
+          collectionName={collectionName || firstArtwork?.collectionName || "Naziv kolekcije"}
+          collectionYear={collectionYear || firstArtwork?.year || "Godina"}
+          template={designConfig.pages.collection}
+        />
+      </CustomPreviewPage>
+
+      {firstArtwork ? (
+        <CustomPreviewPage
+          footer={designConfig.footer}
+          label="04 / Rad"
+          template={designConfig.pages.artwork}
+        >
+          <TemplateArtworkPreview
+            artwork={firstArtwork}
+            discipline={discipline}
+            template={designConfig.pages.artwork}
+          />
+        </CustomPreviewPage>
+      ) : null}
+
+      <CustomPreviewPage
+        footer={designConfig.footer}
+        label="Final / Kontakt"
+        template={designConfig.pages.contact}
+      >
+        <TemplateContactPreview
+          artistName={artistName}
+          coverImage={coverImage}
+          email={email}
+          profileImageUrl={profileImageUrl}
+          project={project}
+          template={designConfig.pages.contact}
+        />
+      </CustomPreviewPage>
+    </div>
+  );
+}
+
+function CustomPreviewPage({
+  children,
+  footer,
+  label,
+  template,
+}: {
+  children: React.ReactNode;
+  footer: PortfolioFooterTemplate;
+  label: string;
+  template: PortfolioTemplate;
+}) {
+  const style = getMiniTemplateStyle(template);
+
+  return (
+    <section>
+      <div className="mb-2 flex items-center justify-between">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#d6a94f]">
+            {label}
+          </p>
+          <p className="mt-1 text-[9px] font-bold uppercase tracking-[0.12em] text-white/38">
+            {templateLabels[template]} / {footerLabels[footer]} footer
+          </p>
+        </div>
+        <span
+          className="h-1.5 w-1.5 rounded-full shadow-[0_0_16px_rgba(214,169,79,0.55)]"
+          style={{ backgroundColor: style.accent }}
+        />
+      </div>
+
+      <div
+        className={`aspect-[0.707/1] rounded-md p-5 shadow-[0_26px_80px_rgba(0,0,0,0.5)] ring-1 ${style.pageClassName}`}
+      >
+        {children}
+      </div>
+    </section>
+  );
+}
+
+function TemplateCoverPreview({
+  artistName,
+  coverImage,
+  discipline,
+  profileImageUrl,
+  project,
+  template,
+}: {
+  artistName: string;
+  coverImage?: string | null;
+  discipline: string;
+  profileImageUrl?: string | null;
+  project: PortfolioProject;
+  template: PortfolioTemplate;
+}) {
+  if (template === "SALES_PRO") {
+    return (
+      <div className="h-full bg-[linear-gradient(135deg,#ffc51d_0%,#db1243_52%,#1048c6_100%)] p-2">
+        <div className="flex h-full flex-col bg-[#fbfbfa] p-6 text-black">
+          <div className="grid grid-cols-[76px_1fr] items-center gap-6">
+            <MiniRoundImage alt={artistName} imageUrl={profileImageUrl} />
+            <div>
+              <h2 className="whitespace-pre-line text-[21px] font-black uppercase leading-[1]">
+                {toMiniStackedName(artistName || "Ime umjetnika")}
+              </h2>
+              <p className="mt-2 text-[6px] font-black uppercase tracking-[0.18em]">
+                {(discipline || "Vizuelni umjetnik").toUpperCase()}
+              </p>
+              <div className="mt-3 flex items-center gap-1">
+                <MiniSalesDots />
+                <span className="ml-1 text-[5.8px] font-black uppercase">
+                  Portfolio, {new Date(project.updatedAt).getFullYear()}
+                </span>
+              </div>
+            </div>
+          </div>
+          <MiniImageBlock className="mt-8 flex-1" imageUrl={coverImage} label="Cover slika" />
+        </div>
+      </div>
+    );
+  }
+
+  if (template === "ARTBOARD_EDITORIAL") {
+    return (
+      <div className="flex h-full flex-col bg-[#fbfbfa] text-[#111827]">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="whitespace-pre-line text-[21px] font-black uppercase leading-[1.08] tracking-[-0.05em]">
+              {toMiniStackedName(artistName || "Ime umjetnika")}
+            </h2>
+            <p className="mt-2 text-[6.5px] font-black uppercase tracking-[0.38em] text-[#7b8494]">
+              {(discipline || "Vizuelni umjetnik").toUpperCase()}
+            </p>
+          </div>
+          <div className="h-20 w-16 overflow-hidden rounded-lg bg-[#eef2f7]">
+            {profileImageUrl ? (
+              <img alt={artistName} className="h-full w-full object-cover grayscale" src={profileImageUrl} />
+            ) : (
+              <MiniPlaceholder label="Profil" />
+            )}
+          </div>
+        </div>
+        <div className="mt-6 flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full bg-[#ffc41d]" />
+          <span className="h-2 w-2 rounded-full bg-[#dc1735]" />
+          <span className="h-2 w-2 rounded-full bg-[#182fc7]" />
+          <span className="ml-2 text-[7px] font-black uppercase tracking-[0.18em]">
+            Portfolio, {new Date(project.updatedAt).getFullYear()}
+          </span>
+        </div>
+        <MiniImageBlock className="mt-auto h-[58%]" imageUrl={coverImage} label="Cover slika" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-full flex-col">
+      <MiniImageBlock className="h-[64%] grayscale" imageUrl={coverImage} label="Cover slika" />
+      <div className="flex flex-1 flex-col px-4 py-3 text-[#1f2430]">
+        <div className="mb-4 flex items-center justify-between border-b border-[#1f2430] pb-1 text-[7px] font-black">
+          <span>{project.location || "Podgorica"}, {new Date(project.updatedAt).getFullYear()}</span>
+          <span>Portfolio</span>
+        </div>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="whitespace-pre-line text-[23px] font-black uppercase leading-[1.08] tracking-[-0.05em]">
+              {toMiniStackedName(artistName || "Ime umjetnika")}
+            </h2>
+            <p className="mt-2 text-[7px] font-black uppercase tracking-[0.42em]">
+              {(discipline || "Vizuelni umjetnik").toUpperCase()}
+            </p>
+          </div>
+          <MiniRoundImage alt={artistName} imageUrl={profileImageUrl} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TemplateProfilePreview({
+  artistName,
+  bio,
+  discipline,
+  selectedItems,
+  template,
+}: {
+  artistName: string;
+  bio: string;
+  discipline: string;
+  selectedItems: PortfolioProject["artworks"];
+  template: PortfolioTemplate;
+}) {
+  const previewWorks = selectedItems.slice(0, template === "ARTBOARD_EDITORIAL" ? 6 : 9);
+
+  return (
+    <div className="flex h-full flex-col text-[#1f2430]">
+      <TemplateMiniTitle template={template} title={template === "SALES_PRO" ? "O UMJETNIKU" : "Profil umjetnika"} />
+      <p className="mt-4 line-clamp-[10] text-[7.5px] leading-[1.58]">
+        {bio || "Biografija i artist statement ce se prikazati ovdje dok ih uredjujes."}
+      </p>
+      <div className="mt-5 grid grid-cols-3 gap-2">
+        {Array.from({ length: previewWorks.length || 6 }).map((_, index) => {
+          const artwork = previewWorks[index];
+
+          return (
+            <div
+              className="aspect-square overflow-hidden rounded-md bg-[#eef2f7]"
+              key={artwork?.id ?? `custom-profile-work-${index}`}
+            >
+              {artwork?.imageUrl ? (
+                <img alt={artwork.title || "Artwork"} className="h-full w-full object-cover" src={artwork.imageUrl} />
+              ) : (
+                <MiniPlaceholder label="Rad" />
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <TemplateMiniFooter artistName={artistName} template={template} />
+    </div>
+  );
+}
+
+function TemplateCollectionPreview({
+  collectionDescription,
+  collectionImage,
+  collectionName,
+  collectionYear,
+  template,
+}: {
+  collectionDescription: string;
+  collectionImage?: string | null;
+  collectionName: string;
+  collectionYear: string;
+  template: PortfolioTemplate;
+}) {
+  return (
+    <div className="flex h-full flex-col text-[#1f2430]">
+      <TemplateMiniTitle template={template} title="Kolekcija" />
+      <MiniImageBlock className="mt-4 h-40" imageUrl={collectionImage} label="Cover kolekcije" />
+      <h3 className="mt-5 text-[10px] font-black uppercase">
+        {collectionName} <span className="font-normal text-[#6b7280]">{collectionYear}</span>
+      </h3>
+      <p className="mt-3 line-clamp-[8] text-[7.5px] leading-[1.6]">
+        {collectionDescription || "Opis kolekcije ili uvodni tekst za odabrane radove prikazuje se ovdje."}
+      </p>
+    </div>
+  );
+}
+
+function TemplateArtworkPreview({
+  artwork,
+  discipline,
+  template,
+}: {
+  artwork: PortfolioProject["artworks"][number];
+  discipline: string;
+  template: PortfolioTemplate;
+}) {
+  return (
+    <div className="flex h-full flex-col text-[#1f2430]">
+      <TemplateMiniTitle template={template} title="Umjetnicki radovi" />
+      <MiniImageBlock className="mt-4 h-40" imageUrl={artwork.imageUrl} label="Rad" />
+      <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2">
+        <MiniInfo label="Naziv rada" value={artwork.title || "Lorem ipsum dolor"} />
+        <MiniInfo label="Godina" value={artwork.year || "2026"} />
+        <MiniInfo label="Kolekcija" value={artwork.collectionName || "Lorem ipsum dolor"} />
+        <MiniInfo label="Tehnika" value={artwork.technique || discipline || "Lorem ipsum dolor"} />
+      </div>
+      <p className="mt-4 line-clamp-[5] text-[7px] leading-[1.55]">
+        {artwork.description || "Opis rada se prikazuje ovdje i prati podatke unesene u editoru."}
+      </p>
+    </div>
+  );
+}
+
+function TemplateContactPreview({
+  artistName,
+  coverImage,
+  email,
+  profileImageUrl,
+  project,
+  template,
+}: {
+  artistName: string;
+  coverImage?: string | null;
+  email: string;
+  profileImageUrl?: string | null;
+  project: PortfolioProject;
+  template: PortfolioTemplate;
+}) {
+  return (
+    <div className="flex h-full flex-col text-[#1f2430]">
+      <TemplateMiniTitle template={template} title="Kontakt" />
+      <div className="mt-4 grid grid-cols-[76px_1fr] gap-5">
+        <div className="h-[76px] overflow-hidden rounded-lg bg-[#eef2f7]">
+          {profileImageUrl ? (
+            <img alt={artistName} className="h-full w-full object-cover" src={profileImageUrl} />
+          ) : (
+            <MiniPlaceholder label="Profil" />
+          )}
+        </div>
+        <div>
+          <h3 className="text-[9px] font-black uppercase">{artistName || "Ime umjetnika"}</h3>
+          <div className="mt-2 space-y-1.5 text-[7.5px]">
+            <MiniContactRow value={email || "Nije unesen"} />
+            <MiniContactRow value={project.phone || "+382 67 262 203"} />
+            <MiniContactRow value={project.websiteUrl || "artstudio360.me"} />
+            <MiniContactRow value={project.location || "Podgorica, Crna Gora"} />
+          </div>
+        </div>
+      </div>
+      <div className="mt-6 flex items-start justify-between gap-4">
+        <div>
+          <h3 className="text-[9px] font-black uppercase">Portfolio linkovi</h3>
+          <ul className="mt-2 space-y-1 text-[7px]">
+            <li>- Behance: behance.net/artist</li>
+            <li>- Instagram: {project.instagramUrl || "@artist"}</li>
+          </ul>
+        </div>
+        <div className="text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded bg-[#eeeeee] text-[7px] font-black">
+            QR
+          </div>
+          <p className="mt-1 text-[5px] font-black uppercase">ArtBoard profil</p>
+        </div>
+      </div>
+      <MiniImageBlock className="mt-5 h-24" imageUrl={coverImage} label="Rad" />
+    </div>
+  );
+}
+
+function TemplateMiniTitle({ template, title }: { template: PortfolioTemplate; title: string }) {
+  if (template === "SALES_PRO") {
+    return <MiniSalesSectionTitle title={title} />;
+  }
+
+  if (template === "ARTBOARD_EDITORIAL") {
+    return (
+      <MiniEditorialSection color="#182fc7" title={title}>
+        <span className="sr-only">{title}</span>
+      </MiniEditorialSection>
+    );
+  }
+
+  return <MiniSectionTitle title={title} />;
+}
+
+function TemplateMiniFooter({ artistName, template }: { artistName: string; template: PortfolioTemplate }) {
+  if (template === "SALES_PRO") {
+    return <MiniSalesFooter artistName={artistName} />;
+  }
+
+  if (template === "ARTBOARD_EDITORIAL") {
+    return <MiniEditorialFooter artistName={artistName} />;
+  }
+
+  return <MiniInstitutionalFooter artistName={artistName} />;
+}
+
+function MiniImageBlock({
+  className = "",
+  imageUrl,
+  label,
+}: {
+  className?: string;
+  imageUrl?: string | null;
+  label: string;
+}) {
+  return (
+    <div className={`overflow-hidden bg-[#eef2f7] ${className}`}>
+      {imageUrl ? (
+        <img alt="" className="h-full w-full object-cover" src={imageUrl} />
+      ) : (
+        <MiniPlaceholder label={label} />
+      )}
+    </div>
+  );
+}
+
+function MiniRoundImage({ alt, imageUrl }: { alt: string; imageUrl?: string | null }) {
+  return (
+    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full bg-[#eef2f7]">
+      {imageUrl ? (
+        <img alt={alt} className="h-full w-full object-cover grayscale" src={imageUrl} />
+      ) : (
+        <MiniPlaceholder label="Profil" />
+      )}
+    </div>
+  );
+}
+
+function getMiniTemplateStyle(template: PortfolioTemplate) {
+  if (template === "SALES_PRO") {
+    return {
+      accent: "#db1243",
+      pageClassName: "bg-[#fbfbfa] text-[#1f2430] ring-[#db1243]/40",
+    };
+  }
+
+  if (template === "ARTBOARD_EDITORIAL") {
+    return {
+      accent: "#182fc7",
+      pageClassName: "bg-[#fbfbfa] text-[#1f2430] ring-[#182fc7]/35",
+    };
+  }
+
+  return {
+    accent: "#d6a94f",
+    pageClassName: "bg-[#fbfbfa] text-[#1f2430] ring-[#f3d998]/28",
+  };
+}
+
+function SalesMiniPreview({
+  artistName,
+  collectionCoverUrl,
+  collectionDescription,
+  collectionName,
+  collectionYear,
+  coverImage,
+  discipline,
+  email,
+  profileImageUrl,
+  project,
+  selectedItems,
+}: {
+  artistName: string;
+  collectionCoverUrl?: string | null;
+  collectionDescription: string;
+  collectionName: string;
+  collectionYear: string;
+  coverImage?: string | null;
+  discipline: string;
+  email: string;
+  profileImageUrl?: string | null;
+  project: PortfolioProject;
+  selectedItems: PortfolioProject["artworks"];
+}) {
+  const featuredArtwork = selectedItems[0];
+  const collectionImage = collectionCoverUrl || project.collectionCoverUrl || coverImage;
+  const profileText =
+    project.biography ||
+    "Ovdje unesite biografiju umjetnika. Tekst treba kratko da predstavi praksu, iskustvo i umjetnicki razvoj.";
+  const selectedPreviewWorks = selectedItems.slice(0, 9);
+
+  return (
+    <div className="mt-5 space-y-5">
+      <MiniPdfPage label="01 / Sales cover">
+        <div className="h-full bg-[linear-gradient(135deg,#ffc51d_0%,#db1243_52%,#1048c6_100%)] p-2">
+          <div className="flex h-full flex-col bg-[#fbfbfa] p-6">
+            <div className="grid grid-cols-[82px_1fr] items-center gap-7">
+              <div className="h-[82px] overflow-hidden rounded-full bg-[#eef2f7]">
+                {profileImageUrl ? (
+                  <img
+                    alt={artistName}
+                    className="h-full w-full object-cover"
+                    src={profileImageUrl}
+                  />
+                ) : (
+                  <MiniPlaceholder label="Profil" />
+                )}
+              </div>
+
+              <div className="min-w-0">
+                <h2 className="whitespace-pre-line text-[22px] font-black uppercase leading-[1] tracking-[-0.05em] text-black">
+                  {toMiniStackedName(artistName || "Ime umjetnika")}
+                </h2>
+                <p className="mt-2 text-[6px] font-black uppercase tracking-[0.18em] text-[#1f2430]">
+                  {(discipline || "Vizuelna umjetnica").toUpperCase()}
+                </p>
+                <div className="mt-3 flex items-center gap-1">
+                  <MiniSalesDots />
+                  <span className="ml-1 text-[5.8px] font-black uppercase">
+                    Portfolio, {new Date(project.updatedAt).getFullYear()}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8 flex-1 overflow-hidden rounded-sm bg-[#eef2f7]">
+              {coverImage ? (
+                <img
+                  alt="Cover artwork"
+                  className="h-full w-full object-cover"
+                  src={coverImage}
+                />
+              ) : (
+                <MiniPlaceholder label="Cover slika" />
+              )}
+            </div>
+          </div>
+        </div>
+      </MiniPdfPage>
+
+      <MiniPdfPage label="02 / O umjetniku">
+        <div className="flex h-full flex-col px-4 py-3">
+          <MiniSalesSectionTitle title="O UMJETNIKU" />
+          <p className="mt-4 line-clamp-[9] text-[7.5px] leading-[1.55] text-[#1f2430]">
+            {profileText}
+          </p>
+          <p className="mt-3 line-clamp-[7] text-[7.5px] leading-[1.55] text-[#1f2430]">
+            {project.artistStatement ||
+              "Ovdje se prikazuje artist statement: ideje, motivi, proces i teme koje se ponavljaju u radu."}
+          </p>
+
+          <div className="mt-5 grid grid-cols-3 gap-2">
+            {Array.from({ length: 9 }).map((_, index) => {
+              const artwork = selectedPreviewWorks[index];
+
+              return (
+                <div
+                  className="aspect-square overflow-hidden rounded-sm bg-[#eef2f7]"
+                  key={artwork?.id ?? `empty-sales-profile-${index}`}
+                >
+                  {artwork?.imageUrl ? (
+                    <img
+                      alt={artwork.title || "Artwork"}
+                      className="h-full w-full object-cover"
+                      src={artwork.imageUrl}
+                    />
+                  ) : (
+                    <MiniPlaceholder label="Rad" />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-auto">
+            <MiniSalesFooter artistName={artistName} />
+          </div>
+        </div>
+      </MiniPdfPage>
+
+      <MiniPdfPage label="03 / Kolekcija">
+        <div className="flex h-full flex-col px-4 py-3">
+          <MiniSalesSectionTitle title="KOLEKCIJA" />
+          <div className="mt-4 h-[205px] overflow-hidden rounded-sm bg-[#eef2f7]">
+            {collectionImage ? (
+              <img
+                alt="Collection cover"
+                className="h-full w-full object-cover"
+                src={collectionImage}
+              />
+            ) : (
+              <MiniPlaceholder label="Cover kolekcije" />
+            )}
+          </div>
+
+          <h3 className="mt-5 text-[8px] font-black uppercase text-[#1f2430]">
+            {collectionName || featuredArtwork?.collectionName || "Naziv kolekcije"}{" "}
+            <span className="font-normal">
+              {collectionYear || featuredArtwork?.year || "Godina"}
+            </span>
+          </h3>
+          <p className="mt-3 line-clamp-[7] text-[7px] leading-[1.55] text-[#1f2430]">
+            {collectionDescription ||
+              featuredArtwork?.description ||
+              "Opis kolekcije jos nije unesen. Ovdje ce se prikazati uvodni tekst o seriji radova."}
+          </p>
+
+          <div className="mt-auto">
+            <MiniSalesFooter artistName={artistName} />
+          </div>
+        </div>
+      </MiniPdfPage>
+
+      {selectedItems.map((artwork, index) => (
+        <MiniPdfPage key={artwork.id} label={`${String(index + 4).padStart(2, "0")} / Sales rad`}>
+          <div className="flex h-full flex-col px-4 py-3">
+            <MiniSalesSectionTitle title="UMJETNICKI RADOVI" />
+            <div className="mt-4 h-[205px] overflow-hidden rounded-sm bg-[#eef2f7]">
+              <img
+                alt={artwork.title || "Artwork"}
+                className="h-full w-full object-cover"
+                src={artwork.imageUrl}
+              />
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3">
+              <MiniInfo label="Naziv rada" value={artwork.title || "Lorem ipsum dolor"} />
+              <MiniInfo label="Godina" value={artwork.year || "Lorem ipsum dolor"} />
+              <MiniInfo label="Kolekcija" value={artwork.collectionName || "Lorem ipsum dolor"} />
+              <MiniInfo
+                label="Tehnika / disciplina"
+                value={artwork.technique || discipline || "Lorem ipsum dolor"}
+              />
+            </div>
+
+            <h3 className="mt-5 text-[8.5px] font-black uppercase">
+              {artwork.title || "Naziv rada"}, {artwork.technique || discipline || "disciplina"},{" "}
+              <span className="font-normal">{artwork.year || "godina"}</span>
+            </h3>
+            <p className="mt-3 line-clamp-[5] text-[7px] leading-[1.55]">
+              {artwork.description || "Opis rada i prodajni detalji prikazuju se ovdje."}
+            </p>
+
+            <div className="mt-auto">
+              <MiniSalesFooter artistName={artistName} />
+            </div>
+          </div>
+        </MiniPdfPage>
+      ))}
+
+      <MiniPdfPage label="Final / Kontakt">
+        <div className="flex h-full flex-col px-4 py-3">
+          <MiniSalesSectionTitle title="KONTAKT" />
+          <div className="mt-4 grid grid-cols-[84px_1fr] gap-7">
+            <div className="h-[84px] overflow-hidden rounded-sm bg-[#eef2f7]">
+              {profileImageUrl ? (
+                <img
+                  alt={artistName}
+                  className="h-full w-full object-cover"
+                  src={profileImageUrl}
+                />
+              ) : (
+                <MiniPlaceholder label="Profil" />
+              )}
+            </div>
+            <div>
+              <h3 className="text-[7px] font-black uppercase">{artistName || "Ime umjetnika"}</h3>
+              <div className="mt-3 space-y-1.5 text-[6.8px]">
+                <MiniContactRow value={email || "Nije unesen"} />
+                <MiniContactRow value={project.phone || "+382 67 262 203"} />
+                <MiniContactRow value={project.websiteUrl || "artstudio360.me"} />
+                <MiniContactRow value={project.location || "Podgorica, Crna Gora"} />
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 flex items-start justify-between gap-4">
+            <div>
+              <MiniSalesSectionTitle title="PORTFOLIO LINKOVI" />
+              <ul className="mt-3 space-y-1 text-[6.5px]">
+                <li>- Behance: behance.net/ivonamedenica</li>
+                <li>- Dribbble: dribbble.com/ivonamedenica</li>
+                <li>- LinkedIn: linkedin.com/in/ivonamedenica</li>
+                <li>- Instagram: {project.instagramUrl || "@ivonamedenica"}</li>
+              </ul>
+            </div>
+            <div className="text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded bg-[#eeeeee] text-[7px] font-black">
+                QR
+              </div>
+              <p className="mt-1 text-[5px] font-black uppercase">ArtBoard profil</p>
+            </div>
+          </div>
+
+          <div className="mt-6 h-28 overflow-hidden rounded-sm bg-[#eef2f7]">
+            {collectionImage ? (
+              <img alt="" className="h-full w-full object-cover" src={collectionImage} />
+            ) : (
+              <MiniPlaceholder label="Rad" />
+            )}
+          </div>
+
+          <div className="mt-auto">
+            <MiniSalesFooter artistName={artistName} />
+          </div>
+        </div>
+      </MiniPdfPage>
+    </div>
+  );
+}
+
+function EditorialMiniPreview({
+  artistName,
+  bio,
+  collectionCoverUrl,
+  collectionDescription,
+  collectionName,
+  collectionYear,
+  coverImage,
+  discipline,
+  email,
+  profileImageUrl,
+  project,
+  selectedItems,
+}: {
+  artistName: string;
+  bio: string;
+  collectionCoverUrl?: string | null;
+  collectionDescription: string;
+  collectionName: string;
+  collectionYear: string;
+  coverImage?: string | null;
+  discipline: string;
+  email: string;
+  profileImageUrl?: string | null;
+  project: PortfolioProject;
+  selectedItems: PortfolioProject["artworks"];
+}) {
+  const featuredArtwork = selectedItems[0];
+  const collectionImage = collectionCoverUrl || project.collectionCoverUrl || coverImage;
+  const previewArtworks = selectedItems.slice(0, 6);
+
+  return (
+    <div className="mt-5 space-y-5">
+      <MiniPdfPage label="01 / Editorial cover">
+        <div className="flex h-full flex-col bg-[#fbfbfa]">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <h2 className="whitespace-pre-line text-[21px] font-black uppercase leading-[1.08] tracking-[-0.05em] text-[#111827]">
+                {toMiniStackedName(artistName || "Ime umjetnika")}
+              </h2>
+              <p className="mt-2 text-[6.5px] font-black uppercase tracking-[0.38em] text-[#7b8494]">
+                {(discipline || "Vizuelni umjetnik").toUpperCase()}
+              </p>
+            </div>
+
+            <div className="h-20 w-16 shrink-0 overflow-hidden rounded-lg bg-[#eef2f7]">
+              {profileImageUrl ? (
+                <img
+                  alt={artistName}
+                  className="h-full w-full object-cover grayscale"
+                  src={profileImageUrl}
+                />
+              ) : (
+                <MiniPlaceholder label="Profil" />
+              )}
+            </div>
+          </div>
+
+          <div className="mt-6 flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-[#ffc41d]" />
+            <span className="h-2 w-2 rounded-full bg-[#dc1735]" />
+            <span className="h-2 w-2 rounded-full bg-[#182fc7]" />
+            <span className="ml-2 text-[7px] font-black uppercase tracking-[0.18em] text-[#1f2430]">
+              Portfolio, {new Date(project.updatedAt).getFullYear()}
+            </span>
+          </div>
+
+          <div className="mt-auto h-[58%] overflow-hidden rounded-t-xl bg-[#eef2f7]">
+            {coverImage ? (
+              <img
+                alt="Cover artwork"
+                className="h-full w-full object-cover"
+                src={coverImage}
+              />
+            ) : (
+              <MiniPlaceholder label="Cover slika" />
+            )}
+          </div>
+        </div>
+      </MiniPdfPage>
+
+      <MiniPdfPage label="02 / Bio + izdvojeni radovi">
+        <div className="grid h-full grid-rows-[auto_auto_1fr] gap-4">
+          <MiniEditorialSection color="#182fc7" title="Biografija umjetnika">
+            <p className="line-clamp-[7] text-[7.5px] leading-[1.55] text-[#1f2430]">
+              {bio ||
+                "Ovdje unesite biografiju umjetnika. Tekst treba kratko da predstavi praksu, iskustvo i umjetnicki razvoj."}
+            </p>
+          </MiniEditorialSection>
+
+          <MiniEditorialSection color="#dc1735" title="O radu umjetnika">
+            <p className="line-clamp-[6] text-[7.5px] leading-[1.55] text-[#1f2430]">
+              {project.artistStatement ||
+                "Ovdje se prikazuje artist statement: ideje, motivi, proces i teme koje se ponavljaju u radu."}
+            </p>
+          </MiniEditorialSection>
+
+          <MiniEditorialSection color="#ffc41d" title="Izdvojeni umjetnicki radovi">
+            <div className="mt-2 grid grid-cols-3 gap-2">
+              {Array.from({ length: 6 }).map((_, index) => {
+                const artwork = previewArtworks[index];
+
+                return (
+                  <div
+                    className="aspect-square overflow-hidden rounded-md bg-[#edf6fb]"
+                    key={artwork?.id ?? `empty-editorial-artwork-${index}`}
+                  >
+                    {artwork?.imageUrl ? (
+                      <img
+                        alt={artwork.title || "Artwork"}
+                        className="h-full w-full object-cover"
+                        src={artwork.imageUrl}
+                      />
+                    ) : (
+                      <MiniPlaceholder label="Rad" />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </MiniEditorialSection>
+        </div>
+      </MiniPdfPage>
+
+      <MiniPdfPage label="03 / Kolekcija">
+        <div className="flex h-full flex-col">
+          <MiniEditorialSection color="#dc1735" title="Kolekcija radova">
+            <div className="mt-3 h-36 overflow-hidden rounded-lg bg-[#eef2f7]">
+              {collectionImage ? (
+                <img
+                  alt="Collection cover"
+                  className="h-full w-full object-cover"
+                  src={collectionImage}
+                />
+              ) : (
+                <MiniPlaceholder label="Cover kolekcije" />
+              )}
+            </div>
+
+            <h3 className="mt-5 text-[11px] font-black uppercase text-[#1f2430]">
+              {collectionName || featuredArtwork?.collectionName || "Naziv kolekcije"}{" "}
+              <span className="font-normal text-[#6b7280]">
+                {collectionYear || featuredArtwork?.year || "Godina"}
+              </span>
+            </h3>
+            <p className="mt-3 line-clamp-[8] text-[7.5px] leading-[1.6] text-[#1f2430]">
+              {collectionDescription ||
+                featuredArtwork?.description ||
+                "Opis kolekcije jos nije unesen. Ovdje ce se prikazati uvodni tekst o seriji radova."}
+            </p>
+          </MiniEditorialSection>
+          <MiniEditorialFooter artistName={artistName} />
+        </div>
+      </MiniPdfPage>
+
+      {selectedItems.map((artwork, index) => (
+        <MiniPdfPage key={artwork.id} label={`${String(index + 4).padStart(2, "0")} / Editorial rad`}>
+          <div className="flex h-full flex-col">
+            <MiniEditorialSection
+              color="#182fc7"
+              title={`${String(index + 1).padStart(2, "0")} / Umjetnicki rad`}
+            >
+              <div className="mt-3 h-36 overflow-hidden rounded-lg bg-[#eef2f7]">
+                <img
+                  alt={artwork.title || "Artwork"}
+                  className="h-full w-full object-contain"
+                  src={artwork.imageUrl}
+                />
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2">
+                <MiniInfo label="Naziv rada" value={artwork.title || "Lorem ipsum dolor"} />
+                <MiniInfo label="Godina" value={artwork.year || "2026"} />
+                <MiniInfo label="Kolekcija" value={artwork.collectionName || "Lorem ipsum dolor"} />
+                <MiniInfo
+                  label="Tehnika"
+                  value={artwork.technique || discipline || "Lorem ipsum dolor"}
+                />
+              </div>
+
+              <h3 className="mt-4 text-[9px] font-black uppercase">
+                {artwork.title || "Naziv rada"},{" "}
+                <span className="font-normal text-[#6b7280]">{artwork.year || "godina"}</span>
+              </h3>
+              <p className="mt-2 line-clamp-[5] text-[7px] leading-[1.55]">
+                {artwork.description || "Opis rada se prikazuje ovdje i prati podatke unesene u editoru."}
+              </p>
+            </MiniEditorialSection>
+            <MiniEditorialFooter artistName={artistName} />
+          </div>
+        </MiniPdfPage>
+      ))}
+
+      <MiniPdfPage label="Final / Kontakt">
+        <div className="flex h-full flex-col">
+          <MiniEditorialSection color="#ffc41d" title="Kontakt">
+            <div className="mt-4 grid grid-cols-[76px_1fr] gap-5">
+              <div className="h-[76px] overflow-hidden rounded-lg bg-[#eef2f7]">
+                {profileImageUrl ? (
+                  <img
+                    alt={artistName}
+                    className="h-full w-full object-cover grayscale"
+                    src={profileImageUrl}
+                  />
+                ) : (
+                  <MiniPlaceholder label="Profil" />
+                )}
+              </div>
+              <div>
+                <h3 className="text-[9px] font-black uppercase">{artistName || "Ime umjetnika"}</h3>
+                <div className="mt-2 space-y-1.5 text-[7.5px]">
+                  <MiniContactRow value={email || "Nije unesen"} />
+                  <MiniContactRow value={project.phone || "+382 67 262 203"} />
+                  <MiniContactRow value={project.websiteUrl || "artstudio360.me"} />
+                  <MiniContactRow value={project.location || "Podgorica, Crna Gora"} />
+                </div>
+              </div>
+            </div>
+
+            <h3 className="mt-6 text-[9px] font-black uppercase">Portfolio linkovi</h3>
+            <ul className="mt-2 space-y-1 text-[7px]">
+              <li>- Behance: behance.net/artist</li>
+              <li>- LinkedIn: linkedin.com/in/artist</li>
+              <li>- Instagram: {project.instagramUrl || "@artist"}</li>
+            </ul>
+
+            <div className="mt-4 h-20 overflow-hidden rounded-md bg-[#eef2f7]">
+              {coverImage ? (
+                <img alt="" className="h-full w-full object-cover" src={coverImage} />
+              ) : (
+                <MiniPlaceholder label="Rad" />
+              )}
+            </div>
+          </MiniEditorialSection>
+          <MiniEditorialFooter artistName={artistName} />
+        </div>
+      </MiniPdfPage>
+    </div>
+  );
+}
+
+function MiniEditorialSection({
+  children,
+  color,
+  title,
+}: {
+  children: React.ReactNode;
+  color: string;
+  title: string;
+}) {
+  return (
+    <section>
+      <div className="flex items-center gap-2">
+        <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} />
+        <h3 className="text-[8.5px] font-black uppercase tracking-[0.06em] text-[#1f2430]">
+          {title}
+        </h3>
+      </div>
+      <div className="mt-2">{children}</div>
+    </section>
+  );
+}
+
+function MiniEditorialFooter({ artistName }: { artistName: string }) {
+  return (
+    <footer className="mt-auto flex items-center justify-between border-t border-[#1f2430] pt-2 text-[6px] font-black uppercase">
+      <span className="max-w-[170px] truncate">{artistName || "Ime umjetnika"}</span>
+      <span className="flex items-center gap-1">
+        <span className="h-2 w-2 rounded-full bg-[#182fc7]" />
+        <span className="h-2 w-2 rounded-full bg-[#dc1735]" />
+        <span className="h-2 w-2 rounded-full bg-[#ffc41d]" />
+        <span className="ml-1">Portfolio</span>
+      </span>
+    </footer>
+  );
+}
+
+function MiniSalesSectionTitle({ title }: { title: string }) {
+  return (
+    <h3 className="bg-[radial-gradient(circle_at_0%_0%,#ffc51d_0%,#db1243_48%,#1048c6_100%)] bg-clip-text text-[10px] font-black uppercase tracking-[0.06em] text-transparent">
+      {title}
+    </h3>
+  );
+}
+
+function MiniSalesDots() {
+  return (
+    <>
+      <span className="h-1.5 w-1.5 rounded-full bg-[#182fc7]" />
+      <span className="h-1.5 w-1.5 rounded-full bg-[#dc1735]" />
+      <span className="h-1.5 w-1.5 rounded-full bg-[#ffc41d]" />
+    </>
+  );
+}
+
+function MiniSalesFooter({ artistName }: { artistName: string }) {
+  return (
+    <footer className="flex items-center justify-between pt-2 text-[5.8px] font-black uppercase">
+      <span className="max-w-[170px] truncate">{artistName || "Ime umjetnika"}</span>
+      <span className="flex items-center gap-1">
+        <MiniSalesDots />
+        <span className="ml-1">Portfolio</span>
+      </span>
+    </footer>
   );
 }
 
@@ -2114,10 +3511,10 @@ function SaveNotice({ error, message }: { error: string | null; message: string 
 
   return (
     <div
-      className={`rounded-lg border px-3 py-2 text-[12px] font-semibold ${
+      className={`rounded-2xl border px-4 py-3 text-[12px] font-semibold shadow-[0_16px_42px_rgba(0,0,0,0.16)] ${
         error
-          ? "border-[#f0b8c2] bg-[#fff5f6] text-[#b4132c]"
-          : "border-[#bfe7ce] bg-[#f0fff5] text-[#137a3a]"
+          ? "border-[#ff4f73]/35 bg-[#dc1735]/14 text-[#ffd6de]"
+          : "border-[#35d07f]/35 bg-[#16a34a]/14 text-[#dfffea]"
       }`}
     >
       {error || message}
@@ -2129,10 +3526,10 @@ function MiniPdfPage({ children, label }: { children: React.ReactNode; label: st
   return (
     <section>
       <div className="mb-2 flex items-center justify-between">
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#7a8494]">{label}</p>
-        <span className="h-1.5 w-1.5 rounded-full bg-[#182fc7]" />
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#d6a94f]">{label}</p>
+        <span className="h-1.5 w-1.5 rounded-full bg-[#d6a94f] shadow-[0_0_16px_rgba(214,169,79,0.55)]" />
       </div>
-      <div className="aspect-[0.707/1] rounded-md bg-[#fbfbfa] p-5 shadow-[0_24px_70px_rgba(31,46,86,0.22)] ring-1 ring-[#cfd8e6]">
+      <div className="aspect-[0.707/1] rounded-md bg-[#fbfbfa] p-5 shadow-[0_26px_80px_rgba(0,0,0,0.5)] ring-1 ring-[#f3d998]/28">
         {children}
       </div>
     </section>
@@ -2224,21 +3621,29 @@ function WorkspaceHeader({
   title: string;
 }) {
   return (
-    <header className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-[#d8e0ec] bg-white px-4 py-3 shadow-[0_10px_30px_rgba(31,46,86,0.04)]">
-      <div>
-        <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#8b94a7]">{label}</p>
-        <h1 className="mt-1 text-[24px] font-bold tracking-[-0.04em]">{title}</h1>
-        <p className="mt-1 max-w-[760px] text-[12px] leading-5 text-[#667085]">{description}</p>
+    <header className={`${studioCardClassName} px-6 py-6 lg:px-7`}>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.38em] text-[#a78bfa]">
+            {label}
+          </p>
+          <h1 className="mt-3 text-[clamp(1.7rem,2.35vw,2.15rem)] font-black tracking-[-0.055em] text-white">
+            {title}
+          </h1>
+          <p className="mt-2 max-w-[760px] text-[13px] leading-6 text-white/[0.56]">
+            {description}
+          </p>
+        </div>
+        {action}
       </div>
-      {action}
     </header>
   );
 }
 
 function Panel({ children, title }: { children: React.ReactNode; title: string }) {
   return (
-    <section className="rounded-xl border border-[#d8e0ec] bg-white p-4 shadow-[0_10px_30px_rgba(31,46,86,0.04)]">
-      <h2 className="mb-4 text-[13px] font-bold uppercase tracking-[0.18em] text-[#6a7280]">
+    <section className={`${studioCardClassName} p-5 lg:p-6`}>
+      <h2 className="mb-4 text-[13px] font-black uppercase tracking-[0.28em] text-[#a78bfa]">
         {title}
       </h2>
       {children}
@@ -2256,10 +3661,10 @@ function BuilderInput({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="grid gap-1.5 text-[11px] font-bold text-[#4c5566]">
+    <label className="grid gap-1.5 text-[11px] font-bold text-white/[0.62]">
       {label}
       <input
-        className="h-9 rounded-lg border border-[#cfd8e6] bg-white px-3 text-[13px] font-normal text-[#1f2430] outline-none transition focus:border-[#182fc7] focus:ring-4 focus:ring-[#182fc7]/8"
+        className={studioInputClassName}
         onChange={(event) => onChange(event.target.value)}
         value={value}
       />
@@ -2269,7 +3674,7 @@ function BuilderInput({
 
 function MiniMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg bg-white/[0.06] p-2">
+    <div className="rounded-lg border border-white/[0.08] bg-white/[0.035] p-2">
       <p className="text-[14px] font-bold text-white">{value}</p>
       <p className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.18em] text-white/35">
         {label}
@@ -2286,10 +3691,10 @@ function StatusPill({
   tone: "blue" | "green" | "neutral" | "yellow";
 }) {
   const toneClassName = {
-    blue: "border-[#7c91ff]/30 bg-[#182fc7]/20 text-[#dbe3ff]",
+    blue: "border-[#8b5cf6]/30 bg-[#8b5cf6]/12 text-[#c4b5fd]",
     green: "border-[#79d39b]/30 bg-[#16a34a]/20 text-[#dfffea]",
-    neutral: "border-white/10 bg-white/8 text-white/65",
-    yellow: "border-[#ffd56a]/30 bg-[#ffc41d]/18 text-[#fff0b8]",
+    neutral: "border-white/10 bg-white/[0.08] text-white/[0.65]",
+    yellow: "border-[#e6b85c]/30 bg-[#e6b85c]/10 text-[#f3d998]",
   }[tone];
 
   return (
@@ -2301,9 +3706,9 @@ function StatusPill({
 
 function PreviewMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-[#c5cfdd] bg-white/70 p-2">
-      <p className="truncate text-[11px] font-bold">{value}</p>
-      <p className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.16em] text-[#7a8494]">
+    <div className="rounded-xl border border-[#d6a94f]/16 bg-[#111827]/82 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+      <p className="truncate text-[11px] font-black text-[#f8fafc]">{value}</p>
+      <p className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.16em] text-[#9aa4b5]">
         {label}
       </p>
     </div>
@@ -2312,9 +3717,9 @@ function PreviewMetric({ label, value }: { label: string; value: string }) {
 
 function OptionBox({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-[#dbe3ef] bg-[#f8fafc] p-3">
-      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#8b94a7]">{label}</p>
-      <p className="mt-1 text-[13px] font-bold">{value}</p>
+    <div className="rounded-2xl border border-white/[0.08] bg-[#0b121e]/70 p-4 transition hover:border-white/[0.15] hover:bg-[#121b2a]/72">
+      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#a78bfa]">{label}</p>
+      <p className="mt-2 text-[14px] font-black text-white">{value}</p>
     </div>
   );
 }
@@ -2333,12 +3738,12 @@ function ExportBox({
   title: string;
 }) {
   const actionClassName =
-    "mt-4 inline-flex rounded-md border border-[#10131b] bg-[#10131b] px-3 py-2 text-[11px] font-bold text-white transition hover:-translate-y-0.5 hover:border-[#dc1735] hover:bg-[#dc1735]";
+    "mt-4 inline-flex rounded-lg border border-white/[0.11] bg-white/[0.04] px-3 py-2 text-[11px] font-bold text-white transition hover:-translate-y-0.5 hover:border-[#8b5cf6] hover:bg-[#8b5cf6] hover:text-white";
 
   return (
-    <article className="rounded-xl border border-[#d8e0ec] bg-white p-4 shadow-[0_10px_30px_rgba(31,46,86,0.04)]">
-      <h2 className="text-[16px] font-bold">{title}</h2>
-      <p className="mt-2 min-h-10 text-[12px] leading-5 text-[#667085]">{text}</p>
+    <article className="rounded-2xl border border-white/[0.08] bg-[#0b121e]/70 p-4 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
+      <h2 className="text-[16px] font-black text-white">{title}</h2>
+      <p className="mt-2 min-h-10 text-[12px] leading-5 text-white/[0.52]">{text}</p>
       <button
         className={`${actionClassName} disabled:cursor-wait disabled:opacity-60`}
         disabled={disabled}
@@ -2353,7 +3758,7 @@ function ExportBox({
 
 function EmptyState({ text }: { text: string }) {
   return (
-    <div className="rounded-xl border border-dashed border-[#cfd8e6] bg-[#f8fafc] p-8 text-center text-[12px] text-[#667085]">
+    <div className="rounded-2xl border border-dashed border-white/[0.12] bg-white/[0.025] p-8 text-center text-[12px] text-[#a3adbd]">
       {text}
     </div>
   );
@@ -2370,7 +3775,7 @@ function PrimaryButton({
 }) {
   return (
     <button
-      className="rounded-md bg-[#dc1735] px-3 py-2 text-[11px] font-bold text-white shadow-[0_10px_24px_rgba(220,23,53,0.2)] transition hover:bg-[#bd102a] disabled:cursor-wait disabled:opacity-60"
+      className="rounded-lg border border-[#8b5cf6]/70 bg-[#8b5cf6] px-4 py-2.5 text-[12px] font-black text-white shadow-[0_12px_28px_rgba(139,92,246,0.16)] transition hover:-translate-y-0.5 hover:bg-[#9c72f8] hover:shadow-[0_16px_38px_rgba(139,92,246,0.22)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b5cf6]/80 disabled:cursor-wait disabled:opacity-60"
       disabled={disabled}
       onClick={onClick}
       type="button"
@@ -2391,7 +3796,7 @@ function SecondaryStudioButton({
 }) {
   return (
     <button
-      className="h-9 rounded-lg border border-[#cfd8e6] bg-white px-3 text-[11px] font-bold text-[#182fc7] transition hover:border-[#182fc7] hover:bg-[#f2f5ff] disabled:cursor-wait disabled:opacity-60"
+      className="h-10 rounded-xl border border-white/[0.11] bg-white/[0.04] px-3 text-[11px] font-bold text-white transition hover:border-white/[0.2] hover:bg-white/[0.08] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b5cf6]/80 disabled:cursor-wait disabled:opacity-60"
       disabled={disabled}
       onClick={onClick}
       type="button"

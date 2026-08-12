@@ -27,7 +27,7 @@ export function HomeArtboardArtistsSection({ artists }: HomeArtboardArtistsSecti
   const smallImages = repeatImages([...showcaseImages].reverse(), 2);
 
   return (
-    <section className="relative -mx-5 overflow-hidden bg-[#f8fbff] py-20 sm:-mx-8 sm:py-24 lg:-mx-10 lg:py-28">
+    <section id="umjetnici" className="relative -mx-5 overflow-hidden bg-[#f8fbff] py-20 sm:-mx-8 sm:py-24 lg:-mx-10 lg:py-28">
       <div className="mx-auto flex max-w-[1080px] flex-col items-center px-5 text-center sm:px-8 lg:px-10">
         <h2 className="text-[3.2rem] font-normal leading-[0.94] text-[#555b64] sm:text-[4.2rem] lg:text-[5rem]">
           Umjetnici
@@ -37,12 +37,12 @@ export function HomeArtboardArtistsSection({ artists }: HomeArtboardArtistsSecti
         </h2>
 
         <p className="mt-7 max-w-[960px] text-[22px] font-medium leading-[1.16] text-[#2f3138] sm:text-[26px]">
-          Predstavljamo crnogorske umjetnike koji su nam ukazali povjerenje.
+          ArtBoard okuplja umjetnike, njihove portfolije i profesionalne priče.
           <br className="hidden sm:block" />
-          Pogledajte njihove portfolije i umjetnicke price.
+          Platforma pomaže da rad bude vidljiv, organizovan i spreman za saradnju.
         </p>
 
-        <SiteCtaButton className="mt-10" href="/artists" label="Vidi sve umjetnike" />
+        <SiteCtaButton className="mt-10" href="/umjetnici" label="Vidi sve umjetnike" />
       </div>
 
       <div className="mt-20 -rotate-[3deg] space-y-5">

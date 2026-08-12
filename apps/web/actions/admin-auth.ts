@@ -38,10 +38,10 @@ export async function loginAdminAction(
     };
   }
 
-  redirect("/admin/admissions");
+  redirect("/admin");
 }
 
 export async function logoutAdminAction() {
   await clearAdminSessionToken();
-  redirect("/artist/login");
+  redirect("/login");
 }

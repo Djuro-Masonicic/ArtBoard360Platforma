@@ -18,10 +18,10 @@ export function HomeFinalCtaSection() {
 
             <div className="mt-9 flex flex-col items-start gap-5 sm:flex-row sm:items-center">
               <NavigationButton
-                className="inline-flex min-h-[50px] items-center gap-3 rounded-full border-2 border-[#ffc41d] bg-[#ffc41d] px-6 text-[1.05rem] font-bold text-[#252933] outline outline-1 outline-offset-2 outline-[#ffc41d] transition hover:bg-white"
-                href="/prijava"
+                className="group inline-flex min-h-[50px] items-center gap-3 rounded-full border-2 border-[#ffc41d] bg-[#ffc41d] px-6 text-[1.05rem] font-bold text-[#252933] outline outline-1 outline-offset-2 outline-[#ffc41d] transition hover:bg-white hover:text-[#ffc41d]"
+                href="/prijava-umjetnika"
               >
-                <span className="h-3.5 w-3.5 rounded-full bg-white" aria-hidden="true" />
+                <span className="h-3.5 w-3.5 rounded-full bg-white transition group-hover:bg-[#ffc41d]" aria-hidden="true" />
                 Prijavi se
               </NavigationButton>
 

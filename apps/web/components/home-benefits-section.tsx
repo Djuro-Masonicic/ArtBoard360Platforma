@@ -81,7 +81,7 @@ export function HomeBenefitsSection() {
   }
 
   return (
-    <section className="relative bg-[#f8fbff] py-12 sm:py-14 lg:py-16">
+    <section id="paketi" className="relative bg-[#f8fbff] py-12 sm:py-14 lg:py-16">
       <div className="mx-auto max-w-[1280px] px-5 sm:px-8 lg:px-10">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <h2 className="text-[2.15rem] font-normal leading-[0.96] tracking-[-0.045em] text-[#555b64] sm:text-[3rem] lg:text-[3.65rem]">
@@ -148,10 +148,10 @@ export function HomeBenefitsSection() {
 
       <div className="mx-auto max-w-[1280px] px-5 sm:px-8 lg:px-10">
         <NavigationButton
-          className="mt-8 inline-flex min-h-[46px] items-center gap-3 rounded-full border-2 border-[#ffc41d] bg-[#ffc41d] px-5 text-[16px] font-bold text-[#252933] outline outline-1 outline-offset-2 outline-[#ffc41d] transition hover:bg-white"
+          className="group mt-8 inline-flex min-h-[46px] items-center gap-3 rounded-full border-2 border-[#ffc41d] bg-[#ffc41d] px-5 text-[16px] font-bold text-[#252933] outline outline-1 outline-offset-2 outline-[#ffc41d] transition hover:bg-white hover:text-[#ffc41d]"
           href="/artists"
         >
-          <span className="h-3 w-3 rounded-full bg-white" aria-hidden="true" />
+          <span className="h-3 w-3 rounded-full bg-white transition group-hover:bg-[#ffc41d]" aria-hidden="true" />
           Saznaj sve o ArtBoardu
         </NavigationButton>
       </div>

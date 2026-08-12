@@ -46,8 +46,8 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         email: adminSession.user.email,
         name: adminSession.user.name,
         avatarUrl: null,
-        primaryHref: "/admin/admissions",
-        primaryLabel: "Prijave",
+        primaryHref: "/admin",
+        primaryLabel: "Admin panel",
       }
     : artistSession
       ? {

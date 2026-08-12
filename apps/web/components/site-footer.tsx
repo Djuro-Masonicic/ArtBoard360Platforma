@@ -1,11 +1,6 @@
-const footerNavigation = [
-  { href: "#", label: "O nama" },
-  { href: "/", label: "ArtBoard" },
-  { href: "/artists", label: "Umjetnici" },
-  { href: "#", label: "Usluge" },
-  { href: "/kontakt", label: "Kontakt" },
-  { href: "#", label: "Blog" },
-];
+import Link from "next/link";
+
+import { publicNavigationItems } from "@/lib/site-routes";
 
 const socialLinks = [
   { href: "https://www.instagram.com/", label: "Instagram" },
@@ -14,9 +9,11 @@ const socialLinks = [
 ];
 
 /**
- * The footer follows the new public-site direction:
- * a soft rounded top shape, a lightweight logo block on the left,
- * and two simple link columns on the right.
+ * Public site footer.
+ *
+ * It intentionally uses the same central navigation list as the header so the
+ * route migration stays easy to maintain. Social links remain normal anchors
+ * because they leave the Next.js app.
  */
 export function SiteFooter() {
   return (
@@ -26,13 +23,13 @@ export function SiteFooter() {
       <div className="relative mx-auto w-full max-w-[1280px] px-[5vw] pb-20 pt-28 sm:pb-24 sm:pt-32">
         <div className="grid gap-14 lg:grid-cols-[1.45fr_0.7fr_0.7fr] lg:gap-10">
           <div className="flex flex-col gap-12">
-            <a className="inline-flex w-fit items-center" href="/" aria-label="Art Studio 360">
+            <Link className="inline-flex w-fit items-center" href="/" aria-label="Art Studio 360">
               <img
                 alt="Art Studio 360 logo"
                 className="w-[112px]"
                 src="https://cdn.prod.website-files.com/681b5dac4415aa941af374fe/682344cfd8a98907bbb50f8e_7e491909af25e7cd587505a1141c670a_360%20Logo%20Black.svg"
               />
-            </a>
+            </Link>
 
             <div className="space-y-10 text-[18px] leading-[1.2] text-[#9ca3af]">
               <p className="max-w-[240px]">
@@ -41,9 +38,9 @@ export function SiteFooter() {
                 All Rights Reserved
               </p>
 
-              <a className="site-footer__muted-link inline-block underline underline-offset-4" href="#">
-                Uslovi korišćenja
-              </a>
+              <Link className="site-footer__muted-link inline-block underline underline-offset-4" href="/uslovi-koriscenja">
+                Uslovi koriscenja
+              </Link>
             </div>
           </div>
 
@@ -51,16 +48,16 @@ export function SiteFooter() {
             <p className="text-[18px] font-medium text-[#8d97a6]">Navigacija</p>
 
             <nav aria-label="Footer navigation" className="flex flex-col gap-4">
-              {footerNavigation.map((item) => (
-                <a key={item.label} className="site-footer__link" href={item.href}>
+              {publicNavigationItems.map((item) => (
+                <Link key={item.label} className="site-footer__link" href={item.href}>
                   {item.label}
-                </a>
+                </Link>
               ))}
             </nav>
           </div>
 
           <div className="space-y-6">
-            <p className="text-[18px] font-medium text-[#8d97a6]">Društvene mreže</p>
+            <p className="text-[18px] font-medium text-[#8d97a6]">Drustvene mreze</p>
 
             <div className="flex flex-col gap-4">
               {socialLinks.map((item) => (

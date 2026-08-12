@@ -7,6 +7,7 @@ type NavigationButtonProps = {
   className?: string;
   href: string;
   title?: string;
+  style?: React.CSSProperties;
 };
 
 /**
@@ -14,7 +15,7 @@ type NavigationButtonProps = {
  * another app route. This keeps the UI semantic as a real button instead of
  * styling an anchor to look like one.
  */
-export function NavigationButton({ children, className = "", href, title }: NavigationButtonProps) {
+export function NavigationButton({ children, className = "", href, title, style }: NavigationButtonProps) {
   const router = useRouter();
 
   function handleClick() {
@@ -37,7 +38,7 @@ export function NavigationButton({ children, className = "", href, title }: Navi
   }
 
   return (
-    <button className={className} onClick={handleClick} title={title} type="button">
+    <button  className={className} style={style} onClick={handleClick} title={title} type="button">
       {children}
     </button>
   );

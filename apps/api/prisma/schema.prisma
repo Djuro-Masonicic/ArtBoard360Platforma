@@ -78,6 +78,16 @@ enum PortfolioPaymentStatus {
   REFUNDED
 }
 
+enum OpportunityType {
+  OPEN_CALL
+  JOB
+  RESIDENCY
+  EXHIBITION
+  COLLABORATION
+  GRANT
+  OTHER
+}
+
 enum SocialPlatform {
   ARTSTATION
   BEHANCE
@@ -326,6 +336,30 @@ model FaqQuestion {
   @@index([isArchived, isDraft, orderIndex])
 }
 
+model Opportunity {
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title         String
+  slug          String          @unique
+  type          OpportunityType @default(OPEN_CALL)
+  organization  String?
+  location      String?
+  summary       String?         @db.Text
+  description   String          @db.Text
+  applyUrl      String?
+  contactEmail  String?
+  deadlineAt    DateTime?
+  isPaid        Boolean         @default(false)
+  isFeatured    Boolean         @default(false)
+  isArchived    Boolean         @default(false)
+  isDraft       Boolean         @default(false)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([type])
+  @@index([deadlineAt])
+  @@index([isArchived, isDraft, isFeatured, deadlineAt])
+}
+
 model PortfolioProject {
   id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   artistAccountId      String?                @db.Uuid
@@ -360,6 +394,7 @@ model PortfolioProject {
   includeBranding      Boolean                @default(true)
   includeCv            Boolean                @default(false)
   includePrices        Boolean                @default(false)
+  designConfig         Json?
   publicShareToken     String?                @unique
   latestPdfUrl         String?
   latestPdfStoragePath String?

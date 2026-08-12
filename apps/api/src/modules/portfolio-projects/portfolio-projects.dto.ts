@@ -3,6 +3,7 @@ import {
   IsEmail,
   IsEnum,
   IsInt,
+  IsObject,
   IsOptional,
   IsString,
   MaxLength,
@@ -149,6 +150,18 @@ export class UpdatePortfolioProjectDto {
   @IsOptional()
   @IsBoolean()
   includePrices?: boolean;
+
+  /**
+   * Premium-only custom design configuration.
+   *
+   * We intentionally keep this as a small JSON object instead of many database
+   * columns because portfolio page combinations will keep changing while the
+   * product is still being shaped. The service validates the exact structure
+   * before saving it.
+   */
+  @IsOptional()
+  @IsObject()
+  designConfig?: Record<string, unknown>;
 }
 
 export class UpdatePortfolioArtworkDto {

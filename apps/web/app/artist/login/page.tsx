@@ -9,7 +9,7 @@ export default async function ArtistLoginPage() {
   const artistSession = await getArtistSessionUser();
 
   if (adminSession) {
-    redirect("/admin/admissions");
+    redirect("/admin");
   }
 
   if (artistSession) {

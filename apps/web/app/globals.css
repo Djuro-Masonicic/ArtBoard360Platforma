@@ -23,6 +23,7 @@
 html {
   max-width: 100%;
   overflow-x: hidden;
+  scroll-behavior: smooth;
 }
 
 body {
@@ -178,6 +179,11 @@ select {
   box-shadow: 0 0 0 2px #ef173f;
   color: #ef173f;
   transform: translateY(2px);
+}
+
+.site-cta-button:hover .site-cta-button__icon-wrap,
+.site-cta-button:hover .site-cta-button__label {
+  color: #ef173f;
 }
 
 .site-cta-button:hover::before {
@@ -1304,4 +1310,30 @@ select {
 .home-cosmos-animation svg {
   max-width: none !important;
   width: 100% !important;
+}
+
+.portfolio-builder-scroll {
+  scrollbar-color: rgba(163, 173, 189, 0.32) rgba(8, 13, 22, 0.04);
+  scrollbar-width: thin;
+}
+
+.portfolio-builder-scroll::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+.portfolio-builder-scroll::-webkit-scrollbar-track {
+  background: rgba(8, 13, 22, 0.04);
+}
+
+.portfolio-builder-scroll::-webkit-scrollbar-thumb {
+  background: rgba(163, 173, 189, 0.28);
+  background-clip: content-box;
+  border: 2px solid transparent;
+  border-radius: 999px;
+}
+
+.portfolio-builder-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(163, 173, 189, 0.44);
+  background-clip: content-box;
 }

@@ -196,6 +196,14 @@ export interface ArtistSubscription {
 export type PortfolioProjectSource = "ARTBOARD_PROFILE" | "GUEST";
 export type PortfolioProjectStatus = "DRAFT" | "READY" | "GENERATED" | "PAID";
 export type PortfolioTemplate = "INSTITUTIONAL_MINIMAL" | "ARTBOARD_EDITORIAL" | "SALES_PRO";
+export type PortfolioDesignMode = "PRESET" | "CUSTOM";
+export type PortfolioDesignPageKey = "cover" | "profile" | "collection" | "artwork" | "contact";
+export type PortfolioFooterTemplate = "MINIMAL" | "ARTBOARD" | "SALES";
+export type PortfolioDesignConfig = {
+  mode: PortfolioDesignMode;
+  pages: Record<PortfolioDesignPageKey, PortfolioTemplate>;
+  footer: PortfolioFooterTemplate;
+};
 export type PortfolioLanguage = "ME" | "EN";
 export type PortfolioPageFormat = "A4" | "US_LETTER";
 export type PortfolioFontStyle = "SANS" | "SERIF";
@@ -287,6 +295,7 @@ export interface PortfolioProject {
   includeBranding: boolean;
   includeCv: boolean;
   includePrices: boolean;
+  designConfig?: PortfolioDesignConfig | null;
   publicShareToken?: string | null;
   latestPdfUrl?: string | null;
   latestPdfStoragePath?: string | null;

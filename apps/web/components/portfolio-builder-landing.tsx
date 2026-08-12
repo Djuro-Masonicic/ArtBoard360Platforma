@@ -41,11 +41,11 @@ export function PortfolioBuilderLanding({
   }
 
   return (
-    <main className="min-h-screen bg-[#eef2f7] text-[#20242d]">
+    <main className="h-screen overflow-hidden bg-[#eef2f7] text-[#20242d]">
       <PortfolioBuilderTopbar />
 
-      <section className="grid min-h-[calc(100vh-56px)] grid-cols-1 gap-0 lg:grid-cols-[0.92fr_1.08fr]">
-        <div className="flex flex-col justify-between border-r border-[#d7deea] bg-white px-8 py-8 lg:px-12">
+      <section className="grid h-[calc(100vh-56px)] grid-cols-1 gap-0 overflow-hidden lg:grid-cols-[0.92fr_1.08fr]">
+        <div className="flex h-full flex-col justify-between border-r border-[#d7deea] bg-white px-8 py-8 lg:px-12">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-[#808999]">
               ArtBoard Portfolio Builder
@@ -66,7 +66,7 @@ export function PortfolioBuilderLanding({
           </div>
         </div>
 
-        <div className="flex items-center bg-[#f7f9fc] px-6 py-8 lg:px-10">
+        <div className="min-h-0 overflow-y-auto bg-[#f7f9fc] px-6 py-8 lg:px-10">
           <div className="mx-auto w-full max-w-[760px]">
             {errorMessage ? (
               <div className="mb-4 rounded-2xl border border-[#f3bdc7] bg-[#fff6f7] px-4 py-3 text-[13px] font-semibold text-[#b4132c]">

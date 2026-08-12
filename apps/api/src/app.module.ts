@@ -6,7 +6,9 @@ import { ArtistSubmissionsModule } from "./modules/artist-submissions/artist-sub
 import { ArtistSubscriptionsModule } from "./modules/artist-subscriptions/artist-subscriptions.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { FaqsModule } from "./modules/faqs/faqs.module";
+import { OpportunitiesModule } from "./modules/opportunities/opportunities.module";
 import { PortfolioProjectsModule } from "./modules/portfolio-projects/portfolio-projects.module";
+import { StatsModule } from "./modules/stats/stats.module";
 import { TestimonialsModule } from "./modules/testimonials/testimonials.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { StorageModule } from "./storage/storage.module";
@@ -25,7 +27,9 @@ import { StorageModule } from "./storage/storage.module";
     ArtistSubscriptionsModule,
     ArtworksModule,
     FaqsModule,
+    OpportunitiesModule,
     PortfolioProjectsModule,
+    StatsModule,
     TestimonialsModule,
   ],
 })

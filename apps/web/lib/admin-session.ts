@@ -67,7 +67,14 @@ export async function requireAdminSession() {
   const session = await getAdminSessionUser();
 
   if (!session) {
-    redirect("/artist/login");
+    /**
+     * Admin-only pages must go to the dedicated admin login.
+     *
+     * If we redirect to /artist/login while an artist session exists, that page
+     * correctly sends the user to /artist/dashboard, which makes admin routes
+     * look broken. Keeping admin auth on /login avoids mixing those two flows.
+     */
+    redirect("/login");
   }
 
   return session;

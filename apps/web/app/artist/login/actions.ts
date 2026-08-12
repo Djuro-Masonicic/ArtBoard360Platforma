@@ -34,7 +34,7 @@ export async function loginArtistAction(
     const adminResponse = await loginAdmin({ email, password });
     await clearArtistSessionToken();
     await setAdminSessionToken(adminResponse.token);
-    redirect("/admin/admissions");
+    redirect("/admin");
   } catch (error) {
     if (!(error instanceof ApiError) || error.status !== 401) {
       return {

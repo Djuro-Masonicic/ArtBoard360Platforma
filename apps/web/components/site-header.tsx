@@ -7,20 +7,16 @@ import { useEffect, useState } from "react";
 import { logoutAdminAction } from "@/actions/admin-auth";
 import { logoutArtistAction } from "@/app/artist/login/actions";
 import { SiteCtaButton } from "@/components/site-cta-button";
+import {
+  artBoardNavigationItems,
+  artStudioNavigationItems,
+  publicNavigationItems,
+  siteRoutes,
+} from "@/lib/site-routes";
 
 const MOBILE_MENU_OPEN_SWEEP_MS = 520;
 const MOBILE_MENU_CLOSE_CONTENT_MS = 180;
 const MOBILE_MENU_CLOSE_SWEEP_MS = 520;
-
-const navigationItems = [
-  { href: "#", label: "O nama" },
-  { href: "#", label: "ArtBoard" },
-  { href: "/artists", label: "Umjetnici", matchPrefix: "/artists" },
-  { href: "/portfolio-builder", label: "Portfolio builder", matchPrefix: "/portfolio-builder" },
-  { href: "#", label: "Usluge" },
-  { href: "/kontakt", label: "Kontakt", matchPrefix: "/kontakt" },
-  { href: "#", label: "Blog" },
-];
 
 const socialLinks = [
   {
@@ -80,9 +76,37 @@ interface SiteHeaderProps {
 
 export function SiteHeader({ session = null }: SiteHeaderProps) {
   const pathname = usePathname();
-  const navColors = ["#ffc41d", "#182fc7", "#dc1735"];
   const [mobileMenuState, setMobileMenuState] = useState<"closed" | "opening" | "open" | "closing">("closed");
-  const isArtistHeroPage = /^\/artists\/[^/]+$/.test(pathname);
+  const isArtistHeroPage = /^\/(?:artists|umjetnik)\/[^/]+$/.test(pathname);
+  const isArtStudioUnit = pathname === "/" || pathname.startsWith(siteRoutes.services) || pathname.startsWith(siteRoutes.contact);
+  const isArtBoardUnit =
+    pathname === siteRoutes.artboard ||
+    pathname.startsWith(siteRoutes.artists) ||
+    pathname.startsWith(siteRoutes.artistProfileBase) ||
+    pathname.startsWith("/artists") ||
+    pathname.startsWith("/artist") ||
+    pathname.startsWith("/login") ||
+    pathname.startsWith(siteRoutes.opportunities) ||
+    pathname.startsWith(siteRoutes.pricing) ||
+    pathname.startsWith(siteRoutes.application) ||
+    pathname.startsWith(siteRoutes.artistApplication) ||
+    pathname.startsWith(siteRoutes.registration) ||
+    pathname.startsWith(siteRoutes.login) ||
+    pathname.startsWith(siteRoutes.account) ||
+    pathname.startsWith(siteRoutes.subscription);
+  const navColors = isArtBoardUnit ? ["#182fc7", "#dc1735", "#ffc41d"] : ["#ffc41d", "#182fc7", "#dc1735"];
+  const navigationItems = isArtBoardUnit
+    ? artBoardNavigationItems
+    : isArtStudioUnit
+      ? artStudioNavigationItems
+      : publicNavigationItems;
+  const logoHref = isArtBoardUnit ? siteRoutes.artboard : siteRoutes.home;
+  const headerCtaHref = isArtBoardUnit
+    ? siteRoutes.registration
+    : isArtStudioUnit
+      ? siteRoutes.artboard
+      : siteRoutes.login;
+  const resolvedHeaderCtaLabel = isArtBoardUnit ? "Kreiraj profil" : isArtStudioUnit ? "Istrazi ArtBoard" : "Prijavi se";
   const [isTransparentHeader, setIsTransparentHeader] = useState(isArtistHeroPage);
   const isAuthenticated = Boolean(session);
 
@@ -168,7 +192,11 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
     <div className="fixed z-30 w-[100vw] px-[5vw] pt-[5vh]">
       <header className={desktopHeaderClass}>
         <div className="relative z-10 flex min-w-0 items-center justify-start">
-          <Link className="inline-flex h-full items-center" href="/" aria-label="Art Studio 360">
+          <Link
+            className="inline-flex h-full items-center"
+            href={logoHref}
+            aria-label={isArtBoardUnit ? "ArtBoard" : "Art Studio 360"}
+          >
             <img
               alt="Art Studio 360 logo"
               className="block w-[78px] translate-y-[1px] transition-opacity duration-300 sm:w-[96px] lg:w-[112px]"
@@ -182,7 +210,7 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
             <Link
               key={item.label}
               className={`${desktopNavLinkClass} h-full px-2 xl:px-3 ${
-                item.matchPrefix && pathname.startsWith(item.matchPrefix) ? "home-nav-link--active" : ""
+                isRouteActive(pathname, item.activePrefixes) ? "home-nav-link--active" : ""
               }`}
               href={item.href}
               style={{ ["--nav-accent" as string]: navColors[index % navColors.length] }}
@@ -194,7 +222,7 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
 
         {!isAuthenticated ? (
           <div className="hidden items-center justify-end lg:flex">
-            <SiteCtaButton asLink href="/artist/login" label="Prijavi se" />
+            <SiteCtaButton asLink href={headerCtaHref} label={resolvedHeaderCtaLabel} />
           </div>
         ) : (
           <div className="hidden justify-end lg:flex">
@@ -257,7 +285,7 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
                   {session?.kind === "artist" ? (
                     <Link
                       className="flex items-center justify-between rounded-[16px] px-3 py-3 text-[14px] font-medium text-[#2f3138] transition hover:bg-[#f6f9ff] hover:text-[#182fc7]"
-                      href="/artist/subscription"
+                      href={siteRoutes.subscription}
                     >
                       <span>Pretplata</span>
                       <span aria-hidden="true">&rarr;</span>
@@ -304,7 +332,7 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
                 <Link
                   key={item.label}
                   className={`site-mobile-menu__link ${
-                    item.matchPrefix && pathname.startsWith(item.matchPrefix) ? "site-mobile-menu__link--active" : ""
+                    isRouteActive(pathname, item.activePrefixes) ? "site-mobile-menu__link--active" : ""
                   }`}
                   href={item.href}
                   onClick={closeMobileMenu}
@@ -317,7 +345,7 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
 
             {!isAuthenticated ? (
               <div className="site-mobile-menu__actions">
-                <SiteCtaButton asLink href="/artist/login" label="Prijavi se" />
+                <SiteCtaButton asLink href={headerCtaHref} label={resolvedHeaderCtaLabel} />
               </div>
             ) : (
               <div className="w-full max-w-[240px] rounded-[24px] border border-[#dde4ef] bg-white/95 px-4 py-4 text-center shadow-[0_14px_38px_rgba(38,51,71,0.08)]">
@@ -352,7 +380,7 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
                 {session?.kind === "artist" ? (
                   <Link
                     className="mt-3 inline-flex h-10 items-center justify-center rounded-full border border-[#d9e1ed] px-4 text-[14px] font-medium text-[#2f3138] transition hover:border-[#182fc7] hover:text-[#182fc7]"
-                    href="/artist/subscription"
+                    href={siteRoutes.subscription}
                     onClick={closeMobileMenu}
                   >
                     Pretplata
@@ -421,4 +449,18 @@ function getInitials(value: string) {
     .map((part) => part.charAt(0))
     .join("")
     .toUpperCase();
+}
+
+function isRouteActive(pathname: string, activePrefixes: readonly string[]) {
+  return activePrefixes.some((prefix) => {
+    if (prefix === "/") {
+      return pathname === "/";
+    }
+
+    if (prefix.includes("#")) {
+      return pathname === "/";
+    }
+
+    return pathname.startsWith(prefix);
+  });
 }

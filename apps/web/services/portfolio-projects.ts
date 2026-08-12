@@ -1,6 +1,7 @@
 import type {
   PaginatedResponse,
   PortfolioArtworkAvailability,
+  PortfolioDesignConfig,
   PortfolioFontStyle,
   PortfolioLanguage,
   PortfolioPageFormat,
@@ -48,6 +49,7 @@ export type UpdatePortfolioProjectPayload = {
   includeBranding?: boolean;
   includeCv?: boolean;
   includePrices?: boolean;
+  designConfig?: PortfolioDesignConfig;
 };
 
 export type UpdatePortfolioArtworkPayload = {

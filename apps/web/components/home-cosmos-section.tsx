@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 
 import { NavigationButton } from "@/components/navigation-button";
 import { SiteCtaButton } from "@/components/site-cta-button";
+import { siteRoutes } from "@/lib/site-routes";
 
 /**
  * The Lottie timeline is lightly scrubbed by normal page scroll. We never call
@@ -122,34 +123,34 @@ export function HomeCosmosSection() {
 
         <div className="relative z-10 mx-auto flex w-full max-w-[640px] flex-col items-center px-6 text-center">
           <h2 className="text-[28px] font-normal leading-[1.04] text-[#555b64] sm:text-[38px] lg:text-[44px]">
-            Art Studio 360 tezi da postane
+            Dvije povezane cjeline
             <strong className="mt-1 block font-bold text-[#2f3138]">
-              centralno mjesto za umjetnost<span className="text-[#182fc7]">.</span>
+              jednog kreativnog ekosistema<span className="text-[#182fc7]">.</span>
             </strong>
           </h2>
 
           <div className="mt-7 grid w-full max-w-[540px] gap-7 sm:grid-cols-2 sm:gap-8">
             <div className="flex flex-col items-center">
               <p className="max-w-[230px] text-[15px] leading-[1.4] text-[#555b64]">
-                Platforma ArtBoard povezuje umjetnike sa publikom.
+                Art Studio 360 razvija kreativne usluge, vizuelne identitete i kulturne projekte.
               </p>
               <SiteCtaButton
                 className="mt-5 scale-[0.88]"
-                href="/artists"
-                label="Saznaj sve o ArtBoardu"
+                href={siteRoutes.services}
+                label="Pogledajte usluge"
               />
             </div>
 
             <div className="flex flex-col items-center">
               <p className="max-w-[230px] text-[15px] leading-[1.4] text-[#555b64]">
-                Art Studio 360 nudi sirok spektar kreativnih usluga.
+                ArtBoard je digitalna platforma koju studio razvija za umjetnike i njihove portfolije.
               </p>
               <NavigationButton
                 className="mt-5 inline-flex min-h-12 items-center gap-3 rounded-full border-2 border-[#182fc7] bg-[#182fc7] px-5 text-[14px] font-bold text-white outline outline-1 outline-offset-2 outline-[#182fc7] transition hover:bg-white hover:text-[#182fc7]"
-                href="/kontakt"
+                href={siteRoutes.artboard}
               >
                 <span className="h-3 w-3 rounded-full bg-current" aria-hidden="true" />
-                Istrazite nase usluge
+                Istražite ArtBoard
               </NavigationButton>
             </div>
           </div>

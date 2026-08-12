@@ -3,6 +3,7 @@ import {
   PortfolioPaymentStatus,
   PortfolioProjectStatus,
   PortfolioProjectSource,
+  PortfolioTemplate,
   SubscriptionPlan,
   SubscriptionStatus,
   Prisma,
@@ -20,7 +21,8 @@ import {
   UpdatePortfolioProjectDto,
 } from "./portfolio-projects.dto";
 import {
-  generateInstitutionalCoverPdf,
+  generatePortfolioPdf,
+  generateSelectedTemplateTestPdf,
 } from "./portfolio-pdf.generator";
 
 const portfolioProjectInclude = Prisma.validator<Prisma.PortfolioProjectInclude>()({
@@ -61,6 +63,14 @@ type PortfolioProjectWithRelations = Prisma.PortfolioProjectGetPayload<{
   include: typeof portfolioProjectInclude;
 }>;
 
+const portfolioDesignPageKeys = ["cover", "profile", "collection", "artwork", "contact"] as const;
+const portfolioTemplateValues: PortfolioTemplate[] = [
+  PortfolioTemplate.INSTITUTIONAL_MINIMAL,
+  PortfolioTemplate.ARTBOARD_EDITORIAL,
+  PortfolioTemplate.SALES_PRO,
+];
+const portfolioFooterValues = ["MINIMAL", "ARTBOARD", "SALES"] as const;
+
 @Injectable()
 export class PortfolioProjectsService {
   constructor(
@@ -99,6 +109,13 @@ export class PortfolioProjectsService {
     }
 
     const artist = artistAccount.artist;
+
+    if (!artist) {
+      throw new BadRequestException(
+        "Artist account is not connected to an artist profile, so a portfolio cannot be created from profile data.",
+      );
+    }
+
     const discipline = artist.disciplines.map((item) => item.discipline.name).join(", ") || null;
     const instagramLink = artist.socialLinks.find((link) => link.platform === "INSTAGRAM")?.url ?? null;
     const websiteLink = artist.socialLinks.find((link) => link.platform === "PERSONAL_WEBSITE")?.url ?? null;
@@ -319,13 +336,22 @@ export class PortfolioProjectsService {
   }
 
   async updatePublicProject(id: string, dto: UpdatePortfolioProjectDto) {
-    await this.ensureProjectExists(id);
+    const existingPortfolioProject = await this.prisma.portfolioProject.findUnique({
+      where: {
+        id,
+      },
+      include: portfolioProjectInclude,
+    });
+
+    if (!existingPortfolioProject) {
+      throw new NotFoundException("Portfolio project was not found.");
+    }
 
     const portfolioProject = await this.prisma.portfolioProject.update({
       where: {
         id,
       },
-      data: this.buildProjectUpdateData(dto),
+      data: this.buildProjectUpdateData(dto, existingPortfolioProject),
       include: portfolioProjectInclude,
     });
 
@@ -458,7 +484,7 @@ export class PortfolioProjectsService {
       throw new ForbiddenException("This portfolio must be paid or premium before generating a clean PDF.");
     }
 
-    const pdfBuffer = await generateInstitutionalCoverPdf(portfolioProject);
+    const pdfBuffer = await generatePortfolioPdf(portfolioProject);
     const uploadedPdf = await this.storageService.uploadFile({
       recordId: portfolioProject.id,
       entityType: "portfolio-pdf",
@@ -536,7 +562,7 @@ export class PortfolioProjectsService {
       throw new NotFoundException("Portfolio project was not found.");
     }
 
-    const pdfBuffer = await generateInstitutionalCoverPdf(portfolioProject, {
+    const pdfBuffer = await generatePortfolioPdf(portfolioProject, {
       watermark: true,
     });
     const safeArtistName = portfolioProject.artistName
@@ -562,7 +588,7 @@ export class PortfolioProjectsService {
       throw new NotFoundException("Portfolio project was not found.");
     }
 
-    const pdfBuffer = await generateInstitutionalCoverPdf(portfolioProject);
+    const pdfBuffer = await generateSelectedTemplateTestPdf(portfolioProject);
     const safeArtistName = portfolioProject.artistName
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
@@ -740,7 +766,10 @@ export class PortfolioProjectsService {
     }
   }
 
-  private buildProjectUpdateData(dto: UpdatePortfolioProjectDto): Prisma.PortfolioProjectUpdateInput {
+  private buildProjectUpdateData(
+    dto: UpdatePortfolioProjectDto,
+    existingProject: PortfolioProjectWithRelations,
+  ): Prisma.PortfolioProjectUpdateInput {
     return {
       title: this.optionalRequiredString(dto.title),
       artistName: this.optionalRequiredString(dto.artistName),
@@ -765,6 +794,63 @@ export class PortfolioProjectsService {
       includeBranding: dto.includeBranding,
       includeCv: dto.includeCv,
       includePrices: dto.includePrices,
+      designConfig: this.buildDesignConfigUpdateData(dto.designConfig, existingProject),
+    };
+  }
+
+  /**
+   * Custom page-by-page design selection is a premium capability.
+   *
+   * We validate this on the backend because the public builder endpoint is also
+   * used by guest projects. Frontend locks are useful UX, but they are not
+   * business rules.
+   */
+  private buildDesignConfigUpdateData(
+    value: Record<string, unknown> | undefined,
+    existingProject: PortfolioProjectWithRelations,
+  ): Prisma.InputJsonValue | undefined {
+    if (value === undefined) {
+      return undefined;
+    }
+
+    if (value.mode !== "PRESET" && value.mode !== "CUSTOM") {
+      throw new BadRequestException("Portfolio design config mode must be PRESET or CUSTOM.");
+    }
+
+    if (value.mode === "CUSTOM" && !this.isActivePlatinumProject(existingProject)) {
+      throw new ForbiddenException("Custom portfolio design mixing is available only to Platinum artists.");
+    }
+
+    const pages = value.pages;
+
+    if (!pages || typeof pages !== "object" || Array.isArray(pages)) {
+      throw new BadRequestException("Portfolio design config must include a pages object.");
+    }
+
+    const normalizedPages: Record<string, PortfolioTemplate> = {};
+
+    for (const key of portfolioDesignPageKeys) {
+      const selectedTemplate = (pages as Record<string, unknown>)[key];
+
+      if (!portfolioTemplateValues.includes(selectedTemplate as PortfolioTemplate)) {
+        throw new BadRequestException(`Portfolio design page "${key}" must use a supported template.`);
+      }
+
+      normalizedPages[key] = selectedTemplate as PortfolioTemplate;
+    }
+
+    const selectedFooter = value.footer;
+
+    if (!portfolioFooterValues.includes(selectedFooter as (typeof portfolioFooterValues)[number])) {
+      throw new BadRequestException("Portfolio design config footer must use a supported footer.");
+    }
+
+    const normalizedFooter = selectedFooter as (typeof portfolioFooterValues)[number];
+
+    return {
+      mode: value.mode,
+      pages: normalizedPages,
+      footer: normalizedFooter,
     };
   }
 
