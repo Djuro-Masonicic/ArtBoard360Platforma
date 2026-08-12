@@ -110,6 +110,7 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
   const resolvedHeaderCtaLabel = isArtBoardUnit ? "Kreiraj profil" : isArtStudioUnit ? "Istrazi ArtBoard" : "Prijavi se";
   const [isTransparentHeader, setIsTransparentHeader] = useState(isArtistHeroPage);
   const isAuthenticated = Boolean(session);
+  const shouldShowAccountMenu = isAuthenticated && !isArtStudioUnit;
 
   const isMobileMenuVisible = mobileMenuState !== "closed";
   const isMobileMenuOpen = mobileMenuState !== "closed";
@@ -221,7 +222,7 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
           ))}
         </nav>
 
-        {!isAuthenticated ? (
+        {!shouldShowAccountMenu ? (
           <div className="hidden items-center justify-end lg:flex">
             <SiteCtaButton asLink href={headerCtaHref} label={resolvedHeaderCtaLabel} />
           </div>
@@ -344,7 +345,7 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
               ))}
             </nav>
 
-            {!isAuthenticated ? (
+            {!shouldShowAccountMenu ? (
               <div className="site-mobile-menu__actions">
                 <SiteCtaButton asLink href={headerCtaHref} label={resolvedHeaderCtaLabel} />
               </div>

@@ -17,6 +17,13 @@ const dmSans = DM_Sans({
 export const metadata: Metadata = {
   title: "ArtBoard Platforma",
   description: "Minimal scaffold for the ArtBoard artist platform.",
+  icons: {
+    icon: "https://cdn.prod.website-files.com/681b5dac4415aa941af374fe/681b5f1cb811f54718bd2d75_360%20Logo%20Symbols%20Only%2032.png",
+    shortcut:
+      "https://cdn.prod.website-files.com/681b5dac4415aa941af374fe/681b5f1cb811f54718bd2d75_360%20Logo%20Symbols%20Only%2032.png",
+    apple:
+      "https://cdn.prod.website-files.com/681b5dac4415aa941af374fe/681b5f1cb811f54718bd2d75_360%20Logo%20Symbols%20Only%2032.png",
+  },
 };
 
 /**
