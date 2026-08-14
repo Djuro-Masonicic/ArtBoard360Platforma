@@ -224,7 +224,12 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
 
         {!shouldShowAccountMenu ? (
           <div className="hidden items-center justify-end lg:flex">
-            <SiteCtaButton asLink href={headerCtaHref} label={resolvedHeaderCtaLabel} />
+            <SiteCtaButton
+              asLink
+              href={headerCtaHref}
+              label={resolvedHeaderCtaLabel}
+              withArtBoardTransition={isArtStudioUnit}
+            />
           </div>
         ) : (
           <div className="hidden justify-end lg:flex">
@@ -347,7 +352,12 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
 
             {!shouldShowAccountMenu ? (
               <div className="site-mobile-menu__actions">
-                <SiteCtaButton asLink href={headerCtaHref} label={resolvedHeaderCtaLabel} />
+                <SiteCtaButton
+                  asLink
+                  href={headerCtaHref}
+                  label={resolvedHeaderCtaLabel}
+                  withArtBoardTransition={isArtStudioUnit}
+                />
               </div>
             ) : (
               <div className="w-full max-w-[240px] rounded-[24px] border border-[#dde4ef] bg-white/95 px-4 py-4 text-center shadow-[0_14px_38px_rgba(38,51,71,0.08)]">

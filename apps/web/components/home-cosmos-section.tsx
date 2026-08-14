@@ -148,6 +148,7 @@ export function HomeCosmosSection() {
               <NavigationButton
                 className="mt-5 inline-flex min-h-12 items-center gap-3 rounded-full border-2 border-[#182fc7] bg-[#182fc7] px-5 text-[14px] font-bold text-white outline outline-1 outline-offset-2 outline-[#182fc7] transition hover:bg-white hover:text-[#182fc7]"
                 href={siteRoutes.artboard}
+                withArtBoardTransition
               >
                 <span className="h-3 w-3 rounded-full bg-current" aria-hidden="true" />
                 Istražite ArtBoard

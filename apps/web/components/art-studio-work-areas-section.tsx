@@ -74,6 +74,7 @@ export function ArtStudioWorkAreasSection() {
                 }
                 href={area.href}
                 title={area.label}
+                withArtBoardTransition={area.href === siteRoutes.artboard}
               >
                 <span
                   className="relative z-10 h-3 w-3 rounded-full bg-current transition-colors"

@@ -49,6 +49,7 @@ export function ArtStudioToolsSection() {
           <NavigationButton
             className="inline-flex min-h-[48px] w-fit items-center gap-3 rounded-full border-2 border-[#182fc7] bg-[#182fc7] px-6 text-[16px] font-bold text-white outline outline-1 outline-offset-2 outline-[#182fc7] transition hover:bg-white hover:text-[#182fc7]"
             href={siteRoutes.artboard}
+            withArtBoardTransition
           >
             <span className="h-3 w-3 rounded-full bg-current" aria-hidden="true" />
             Istraži ArtBoard

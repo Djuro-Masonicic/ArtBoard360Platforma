@@ -45,7 +45,11 @@ export async function HomePage() {
               <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
                 <SiteCtaButton href={siteRoutes.services} label="Pogledajte usluge" />
 
-                <NavigationButton className="hero-more-link" href={siteRoutes.artboard}>
+                <NavigationButton
+                  className="hero-more-link"
+                  href={siteRoutes.artboard}
+                  withArtBoardTransition
+                >
                   <svg
                     aria-hidden="true"
                     className="hero-more-link__icon h-5 w-5 text-[#2440d8]"

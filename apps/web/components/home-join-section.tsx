@@ -124,16 +124,28 @@ export function HomeJoinSection() {
       />
 
       <div className="relative z-[4] mx-auto flex min-h-[78vh] max-w-[980px] items-center justify-center pt-[8vh] text-center">
-        <div className="max-w-[760px]">
-          <p className="text-[1.9rem] font-light leading-[1.12] tracking-[-0.04em] text-[#333333] sm:text-[1.5rem] lg:text-[1.9rem]">
-            <strong className="font-bold text-[#dc1735]">ArtBoard platforma</strong> je digitalni
-            dom crnogorskih umjetnika. Prostor za promociju, umrežavanje i profesionalni rast.
+        <div className="max-w-[800px]">
+          <p className="text-[0.78rem] font-bold uppercase tracking-[0.35em] text-[#8a94a6]">
+            Naša misija
           </p>
 
-          <p className="mt-10 text-[1.9rem] font-light leading-[1.12] tracking-[-0.04em] text-[#333333] sm:text-[1.5rem] lg:text-[1.9rem]">
-            <strong className="font-bold text-[#182fc7]">Art Studio 360</strong> je kreativni studio
-            koji nudi usluge dizajna, produkcije i inovativnih rješenja za kompanije, pojedince i umjetnike.
-          </p>
+          <h2 className="mx-auto mt-5 max-w-[720px] text-[1.85rem] font-light leading-[1.08] tracking-[-0.04em] text-[#333333] sm:text-[2.35rem] lg:text-[2.1rem]">
+            Naša vizija je svijet u kojem umjetnost nije samo privilegija, već integralni dio
+            svakodnevnog života.
+          </h2>
+
+          <div className="mx-auto mt-10 grid max-w-[760px] gap-6 text-center md:grid-cols-2">
+            <p className="text-[1.1rem] font-light leading-[1.18] tracking-[-0.03em] text-[#333333] sm:text-[1.25rem] lg:text-[1.42rem]">
+              <strong className="block font-bold text-[#dc1735]">ArtBoard platforma</strong>
+              Digitalni prostor za promociju, povezivanje i profesionalni razvoj umjetnika.
+            </p>
+
+            <p className="text-[1.1rem] font-light leading-[1.18] tracking-[-0.03em] text-[#333333] sm:text-[1.25rem] lg:text-[1.42rem]">
+              <strong className="block font-bold text-[#182fc7]">Art Studio 360</strong>
+              Kreativni studio koji razvija dizajn, projekte i digitalna rješenja za kompanije,
+              pojedince i umjetnike.
+            </p>
+          </div>
         </div>
       </div>
     </section>

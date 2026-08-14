@@ -2,11 +2,14 @@
 
 import { useRouter } from "next/navigation";
 
+import { ArtBoardTransitionButton, ArtBoardTransitionLink } from "@/components/artboard-transition-link";
+
 type SiteCtaButtonProps = {
   href: string;
   label: string;
   className?: string;
   asLink?: boolean;
+  withArtBoardTransition?: boolean;
 };
 
 /**
@@ -14,7 +17,13 @@ type SiteCtaButtonProps = {
  * The visual treatment is kept in one place so we can reuse it in the header
  * and later in hero/section call-to-actions without duplicating classes.
  */
-export function SiteCtaButton({ asLink = false, href, label, className = "" }: SiteCtaButtonProps) {
+export function SiteCtaButton({
+  asLink = false,
+  href,
+  label,
+  className = "",
+  withArtBoardTransition = false,
+}: SiteCtaButtonProps) {
   const router = useRouter();
   const classNames = `site-cta-button inline-flex items-center justify-center whitespace-nowrap ${className}`.trim();
   const content = (
@@ -45,10 +54,26 @@ export function SiteCtaButton({ asLink = false, href, label, className = "" }: S
   );
 
   if (asLink) {
+    if (withArtBoardTransition) {
+      return (
+        <ArtBoardTransitionLink className={classNames} href={href}>
+          {content}
+        </ArtBoardTransitionLink>
+      );
+    }
+
     return (
       <a className={classNames} href={href}>
         {content}
       </a>
+    );
+  }
+
+  if (withArtBoardTransition) {
+    return (
+      <ArtBoardTransitionButton className={classNames} href={href}>
+        {content}
+      </ArtBoardTransitionButton>
     );
   }
 

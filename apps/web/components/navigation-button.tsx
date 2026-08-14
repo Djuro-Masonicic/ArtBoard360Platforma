@@ -2,12 +2,15 @@
 
 import { useRouter } from "next/navigation";
 
+import { ArtBoardTransitionButton } from "@/components/artboard-transition-link";
+
 type NavigationButtonProps = {
   children: React.ReactNode;
   className?: string;
   href: string;
   title?: string;
   style?: React.CSSProperties;
+  withArtBoardTransition?: boolean;
 };
 
 /**
@@ -15,8 +18,23 @@ type NavigationButtonProps = {
  * another app route. This keeps the UI semantic as a real button instead of
  * styling an anchor to look like one.
  */
-export function NavigationButton({ children, className = "", href, title, style }: NavigationButtonProps) {
+export function NavigationButton({
+  children,
+  className = "",
+  href,
+  title,
+  style,
+  withArtBoardTransition = false,
+}: NavigationButtonProps) {
   const router = useRouter();
+
+  if (withArtBoardTransition) {
+    return (
+      <ArtBoardTransitionButton className={className} href={href} style={style} title={title}>
+        {children}
+      </ArtBoardTransitionButton>
+    );
+  }
 
   function handleClick() {
     if (/^(https?:|mailto:|tel:)/.test(href)) {

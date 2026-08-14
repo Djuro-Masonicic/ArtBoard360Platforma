@@ -443,39 +443,101 @@ export default async function ArtBoardPage() {
     },
     { label: "Podrška i razvoj", value: "Art Studio 360" },
   ];
+  const heroMosaic = getRandomArtists(artists, 8)
+    .map((artist) => ({
+      id: artist.id,
+      name: artist.name,
+      imageUrl: artist.artworks[0]?.imageUrl ?? artist.profileImageUrl ?? "",
+    }))
+    .filter((item) => item.imageUrl);
 
   return (
-    <main className="bg-[#f8fbff] pb-20 pt-[15vh] text-[#252933]">
-      <section className="mx-auto max-w-[1240px] px-4 sm:px-6">
-        <div className="rounded-[42px] border border-[#dce5f1] bg-white p-7 shadow-[0_28px_90px_rgba(38,51,71,0.08)] sm:p-10 lg:p-14">
-          <p className="text-[12px] font-bold uppercase tracking-[0.34em] text-[#7c8798]">
-            Created by Art Studio 360
-          </p>
-          <h1 className="mt-5 max-w-[980px] text-[44px] font-bold leading-[0.96] tracking-[-0.05em] text-[#2f3138] sm:text-[72px]">
-            Profesionalni umjetnički profil, online portfolio i alati za promociju rada.
-          </h1>
-          <p className="mt-6 max-w-[800px] text-[20px] leading-[1.5] text-[#4e5560]">
-            ArtBoard pomaže umjetnicima da predstave radove, kreiraju portfolio, upravljaju
-            promocijom i lakše dođu do publike, saradnika i profesionalnih prilika.
-          </p>
+    <main className="relative isolate overflow-hidden bg-[#f8fbff] pb-20 pt-[13vh] text-[#252933]">
+      <div
+        className="pointer-events-none absolute inset-0 -z-10 opacity-80"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle at 16% 7%, rgba(24,47,199,0.1), transparent 25%), radial-gradient(circle at 88% 14%, rgba(220,23,53,0.09), transparent 24%), radial-gradient(circle at 52% 52%, rgba(255,196,29,0.12), transparent 26%)",
+        }}
+      />
+      <div className="pointer-events-none absolute left-[-18vw] top-[420px] -z-10 h-[56vw] w-[56vw] rounded-full border border-[#dce5f1]" />
+      <div className="pointer-events-none absolute right-[-16vw] top-[860px] -z-10 h-[42vw] w-[42vw] rounded-full border border-[#dce5f1]" />
 
-          <div className="mt-9 flex flex-col gap-4 sm:flex-row">
-            <SiteCtaButton href={siteRoutes.registration} label="Kreiraj profil" />
-            <Link
-              className="inline-flex min-h-[54px] w-fit items-center justify-center rounded-full border border-[#ccd7e6] bg-white px-6 text-[17px] font-bold text-[#252933] transition hover:border-[#182fc7] hover:text-[#182fc7]"
-              href={siteRoutes.artists}
-            >
-              Istraži umjetnike
-            </Link>
+      <section className="mx-auto max-w-[1320px] px-4 sm:px-6">
+        <div className="relative overflow-hidden rounded-[50px] border border-[#dce5f1] bg-white/90 p-7 shadow-[0_32px_110px_rgba(38,51,71,0.1)] backdrop-blur sm:p-10 lg:min-h-[620px] lg:p-14">
+          <span className="absolute right-[-110px] top-[-120px] h-[360px] w-[360px] rounded-full bg-[#ffc41d]/25" />
+          <span className="absolute bottom-[-160px] left-[45%] h-[320px] w-[320px] rounded-full bg-[#182fc7]/10" />
+          <div className="relative grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+            <div>
+              <p className="text-[12px] font-bold uppercase tracking-[0.34em] text-[#7c8798]">
+                Created by Art Studio 360
+              </p>
+              <h1 className="mt-5 max-w-[780px] text-[44px] font-bold leading-[0.94] tracking-[-0.055em] text-[#2f3138] sm:text-[72px]">
+                Profesionalni umjetnički profil, portfolio i alati za vidljivost.
+              </h1>
+              <p className="mt-6 max-w-[680px] text-[20px] leading-[1.5] text-[#4e5560]">
+                ArtBoard pomaže umjetnicima da predstave radove, kreiraju portfolio,
+                upravljaju promocijom i lakše dođu do publike, saradnika i profesionalnih
+                prilika.
+              </p>
+
+              <div className="mt-9 flex flex-col gap-4 sm:flex-row">
+                <SiteCtaButton href={siteRoutes.registration} label="Kreiraj profil" />
+                <Link
+                  className="inline-flex min-h-[54px] w-fit items-center justify-center rounded-full border border-[#ccd7e6] bg-white px-6 text-[17px] font-bold text-[#252933] transition hover:border-[#182fc7] hover:text-[#182fc7]"
+                  href={siteRoutes.artists}
+                >
+                  Istraži umjetnike
+                </Link>
+              </div>
+            </div>
+
+            <div className="relative min-h-[430px]">
+              <div className="absolute left-1/2 top-1/2 h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#dce5f1]" />
+              <div className="absolute left-1/2 top-1/2 h-[360px] w-[360px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#dce5f1]" />
+              <span className="absolute left-[10%] top-[20%] h-12 w-12 rounded-full bg-[#182fc7]" />
+              <span className="absolute right-[18%] top-[15%] h-16 w-16 rounded-full bg-[#dc1735]" />
+              <span className="absolute bottom-[14%] left-[28%] h-14 w-14 rounded-full bg-[#ffc41d]" />
+
+              <div className="relative mx-auto grid max-w-[560px] grid-cols-3 gap-3 pt-10">
+                {heroMosaic.slice(0, 6).map((item, index) => (
+                  <Link
+                    className={[
+                      "group overflow-hidden rounded-[28px] border-4 border-white bg-[#e9eef5] shadow-[0_22px_60px_rgba(38,51,71,0.16)] transition duration-300 hover:-translate-y-2",
+                      index === 1 ? "translate-y-8 rotate-2" : "",
+                      index === 2 ? "-translate-y-3 -rotate-3" : "",
+                      index === 3 ? "translate-y-2 -rotate-2" : "",
+                      index === 4 ? "-translate-y-6 rotate-3" : "",
+                    ].join(" ")}
+                    href={siteRoutes.artists}
+                    key={item.id}
+                    title={item.name}
+                  >
+                    <img
+                      alt=""
+                      className="h-40 w-full object-cover transition duration-500 group-hover:scale-110"
+                      src={item.imageUrl}
+                    />
+                  </Link>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto mt-6 max-w-[1240px] px-4 sm:px-6">
-        <div className="grid gap-3 rounded-[30px] border border-[#dce5f1] bg-white p-4 shadow-[0_18px_60px_rgba(38,51,71,0.06)] sm:grid-cols-2 lg:grid-cols-4">
-          {proofItems.map((item) => (
-            <article className="rounded-[22px] bg-[#f8fbff] p-5" key={item.label}>
-              <p className="text-[30px] font-bold tracking-[-0.04em] text-[#182fc7]">{item.value}</p>
+      <section className="mx-auto mt-[-28px] max-w-[1180px] px-4 sm:px-6">
+        <div className="relative z-10 grid gap-3 rounded-[30px] border border-[#dce5f1] bg-white/95 p-4 shadow-[0_18px_60px_rgba(38,51,71,0.08)] sm:grid-cols-2 lg:grid-cols-4">
+          {proofItems.map((item, index) => (
+            <article
+              className="relative overflow-hidden rounded-[24px] bg-[#f8fbff] p-5"
+              key={item.label}
+            >
+              <span
+                className="absolute right-4 top-4 h-3 w-3 rounded-full"
+                style={{ backgroundColor: ["#182fc7", "#dc1735", "#ffc41d", "#2f3138"][index] }}
+              />
+              <p className="text-[34px] font-bold tracking-[-0.05em] text-[#182fc7]">{item.value}</p>
               <p className="mt-1 text-[13px] font-bold uppercase tracking-[0.22em] text-[#7c8798]">
                 {item.label}
               </p>
@@ -484,78 +546,103 @@ export default async function ArtBoardPage() {
         </div>
       </section>
 
-      <section className="mx-auto mt-16 max-w-[1240px] px-4 sm:px-6">
-        <div className="max-w-[760px]">
+      <section className="mx-auto mt-20 grid max-w-[1240px] gap-10 px-4 sm:px-6 lg:grid-cols-[0.75fr_1.25fr]">
+        <div className="lg:sticky lg:top-32 lg:self-start">
           <p className="text-[13px] font-bold uppercase tracking-[0.32em] text-[#dc1735]">
             Zašto ArtBoard
           </p>
           <h2 className="mt-3 text-[40px] font-bold leading-[1] tracking-[-0.04em] sm:text-[58px]">
-            Platforma rješava stvarne probleme umjetnika.
+            Manje haosa. Više profesionalnog prisustva.
           </h2>
+          <p className="mt-5 text-[18px] leading-[1.55] text-[#5d6675]">
+            Umjesto da radovi, linkovi, prijave i portfolio žive na deset različitih mjesta,
+            ArtBoard ih spaja u jedan čist tok.
+          </p>
         </div>
-        <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-          {benefits.map((benefit) => (
+        <div className="space-y-5">
+          {benefits.map((benefit, index) => (
             <article
-              className="rounded-[30px] border border-[#dce5f1] bg-white p-7 shadow-[0_18px_60px_rgba(38,51,71,0.05)]"
+              className={[
+                "group relative overflow-hidden rounded-[34px] border border-[#dce5f1] bg-white p-7 shadow-[0_18px_60px_rgba(38,51,71,0.05)] transition hover:-translate-y-1 hover:shadow-[0_28px_90px_rgba(38,51,71,0.1)]",
+                index % 2 === 1 ? "lg:ml-12" : "lg:mr-12",
+              ].join(" ")}
               key={benefit.title}
             >
               <span
-                className="block h-4 w-4 rounded-full"
+                className="absolute right-[-44px] top-[-44px] h-28 w-28 rounded-full opacity-15 transition group-hover:scale-125"
                 style={{ backgroundColor: benefit.color }}
                 aria-hidden="true"
               />
-              <h3 className="mt-8 text-[24px] font-bold tracking-[-0.03em]">{benefit.title}</h3>
-              <p className="mt-3 text-[16px] leading-[1.5] text-[#5d6675]">{benefit.text}</p>
+              <div className="flex gap-5">
+                <span
+                  className="mt-1 grid h-10 w-10 shrink-0 place-items-center rounded-full text-[13px] font-bold text-white"
+                  style={{ backgroundColor: benefit.color }}
+                >
+                  {index + 1}
+                </span>
+                <div>
+                  <h3 className="text-[26px] font-bold tracking-[-0.03em]">{benefit.title}</h3>
+                  <p className="mt-3 text-[16px] leading-[1.55] text-[#5d6675]">{benefit.text}</p>
+                </div>
+              </div>
             </article>
           ))}
         </div>
       </section>
 
-      <section className="mx-auto mt-16 max-w-[1240px] scroll-mt-36 px-4 sm:px-6" id="alati">
-        <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
-          <div>
-            <p className="text-[13px] font-bold uppercase tracking-[0.32em] text-[#182fc7]">
-              Alati i servisi
-            </p>
-            <h2 className="mt-3 max-w-[780px] text-[40px] font-bold leading-[1] tracking-[-0.04em] sm:text-[58px]">
-              ArtBoard nije samo katalog, već radni prostor za umjetnike.
-            </h2>
-          </div>
-        </div>
-        <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {tools.map((tool, index) => (
-            <Link
-              className="group rounded-[30px] border bg-white p-7 shadow-[0_18px_60px_rgba(38,51,71,0.05)] transition hover:-translate-y-1 hover:shadow-[0_24px_80px_rgba(38,51,71,0.11)]"
-              href={tool.href}
-              key={tool.title}
-              style={{ borderColor: `${tool.color}33` }}
-            >
-              <div className="flex items-center justify-between gap-4">
-                <p className="text-[13px] font-bold uppercase tracking-[0.28em] text-[#9aa4b5]">
-                  0{index + 1}
-                </p>
-                <span
-                  className="h-4 w-4 rounded-full transition group-hover:scale-125"
-                  style={{ backgroundColor: tool.color }}
-                  aria-hidden="true"
-                />
-              </div>
-              <h3 className="mt-5 text-[25px] font-bold tracking-[-0.03em]">{tool.title}</h3>
-              <p className="mt-3 text-[16px] leading-[1.5] text-[#5d6675]">{tool.text}</p>
-              <p className="mt-6 text-[15px] font-bold" style={{ color: tool.color }}>
-                Otvori →
+      <section className="mx-auto mt-20 max-w-[1240px] scroll-mt-36 px-4 sm:px-6" id="alati">
+        <div className="relative overflow-hidden rounded-[44px] border border-[#dce5f1] bg-white p-6 shadow-[0_26px_90px_rgba(38,51,71,0.08)] sm:p-9">
+          <span className="absolute right-[-90px] top-[-90px] h-60 w-60 rounded-full bg-[#182fc7]/10" />
+          <div className="relative flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
+            <div>
+              <p className="text-[13px] font-bold uppercase tracking-[0.32em] text-[#182fc7]">
+                Alati i servisi
               </p>
-            </Link>
-          ))}
+              <h2 className="mt-3 max-w-[780px] text-[40px] font-bold leading-[1] tracking-[-0.04em] sm:text-[58px]">
+                Digitalni atelje sa praktičnim alatima.
+              </h2>
+            </div>
+          </div>
+          <div className="relative mt-8 grid auto-rows-[minmax(210px,auto)] gap-5 md:grid-cols-2 xl:grid-cols-6">
+            {tools.map((tool, index) => (
+              <Link
+                className={[
+                  "group flex flex-col rounded-[30px] border bg-[#f8fbff] p-7 transition hover:-translate-y-1 hover:bg-white hover:shadow-[0_24px_80px_rgba(38,51,71,0.11)]",
+                  index === 0 || index === 2 ? "xl:col-span-3" : "xl:col-span-2",
+                ].join(" ")}
+                href={tool.href}
+                key={tool.title}
+                style={{ borderColor: `${tool.color}33` }}
+              >
+                <div className="flex items-center justify-between gap-4">
+                  <p className="text-[13px] font-bold uppercase tracking-[0.28em] text-[#9aa4b5]">
+                    0{index + 1}
+                  </p>
+                  <span
+                    className="h-4 w-4 rounded-full transition group-hover:scale-125"
+                    style={{ backgroundColor: tool.color }}
+                    aria-hidden="true"
+                  />
+                </div>
+                <h3 className="mt-5 text-[25px] font-bold tracking-[-0.03em]">{tool.title}</h3>
+                <p className="mt-3 text-[16px] leading-[1.5] text-[#5d6675]">{tool.text}</p>
+                <p className="mt-auto pt-6 text-[15px] font-bold" style={{ color: tool.color }}>
+                  Otvori →
+                </p>
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
 
       <section
-        className="mx-auto mt-10 max-w-[1240px] scroll-mt-36 px-4 sm:px-6"
+        className="mx-auto mt-16 max-w-[1240px] scroll-mt-36 px-4 sm:px-6"
         id="portfolio-builder"
       >
-        <div className="grid gap-5 rounded-[30px] border border-[#ccd7e6] bg-[#101827] p-5 text-white shadow-[0_18px_56px_rgba(16,24,39,0.15)] sm:p-6 lg:grid-cols-[0.82fr_1.18fr] lg:p-7">
-          <div>
+        <div className="relative grid gap-5 overflow-hidden rounded-[38px] border border-[#25314a] bg-[#101827] p-5 text-white shadow-[0_28px_90px_rgba(16,24,39,0.2)] sm:p-6 lg:grid-cols-[0.82fr_1.18fr] lg:p-7">
+          <span className="absolute left-[-90px] top-[-90px] h-64 w-64 rounded-full bg-[#dc1735]/25 blur-3xl" />
+          <span className="absolute bottom-[-100px] right-[-80px] h-72 w-72 rounded-full bg-[#182fc7]/35 blur-3xl" />
+          <div className="relative">
             <p className="text-[11px] font-bold uppercase tracking-[0.26em] text-[#ffc41d]">
               Portfolio Builder
             </p>
@@ -582,7 +669,7 @@ export default async function ArtBoardPage() {
             </div>
           </div>
 
-          <div>
+          <div className="relative">
             <ArtBoardTemplateCarousel templates={portfolioTemplates} />
             <div className="mt-2.5 rounded-[18px] border border-white/12 bg-white/6 p-3.5 text-[13px] leading-relaxed text-[#d7deea]">
               Cijena može biti jednokratna za jedan PDF ili uključena u Premium članstvo.
@@ -591,39 +678,42 @@ export default async function ArtBoardPage() {
         </div>
       </section>
 
-      <section className="mx-auto mt-16 max-w-[1240px] px-4 sm:px-6">
-        <div className="text-center">
-          <p className="text-[13px] font-bold uppercase tracking-[0.32em] text-[#dc1735]">
-            Umjetnici
-          </p>
-          <h2 className="mt-3 text-[40px] font-bold leading-[1] tracking-[-0.04em] sm:text-[58px]">
-            Preview ArtBoard kataloga.
-          </h2>
-        </div>
-
-        <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-          {previewArtists.length > 0 ? (
-            previewArtists.map((artist) => <ArtistCard artist={artist} key={artist.id} />)
-          ) : (
-            <div className="rounded-[30px] border border-[#dce5f1] bg-white p-8 text-[#5d6675] md:col-span-2 xl:col-span-4">
-              Preview umjetnika će se prikazati čim je backend dostupan.
+      <section className="mx-auto mt-20 max-w-[1240px] px-4 sm:px-6">
+        <div className="grid gap-8 lg:grid-cols-[0.72fr_1.28fr] lg:items-center">
+          <div>
+            <p className="text-[13px] font-bold uppercase tracking-[0.32em] text-[#dc1735]">
+              Umjetnici
+            </p>
+            <h2 className="mt-3 text-[40px] font-bold leading-[1] tracking-[-0.04em] sm:text-[58px]">
+              Katalog koji se mijenja kao živa galerija.
+            </h2>
+            <p className="mt-5 text-[18px] leading-[1.55] text-[#5d6675]">
+              Svako učitavanje donosi novi presjek umjetnika, radova i disciplina.
+            </p>
+            <div className="mt-8">
+              <SiteCtaButton href={siteRoutes.artists} label="Pogledajte sve umjetnike" />
             </div>
-          )}
-        </div>
-
-        <div className="mt-8 flex justify-center">
-          <SiteCtaButton href={siteRoutes.artists} label="Pogledajte sve umjetnike" />
+          </div>
+          <div className="grid gap-5 md:grid-cols-2">
+            {previewArtists.length > 0 ? (
+              previewArtists.map((artist) => <ArtistCard artist={artist} key={artist.id} />)
+            ) : (
+              <div className="rounded-[30px] border border-[#dce5f1] bg-white p-8 text-[#5d6675] md:col-span-2">
+                Preview umjetnika će se prikazati čim je backend dostupan.
+              </div>
+            )}
+          </div>
         </div>
       </section>
 
-      <section className="mx-auto mt-16 max-w-[1240px] px-4 sm:px-6">
-        <div className="rounded-[42px] border border-[#dce5f1] bg-white p-7 sm:p-10">
+      <section className="mx-auto mt-20 max-w-[1240px] px-4 sm:px-6">
+        <div className="relative rounded-[44px] border border-[#dce5f1] bg-white p-7 sm:p-10">
           <p className="text-[13px] font-bold uppercase tracking-[0.32em] text-[#ffc41d]">
             Kako funkcioniše ArtBoard
           </p>
-          <div className="mt-8 grid gap-4 md:grid-cols-5">
+          <div className="mt-8 grid gap-0 overflow-hidden rounded-[30px] border border-[#dce5f1] md:grid-cols-5">
             {platformSteps.map((step, index) => (
-              <article className="rounded-[24px] bg-[#f8fbff] p-5" key={step}>
+              <article className="border-b border-[#dce5f1] bg-[#f8fbff] p-5 md:border-b-0 md:border-r last:border-r-0" key={step}>
                 <p className="text-[28px] font-bold text-[#182fc7]">{index + 1}</p>
                 <h3 className="mt-5 text-[18px] font-bold leading-[1.2]">{step}</h3>
               </article>
@@ -632,19 +722,17 @@ export default async function ArtBoardPage() {
         </div>
       </section>
 
-      <section className="mx-auto mt-16 max-w-[1240px] scroll-mt-36 px-4 sm:px-6" id="paketi">
-        <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
-          <div>
-            <p className="text-[13px] font-bold uppercase tracking-[0.32em] text-[#182fc7]">
-              Paketi i cijene
-            </p>
-            <h2 className="mt-3 max-w-[760px] text-[40px] font-bold leading-[1] tracking-[-0.04em] sm:text-[58px]">
-              Jednostavan izbor za početak i rast.
-            </h2>
-          </div>
+      <section className="mx-auto mt-20 max-w-[1240px] scroll-mt-36 px-4 sm:px-6" id="paketi">
+        <div>
+          <p className="text-[13px] font-bold uppercase tracking-[0.32em] text-[#182fc7]">
+            Paketi i cijene
+          </p>
+          <h2 className="mt-3 max-w-[760px] text-[40px] font-bold leading-[1] tracking-[-0.04em] sm:text-[58px]">
+            Jednostavan izbor za početak i rast.
+          </h2>
         </div>
         <div className="mt-8 grid gap-5 lg:grid-cols-3">
-          {packageCards.map((card) => (
+          {packageCards.map((card, index) => (
             <article
               className="grid min-h-[410px] grid-rows-[auto_96px_132px_auto] rounded-[36px] border border-[#dce5f1] bg-white p-8 shadow-[0_18px_60px_rgba(38,51,71,0.05)]"
               key={card.title}
@@ -659,61 +747,71 @@ export default async function ArtBoardPage() {
                 {card.text}
               </p>
               <div className="self-end pt-8">
-                <SiteCtaButton href={card.href} label="Pogledaj opciju" />
+                <SiteCtaButton
+                  href={card.href}
+                  label={index === 1 ? "Upravljaj premiumom" : "Pogledaj opciju"}
+                />
               </div>
             </article>
           ))}
         </div>
       </section>
 
-      <section className="mx-auto mt-16 max-w-[1240px] px-4 sm:px-6">
-        <div className="grid gap-8 rounded-[42px] border border-[#dce5f1] bg-white p-7 sm:p-10 lg:grid-cols-[0.9fr_1.1fr]">
-          <div>
-            <p className="text-[13px] font-bold uppercase tracking-[0.32em] text-[#dc1735]">
-              Oglasi i profesionalne prilike
-            </p>
-            <h2 className="mt-4 text-[40px] font-bold leading-[1] tracking-[-0.04em] sm:text-[56px]">
-              Jedno mjesto za konkurse, saradnje i angažmane.
-            </h2>
-          </div>
-          <div className="self-end">
-            <p className="text-[19px] leading-[1.55] text-[#4e5560]">
-              Umjetnici mogu pratiti relevantne prilike, dok organizacije i poslodavci dobijaju
-              jasniji kanal ka kreativnoj zajednici.
-            </p>
-            <div className="mt-5 flex flex-wrap gap-2">
-              {opportunityTypes.map((type) => (
-                <span className="rounded-full border border-[#ccd7e6] px-4 py-2 text-[14px]" key={type}>
-                  {type}
-                </span>
-              ))}
+      <section className="mx-auto mt-20 max-w-[1240px] px-4 sm:px-6">
+        <div className="relative overflow-hidden rounded-[42px] border border-[#dce5f1] bg-white p-7 sm:p-10">
+          <span className="absolute bottom-[-90px] right-[-60px] h-56 w-56 rounded-full bg-[#ffc41d]/35" />
+          <div className="relative grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
+            <div>
+              <p className="text-[13px] font-bold uppercase tracking-[0.32em] text-[#dc1735]">
+                Oglasi i profesionalne prilike
+              </p>
+              <h2 className="mt-4 text-[40px] font-bold leading-[1] tracking-[-0.04em] sm:text-[56px]">
+                Jedno mjesto za konkurse, saradnje i angažmane.
+              </h2>
             </div>
-            <div className="mt-7">
-              <SiteCtaButton href={siteRoutes.opportunities} label="Istražite oglase" />
+            <div className="self-end">
+              <p className="text-[19px] leading-[1.55] text-[#4e5560]">
+                Umjetnici mogu pratiti relevantne prilike, dok organizacije i poslodavci dobijaju
+                jasniji kanal ka kreativnoj zajednici.
+              </p>
+              <div className="mt-5 flex flex-wrap gap-2">
+                {opportunityTypes.map((type) => (
+                  <span className="rounded-full border border-[#ccd7e6] bg-[#f8fbff] px-4 py-2 text-[14px]" key={type}>
+                    {type}
+                  </span>
+                ))}
+              </div>
+              <div className="mt-7">
+                <SiteCtaButton href={siteRoutes.opportunities} label="Istražite oglase" />
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto mt-16 max-w-[1240px] px-4 sm:px-6">
-        <div className="rounded-[42px] bg-[#182fc7] p-8 text-white sm:p-12">
-          <p className="text-[13px] font-bold uppercase tracking-[0.32em] text-[#ffc41d]">
-            Spreman/na za ArtBoard?
-          </p>
-          <h2 className="mt-4 max-w-[860px] text-[42px] font-bold leading-[1] tracking-[-0.04em] sm:text-[62px]">
-            Kreiraj svoj ArtBoard profil i predstavi rad kroz profesionalne alate.
-          </h2>
-          <div className="mt-8 flex flex-wrap gap-3">
-            {["Slikarstvo", "Fotografija", "Dizajn", "Skulptura", "Ilustracija", "Digitalna umjetnost"].map(
-              (discipline) => (
-                <span className="rounded-full border border-white/25 px-4 py-2 text-[15px]" key={discipline}>
-                  {discipline}
-                </span>
-              ),
-            )}
-          </div>
-          <div className="mt-8">
-            <SiteCtaButton href={siteRoutes.registration} label="Kreiraj svoj ArtBoard profil" />
+      <section className="mx-auto mt-20 max-w-[1240px] px-4 sm:px-6">
+        <div className="relative overflow-hidden rounded-[46px] bg-[#182fc7] p-8 text-white sm:p-12">
+          <span className="absolute right-[-70px] top-[-70px] h-52 w-52 rounded-full bg-[#ffc41d]" />
+          <span className="absolute bottom-[-60px] left-[-60px] h-44 w-44 rounded-full bg-[#dc1735]" />
+          <div className="relative">
+            <p className="text-[13px] font-bold uppercase tracking-[0.32em] text-[#ffc41d]">
+              Spreman/na za ArtBoard?
+            </p>
+            <h2 className="mt-4 max-w-[860px] text-[42px] font-bold leading-[1] tracking-[-0.04em] sm:text-[62px]">
+              Kreiraj svoj ArtBoard profil i predstavi rad kroz profesionalne alate.
+            </h2>
+            <div className="mt-8 flex flex-wrap gap-3">
+              {["Slikarstvo", "Fotografija", "Dizajn", "Skulptura", "Ilustracija", "Digitalna umjetnost"].map(
+                (discipline) => (
+                  <span className="rounded-full border border-white/25 px-4 py-2 text-[15px]" key={discipline}>
+                    {discipline}
+                  </span>
+                ),
+              )}
+            </div>
+            <div className="mt-8">
+              <SiteCtaButton href={siteRoutes.registration} label="Kreiraj svoj ArtBoard profil" />
+            </div>
           </div>
         </div>
       </section>
