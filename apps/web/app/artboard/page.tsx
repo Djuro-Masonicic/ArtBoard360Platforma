@@ -416,6 +416,189 @@ function PortfolioTemplatePreviewCard({
   );
 }
 
+function ArtBoardSignalMapSection({
+  items,
+}: {
+  items: { id: string; name: string; imageUrl: string }[];
+}) {
+  const [primaryImage, secondaryImage, tertiaryImage] = items;
+  const workflow = [
+    {
+      label: "Profil",
+      text: "Umjetnik dobija jasno mjesto za bio, kontakte, discipline i radove.",
+      color: "#182fc7",
+    },
+    {
+      label: "Portfolio",
+      text: "Iz profila nastaje PDF ili link spreman za galerije, konkurse i saradnike.",
+      color: "#dc1735",
+    },
+    {
+      label: "Promocija",
+      text: "Rad se lakse dijeli kroz pretragu, QR materijale i profesionalne prilike.",
+      color: "#ffc41d",
+    },
+  ];
+  const previewImages = [secondaryImage, tertiaryImage, primaryImage].filter(
+    (item): item is { id: string; name: string; imageUrl: string } => Boolean(item),
+  );
+
+  return (
+    <section className="relative z-10 mx-auto mt-12 max-w-[1240px] px-4 sm:px-6">
+      <div className="artboard-signal-map relative overflow-hidden rounded-[46px] border border-[#dce6f4] bg-white p-5 shadow-[0_34px_120px_rgba(24,47,199,0.12)] sm:p-8 lg:p-10">
+        <div className="relative z-10 grid gap-8 lg:grid-cols-[0.84fr_1.16fr] lg:items-center">
+          <div className="rounded-[34px] border border-[#dbe5f2] bg-white/78 p-6 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur sm:p-8">
+            <div>
+              <p className="text-[12px] font-bold uppercase tracking-[0.34em] text-[#182fc7]">
+                ArtBoard ekosistem
+              </p>
+              <h2 className="mt-4 max-w-[560px] text-[40px] font-bold leading-[0.95] tracking-[-0.055em] text-[#2f3138] sm:text-[58px]">
+                Od jednog rada do profesionalnog nastupa.
+              </h2>
+              <p className="mt-5 text-[16px] leading-[1.72] text-[#536072]">
+                ArtBoard nije samo katalog. To je tok kroz koji rad dobija kontekst:
+                profil, portfolio, promociju, prilike i jasniji put do publike.
+              </p>
+            </div>
+
+            <div className="mt-8 grid gap-3">
+              {workflow.map((step, index) => (
+                <div
+                  className="grid grid-cols-[42px_1fr] gap-4 rounded-[24px] border border-[#e0e8f4] bg-[#f8fbff] p-4"
+                  key={step.label}
+                >
+                  <span
+                    className="grid h-10 w-10 place-items-center rounded-full text-[15px] font-black text-white shadow-[0_12px_32px_rgba(15,23,42,0.12)]"
+                    style={{ backgroundColor: step.color }}
+                  >
+                    {index + 1}
+                  </span>
+                  <div>
+                    <p className="text-[15px] font-bold text-[#252933]">{step.label}</p>
+                    <p className="mt-1 text-[14px] leading-[1.5] text-[#667285]">{step.text}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link
+                className="inline-flex min-h-[48px] items-center rounded-full bg-[#dc1735] px-5 text-[15px] font-bold text-white transition hover:bg-[#252933]"
+                href={siteRoutes.portfolioBuilder}
+              >
+                Pokreni Portfolio Builder
+              </Link>
+              <Link
+                className="inline-flex min-h-[48px] items-center rounded-full border border-[#cfd9e8] bg-white px-5 text-[15px] font-bold text-[#252933] transition hover:border-[#182fc7] hover:text-[#182fc7]"
+                href={siteRoutes.opportunities}
+              >
+                Pogledaj prilike
+              </Link>
+            </div>
+          </div>
+
+          <div className="relative min-h-[520px]">
+            <div className="artboard-signal-orbit absolute left-1/2 top-1/2 h-[82%] w-[82%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#dfe8f4]" />
+            <div className="artboard-signal-orbit artboard-signal-orbit-slow absolute left-1/2 top-1/2 h-[62%] w-[62%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#e7edf6]" />
+
+            <div className="artboard-signal-sheet relative z-10 mx-auto max-w-[540px] rounded-[34px] border border-[#d8e3f1] bg-white p-5 shadow-[0_28px_90px_rgba(15,23,42,0.16)]">
+              <div className="flex items-start justify-between gap-5">
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-[#8793a7]">
+                    Portfolio dokument
+                  </p>
+                  <h3 className="mt-2 text-[30px] font-bold leading-[0.95] tracking-[-0.04em] text-[#252933]">
+                    Rad dobija formu koju mozes poslati dalje.
+                  </h3>
+                </div>
+                <div className="shrink-0 overflow-hidden rounded-full border-4 border-white bg-[#eef4fb] shadow-[0_18px_38px_rgba(15,23,42,0.14)]">
+                  {secondaryImage ? (
+                    <img
+                      alt=""
+                      className="h-[84px] w-[84px] object-cover"
+                      src={secondaryImage.imageUrl}
+                    />
+                  ) : (
+                    <TemplateLandscape className="h-[84px] w-[84px]" />
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-6 overflow-hidden rounded-[28px] border border-[#e3eaf4] bg-[#eef4fb]">
+                {primaryImage ? (
+                  <img
+                    alt=""
+                    className="aspect-[1.45/1] w-full object-cover"
+                    src={primaryImage.imageUrl}
+                  />
+                ) : (
+                  <TemplateLandscape className="aspect-[1.45/1] w-full" />
+                )}
+              </div>
+
+              <div className="mt-4 grid grid-cols-3 gap-3">
+                {previewImages.length > 0
+                  ? previewImages.map((item, index) => (
+                      <img
+                        alt=""
+                        className="aspect-[1.1/1] rounded-[18px] border border-[#e1e8f2] object-cover"
+                        key={`${item.id}-${index}`}
+                        src={item.imageUrl}
+                      />
+                    ))
+                  : [0, 1, 2].map((index) => (
+                      <TemplateLandscape
+                        className="aspect-[1.1/1] rounded-[18px] border border-[#e1e8f2]"
+                        key={index}
+                      />
+                    ))}
+              </div>
+
+              <div className="mt-5 flex items-center justify-between border-t border-[#e2e9f3] pt-4">
+                <span className="text-[12px] font-bold uppercase tracking-[0.22em] text-[#8793a7]">
+                  ArtBoard profil
+                </span>
+                <span className="flex gap-1">
+                  <i className="h-2.5 w-2.5 rounded-full bg-[#182fc7]" />
+                  <i className="h-2.5 w-2.5 rounded-full bg-[#dc1735]" />
+                  <i className="h-2.5 w-2.5 rounded-full bg-[#ffc41d]" />
+                </span>
+              </div>
+            </div>
+
+            <div className="artboard-signal-chip absolute left-0 top-[12%] z-20 max-w-[170px] rounded-[22px] border border-[#dbe5f2] bg-white/92 p-4 shadow-[0_18px_48px_rgba(15,23,42,0.12)] backdrop-blur">
+              <p className="text-[12px] font-bold uppercase tracking-[0.22em] text-[#dc1735]">
+                Pretraga
+              </p>
+              <p className="mt-1 text-[14px] leading-[1.35] text-[#4f5c6f]">
+                Publika lakse pronalazi umjetnike i discipline.
+              </p>
+            </div>
+
+            <div className="artboard-signal-chip artboard-signal-chip-delay absolute right-0 top-[18%] z-20 max-w-[178px] rounded-[22px] border border-[#dbe5f2] bg-white/92 p-4 shadow-[0_18px_48px_rgba(15,23,42,0.12)] backdrop-blur">
+              <p className="text-[12px] font-bold uppercase tracking-[0.22em] text-[#182fc7]">
+                PDF alati
+              </p>
+              <p className="mt-1 text-[14px] leading-[1.35] text-[#4f5c6f]">
+                Portfolio se pretvara u profesionalan dokument.
+              </p>
+            </div>
+
+            <div className="artboard-signal-chip artboard-signal-chip-late absolute bottom-[6%] left-[10%] z-20 max-w-[190px] rounded-[22px] border border-[#dbe5f2] bg-white/92 p-4 shadow-[0_18px_48px_rgba(15,23,42,0.12)] backdrop-blur">
+              <p className="text-[12px] font-bold uppercase tracking-[0.22em] text-[#b28700]">
+                Prilike
+              </p>
+              <p className="mt-1 text-[14px] leading-[1.35] text-[#4f5c6f]">
+                Oglasi, saradnje i pozivi se vezuju za rad.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default async function ArtBoardPage() {
   const artBoardData = await getArtBoardData();
   const artistData = artBoardData?.artistData ?? null;
@@ -462,8 +645,7 @@ export default async function ArtBoardPage() {
       />
       <div className="pointer-events-none absolute left-[-18vw] top-[420px] -z-10 h-[56vw] w-[56vw] rounded-full border border-[#dce5f1]" />
       <div className="pointer-events-none absolute right-[-16vw] top-[860px] -z-10 h-[42vw] w-[42vw] rounded-full border border-[#dce5f1]" />
-
-      <section className="mx-auto max-w-[1320px] px-4 sm:px-6">
+      <section className="relative z-10 mx-auto max-w-[1320px] px-4 sm:px-6">
         <div className="relative overflow-hidden rounded-[50px] border border-[#dce5f1] bg-white/90 p-7 shadow-[0_32px_110px_rgba(38,51,71,0.1)] backdrop-blur sm:p-10 lg:min-h-[620px] lg:p-14">
           <span className="absolute right-[-110px] top-[-120px] h-[360px] w-[360px] rounded-full bg-[#ffc41d]/25" />
           <span className="absolute bottom-[-160px] left-[45%] h-[320px] w-[320px] rounded-full bg-[#182fc7]/10" />
@@ -526,7 +708,7 @@ export default async function ArtBoardPage() {
         </div>
       </section>
 
-      <section className="mx-auto mt-[-28px] max-w-[1180px] px-4 sm:px-6">
+      <section className="relative z-10 mx-auto mt-[-28px] max-w-[1180px] px-4 sm:px-6">
         <div className="relative z-10 grid gap-3 rounded-[30px] border border-[#dce5f1] bg-white/95 p-4 shadow-[0_18px_60px_rgba(38,51,71,0.08)] sm:grid-cols-2 lg:grid-cols-4">
           {proofItems.map((item, index) => (
             <article
@@ -546,7 +728,9 @@ export default async function ArtBoardPage() {
         </div>
       </section>
 
-      <section className="mx-auto mt-20 grid max-w-[1240px] gap-10 px-4 sm:px-6 lg:grid-cols-[0.75fr_1.25fr]">
+      <ArtBoardSignalMapSection items={heroMosaic} />
+
+      <section className="relative z-10 mx-auto mt-20 grid max-w-[1240px] gap-10 px-4 sm:px-6 lg:grid-cols-[0.75fr_1.25fr]">
         <div className="lg:sticky lg:top-32 lg:self-start">
           <p className="text-[13px] font-bold uppercase tracking-[0.32em] text-[#dc1735]">
             Zašto ArtBoard
@@ -590,7 +774,7 @@ export default async function ArtBoardPage() {
         </div>
       </section>
 
-      <section className="mx-auto mt-20 max-w-[1240px] scroll-mt-36 px-4 sm:px-6" id="alati">
+      <section className="relative z-10 mx-auto mt-20 max-w-[1240px] scroll-mt-36 px-4 sm:px-6" id="alati">
         <div className="relative overflow-hidden rounded-[44px] border border-[#dce5f1] bg-white p-6 shadow-[0_26px_90px_rgba(38,51,71,0.08)] sm:p-9">
           <span className="absolute right-[-90px] top-[-90px] h-60 w-60 rounded-full bg-[#182fc7]/10" />
           <div className="relative flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
@@ -636,7 +820,7 @@ export default async function ArtBoardPage() {
       </section>
 
       <section
-        className="mx-auto mt-16 max-w-[1240px] scroll-mt-36 px-4 sm:px-6"
+        className="relative z-10 mx-auto mt-16 max-w-[1240px] scroll-mt-36 px-4 sm:px-6"
         id="portfolio-builder"
       >
         <div className="relative grid gap-5 overflow-hidden rounded-[38px] border border-[#25314a] bg-[#101827] p-5 text-white shadow-[0_28px_90px_rgba(16,24,39,0.2)] sm:p-6 lg:grid-cols-[0.82fr_1.18fr] lg:p-7">
@@ -678,7 +862,7 @@ export default async function ArtBoardPage() {
         </div>
       </section>
 
-      <section className="mx-auto mt-20 max-w-[1240px] px-4 sm:px-6">
+      <section className="relative z-10 mx-auto mt-20 max-w-[1240px] px-4 sm:px-6">
         <div className="grid gap-8 lg:grid-cols-[0.72fr_1.28fr] lg:items-center">
           <div>
             <p className="text-[13px] font-bold uppercase tracking-[0.32em] text-[#dc1735]">
@@ -706,7 +890,7 @@ export default async function ArtBoardPage() {
         </div>
       </section>
 
-      <section className="mx-auto mt-20 max-w-[1240px] px-4 sm:px-6">
+      <section className="relative z-10 mx-auto mt-20 max-w-[1240px] px-4 sm:px-6">
         <div className="relative rounded-[44px] border border-[#dce5f1] bg-white p-7 sm:p-10">
           <p className="text-[13px] font-bold uppercase tracking-[0.32em] text-[#ffc41d]">
             Kako funkcioniše ArtBoard
@@ -722,7 +906,7 @@ export default async function ArtBoardPage() {
         </div>
       </section>
 
-      <section className="mx-auto mt-20 max-w-[1240px] scroll-mt-36 px-4 sm:px-6" id="paketi">
+      <section className="relative z-10 mx-auto mt-20 max-w-[1240px] scroll-mt-36 px-4 sm:px-6" id="paketi">
         <div>
           <p className="text-[13px] font-bold uppercase tracking-[0.32em] text-[#182fc7]">
             Paketi i cijene
@@ -757,7 +941,7 @@ export default async function ArtBoardPage() {
         </div>
       </section>
 
-      <section className="mx-auto mt-20 max-w-[1240px] px-4 sm:px-6">
+      <section className="relative z-10 mx-auto mt-20 max-w-[1240px] px-4 sm:px-6">
         <div className="relative overflow-hidden rounded-[42px] border border-[#dce5f1] bg-white p-7 sm:p-10">
           <span className="absolute bottom-[-90px] right-[-60px] h-56 w-56 rounded-full bg-[#ffc41d]/35" />
           <div className="relative grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
@@ -789,7 +973,7 @@ export default async function ArtBoardPage() {
         </div>
       </section>
 
-      <section className="mx-auto mt-20 max-w-[1240px] px-4 sm:px-6">
+      <section className="relative z-10 mx-auto mt-20 max-w-[1240px] px-4 sm:px-6">
         <div className="relative overflow-hidden rounded-[46px] bg-[#182fc7] p-8 text-white sm:p-12">
           <span className="absolute right-[-70px] top-[-70px] h-52 w-52 rounded-full bg-[#ffc41d]" />
           <span className="absolute bottom-[-60px] left-[-60px] h-44 w-44 rounded-full bg-[#dc1735]" />
@@ -816,7 +1000,9 @@ export default async function ArtBoardPage() {
         </div>
       </section>
 
-      <ArtBoardFaqSection items={artBoardFaqs} />
+      <div className="relative z-10">
+        <ArtBoardFaqSection items={artBoardFaqs} />
+      </div>
     </main>
   );
 }
