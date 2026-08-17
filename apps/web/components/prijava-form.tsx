@@ -117,7 +117,7 @@ export function PrijavaForm({ disciplines }: PrijavaFormProps) {
 
   const artworkCountMessage = useMemo(() => {
     if (artworkFiles.length === 0) {
-      return "Odaberite izmedju 6 i 25 JPG radova.";
+      return "Odaberite izmedju 6 i 25 JPG ili PNG radova.";
     }
 
     if (artworkFiles.length < 6) {
@@ -268,7 +268,12 @@ export function PrijavaForm({ disciplines }: PrijavaFormProps) {
 
   function handleArtworkSelection(event: React.ChangeEvent<HTMLInputElement>) {
     const selectedFiles = Array.from(event.target.files ?? []).filter(
-      (file) => file.type === "image/jpeg" || file.name.toLowerCase().endsWith(".jpg") || file.name.toLowerCase().endsWith(".jpeg"),
+      (file) =>
+        file.type === "image/jpeg" ||
+        file.type === "image/png" ||
+        file.name.toLowerCase().endsWith(".jpg") ||
+        file.name.toLowerCase().endsWith(".jpeg") ||
+        file.name.toLowerCase().endsWith(".png"),
     );
 
     if (selectedFiles.length === 0) {
@@ -308,8 +313,32 @@ export function PrijavaForm({ disciplines }: PrijavaFormProps) {
       return;
     }
 
+    const cleanedPortfolioLinks = portfolioLinks.map((item) => item.trim()).filter(Boolean);
+    const cleanedSocialLinks = socialLinks.map((item) => item.trim()).filter(Boolean);
+
     if (!profilePhotoFile) {
       setSubmitState({ kind: "error", message: "Profilna fotografija je obavezna." });
+      return;
+    }
+
+    if (artworkFiles.length < 6 || artworkFiles.length > 25) {
+      setSubmitState({
+        kind: "error",
+        message: "Potrebno je poslati izmedju 6 i 25 JPG ili PNG radova.",
+      });
+      return;
+    }
+
+    if (!portfolioPdfFile && cleanedPortfolioLinks.length === 0) {
+      setSubmitState({
+        kind: "error",
+        message: "Dodajte barem jedan portfolio link ili uploadujte portfolio PDF.",
+      });
+      return;
+    }
+
+    if (cleanedSocialLinks.length === 0) {
+      setSubmitState({ kind: "error", message: "Dodajte barem jedan link za drustvene mreze." });
       return;
     }
 
@@ -326,8 +355,8 @@ export function PrijavaForm({ disciplines }: PrijavaFormProps) {
         notes: formValues.notes.trim(),
         confirmedRules,
         disciplines: selectedDisciplineSlugs,
-        portfolioLinks: portfolioLinks.map((item) => item.trim()).filter(Boolean),
-        socialLinks: socialLinks.map((item) => item.trim()).filter(Boolean),
+        portfolioLinks: cleanedPortfolioLinks,
+        socialLinks: cleanedSocialLinks,
         portfolioPdf: portfolioPdfFile,
         profilePhoto: profilePhotoFile,
         featuredWorks: artworkFiles,
@@ -672,7 +701,7 @@ export function PrijavaForm({ disciplines }: PrijavaFormProps) {
                             Izdvojeni radovi *
                           </label>
                           <p className="mt-2 text-[15px] leading-7 text-[#5b6472]">
-                            Posalji izmedju 6 i 25 reprezentativnih JPG radova. Nakon odabira mozes ih
+                            Posalji izmedju 6 i 25 reprezentativnih JPG ili PNG radova. Nakon odabira mozes ih
                             pregledati, listati i ukloniti prije slanja.
                           </p>
                         </div>
@@ -685,13 +714,12 @@ export function PrijavaForm({ disciplines }: PrijavaFormProps) {
                       </div>
 
                       <input
-                        accept=".jpg,.jpeg,image/jpeg"
+                        accept=".jpg,.jpeg,.png,image/jpeg,image/png"
                         className="sr-only"
                         id="featuredWorks"
                         multiple
                         name="featuredWorks"
                         onChange={handleArtworkSelection}
-                        required
                         type="file"
                       />
 
@@ -825,7 +853,6 @@ export function PrijavaForm({ disciplines }: PrijavaFormProps) {
                         id="profilePhoto"
                         name="profilePhoto"
                         onChange={handleProfilePhotoChange}
-                        required
                         type="file"
                       />
 
@@ -877,7 +904,7 @@ export function PrijavaForm({ disciplines }: PrijavaFormProps) {
                     <ul className="mt-3 space-y-1">
                       <li>Popunjena sva obavezna polja</li>
                       <li>Portfolio u jednom od sljedecih formata: LINK ili PDF</li>
-                      <li>Izmedju 6 i 25 reprezentativnih radova u JPG formatu</li>
+                      <li>Izmedju 6 i 25 reprezentativnih radova u JPG ili PNG formatu</li>
                       <li>Profilna fotografija</li>
                     </ul>
                     <p className="mt-4">

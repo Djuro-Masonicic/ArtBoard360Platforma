@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import {
   downloadPortfolioCoverTestPdf,
@@ -1579,9 +1580,19 @@ function ArtworkEditModal({
   title: string;
   year: string;
 }) {
-  return (
-    <div className="fixed inset-0 z-[120] grid place-items-center bg-black/88 px-4 py-5 backdrop-blur-md">
-      <section className="grid max-h-[92vh] w-full max-w-[1180px] overflow-hidden rounded-3xl border border-white/[0.09] bg-[#080d16] text-white shadow-[0_40px_120px_rgba(0,0,0,0.65)] lg:grid-cols-[minmax(0,0.95fr)_minmax(420px,1.05fr)]">
+  const modal = (
+    <div
+      className="fixed inset-0 z-[999] flex min-h-screen items-center justify-center bg-[#02040a]/92 px-4 py-5 backdrop-blur-xl"
+      onMouseDown={onClose}
+      role="presentation"
+    >
+      <section
+        aria-label="Detalji rada"
+        aria-modal="true"
+        className="grid max-h-[92vh] w-full max-w-[1180px] overflow-hidden rounded-3xl border border-white/[0.09] bg-[#080d16] text-white shadow-[0_40px_120px_rgba(0,0,0,0.65)] lg:grid-cols-[minmax(0,0.95fr)_minmax(420px,1.05fr)]"
+        onMouseDown={(event) => event.stopPropagation()}
+        role="dialog"
+      >
         <div className="relative min-h-[300px] bg-[#050912] p-4 lg:min-h-0">
           <div className="absolute left-4 top-4 z-10 rounded-full border border-white/[0.12] bg-black/45 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-[#a78bfa] backdrop-blur">
             Preview rada
@@ -1670,6 +1681,15 @@ function ArtworkEditModal({
       </section>
     </div>
   );
+
+  // The editor cards live inside a scrollable grid column. Rendering the modal
+  // through a portal keeps it centered against the full browser viewport instead
+  // of letting parent layout/scroll containers influence its position.
+  if (typeof document === "undefined") {
+    return null;
+  }
+
+  return createPortal(modal, document.body);
 }
 
 function DesignWorkspace({

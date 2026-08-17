@@ -483,7 +483,7 @@ function ArtBoardSignalMapSection({
 
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
-                className="inline-flex min-h-[48px] items-center rounded-full bg-[#dc1735] px-5 text-[15px] font-bold text-white transition hover:bg-[#252933]"
+                className="inline-flex min-h-[48px] items-center rounded-full border border-[#dc1735] bg-[#dc1735] px-5 text-[15px] font-bold text-white transition hover:bg-white hover:text-[#dc1735]"
                 href={siteRoutes.portfolioBuilder}
               >
                 Pokreni Portfolio Builder
@@ -630,9 +630,10 @@ export default async function ArtBoardPage() {
     .map((artist) => ({
       id: artist.id,
       name: artist.name,
+      slug: artist.slug,
       imageUrl: artist.artworks[0]?.imageUrl ?? artist.profileImageUrl ?? "",
     }))
-    .filter((item) => item.imageUrl);
+    .filter((item) => item.imageUrl && item.slug);
 
   return (
     <main className="relative isolate overflow-hidden bg-[#f8fbff] pb-20 pt-[13vh] text-[#252933]">
@@ -691,7 +692,7 @@ export default async function ArtBoardPage() {
                       index === 3 ? "translate-y-2 -rotate-2" : "",
                       index === 4 ? "-translate-y-6 rotate-3" : "",
                     ].join(" ")}
-                    href={siteRoutes.artists}
+                    href={`${siteRoutes.artistProfileBase}/${item.slug}`}
                     key={item.id}
                     title={item.name}
                   >

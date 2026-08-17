@@ -1,4 +1,5 @@
 import { NavigationButton } from "@/components/navigation-button";
+import { siteRoutes } from "@/lib/site-routes";
 
 const FINAL_CTA_IMAGE_URL =
   "https://cdn.prod.website-files.com/681b5dac4415aa941af374fe/687ce08052c5ed751b10deca_Homepage%20Graphic%20Blue%20Card.webp";
@@ -27,7 +28,7 @@ export function HomeFinalCtaSection() {
 
               <NavigationButton
                 className="group inline-flex items-center gap-3 text-[1.05rem] font-bold text-white"
-                href="/kontakt"
+                href={siteRoutes.artboardContact}
               >
                 <svg
                   aria-hidden="true"

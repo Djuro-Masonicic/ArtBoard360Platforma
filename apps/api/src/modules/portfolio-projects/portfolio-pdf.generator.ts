@@ -1126,7 +1126,7 @@ class PortfolioTemplateContext {
         imageW,
         imageH,
         "COVER KOLEKCIJE",
-        "cover",
+        "contain",
         LIGHT_PANEL,
       );
       this.document.restore();
@@ -1190,7 +1190,7 @@ class PortfolioTemplateContext {
         coverW,
         coverH,
         "COVER SLIKA",
-        "cover",
+        "contain",
       );
       this.document.restore();
     } else {

@@ -39,7 +39,7 @@ export function ArtBoardFaqSection({ items }: ArtBoardFaqSectionProps) {
 
           <NavigationButton
             className="group mt-7 inline-flex min-h-[46px] items-center gap-3 rounded-full border-2 border-[#ffc41d] bg-[#ffc41d] px-5 text-[15px] font-bold text-[#252933] outline outline-1 outline-offset-2 outline-[#ffc41d] transition hover:bg-white hover:text-[#b88700]"
-            href={siteRoutes.contact}
+            href={siteRoutes.artboardContact}
           >
             <span
               className="h-3 w-3 rounded-full bg-white transition group-hover:bg-[#ffc41d]"

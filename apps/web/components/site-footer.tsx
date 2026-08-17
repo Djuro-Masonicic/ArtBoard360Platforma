@@ -1,6 +1,9 @@
-import Link from "next/link";
+"use client";
 
-import { publicNavigationItems } from "@/lib/site-routes";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+import { publicNavigationItems, siteRoutes } from "@/lib/site-routes";
 
 const socialLinks = [
   { href: "https://www.instagram.com/", label: "Instagram" },
@@ -16,6 +19,35 @@ const socialLinks = [
  * because they leave the Next.js app.
  */
 export function SiteFooter() {
+  const pathname = usePathname();
+
+  /**
+   * ArtBoard has its own contact page now.
+   * We keep the visual footer shared, but route "Kontakt" differently when the
+   * visitor is inside the ArtBoard product area.
+   */
+  const isArtBoardArea =
+    pathname === siteRoutes.artboard ||
+    pathname.startsWith(`${siteRoutes.artboard}/`) ||
+    pathname.startsWith(siteRoutes.artists) ||
+    pathname.startsWith(siteRoutes.artistProfileBase) ||
+    pathname.startsWith(siteRoutes.portfolioBuilder) ||
+    pathname.startsWith(siteRoutes.opportunities) ||
+    pathname.startsWith(siteRoutes.pricing) ||
+    pathname.startsWith(siteRoutes.application) ||
+    pathname.startsWith(siteRoutes.artistApplication) ||
+    pathname.startsWith(siteRoutes.registration) ||
+    pathname.startsWith(siteRoutes.login) ||
+    pathname.startsWith(siteRoutes.account) ||
+    pathname.startsWith(siteRoutes.subscription) ||
+    pathname.startsWith("/admin");
+
+  const footerNavigationItems = publicNavigationItems.map((item) =>
+    isArtBoardArea && item.label === "Kontakt"
+      ? { ...item, href: siteRoutes.artboardContact }
+      : item,
+  );
+
   return (
     <footer className="site-footer relative mt-24 overflow-hidden text-[#4a4f59]">
       <div className="site-footer__shape" aria-hidden="true" />
@@ -48,7 +80,7 @@ export function SiteFooter() {
             <p className="text-[18px] font-medium text-[#8d97a6]">Navigacija</p>
 
             <nav aria-label="Footer navigation" className="flex flex-col gap-4">
-              {publicNavigationItems.map((item) => (
+              {footerNavigationItems.map((item) => (
                 <Link key={item.label} className="site-footer__link" href={item.href}>
                   {item.label}
                 </Link>

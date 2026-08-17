@@ -38,6 +38,8 @@ interface StoredObject {
 export class R2StorageService {
   private readonly allowedImageMimeTypes = new Set([
     "image/jpeg",
+    "image/jpg",
+    "image/pjpeg",
     "image/png",
     "image/webp",
     "image/avif",

@@ -559,21 +559,23 @@ export class ArtistSubmissionsService {
     >
   > {
     if (files.length < 6 || files.length > 25) {
-      throw new BadRequestException("Submission artworks must include between 6 and 25 JPG files.");
+      throw new BadRequestException("Submission artworks must include between 6 and 25 JPG or PNG files.");
     }
 
     const uploads: Array<UploadedSubmissionFile & { originalFileName: string; mimeType: string; fileSizeBytes: number }> = [];
 
     for (const file of files) {
-      if (file.mimetype !== "image/jpeg") {
-        throw new BadRequestException("Submission artworks must be JPG files.");
+      const artworkMimeType = this.getSubmissionArtworkMimeType(file);
+
+      if (!artworkMimeType) {
+        throw new BadRequestException("Submission artworks must be JPG or PNG files.");
       }
 
       const uploadedFile = await this.storageService.uploadFile({
         recordId: submissionId,
         entityType: "submission-artwork",
         fileName: file.originalname,
-        mimeType: file.mimetype,
+        mimeType: artworkMimeType,
         fileSizeBytes: file.size,
         body: file.buffer,
       });
@@ -582,12 +584,38 @@ export class ArtistSubmissionsService {
       uploads.push({
         ...uploadedFile,
         originalFileName: file.originalname,
-        mimeType: file.mimetype,
+        mimeType: artworkMimeType,
         fileSizeBytes: file.size,
       });
     }
 
     return uploads;
+  }
+
+  /**
+   * Different browsers/devices can report image MIME types slightly differently.
+   * We normalize accepted submission artwork formats before sending them to R2
+   * so the stored metadata matches the actual image type.
+   */
+  private getSubmissionArtworkMimeType(file: Express.Multer.File): "image/jpeg" | "image/png" | null {
+    const mimeType = file.mimetype.toLowerCase();
+    const fileName = file.originalname.toLowerCase();
+
+    if (
+      mimeType === "image/jpeg" ||
+      mimeType === "image/jpg" ||
+      mimeType === "image/pjpeg" ||
+      fileName.endsWith(".jpg") ||
+      fileName.endsWith(".jpeg")
+    ) {
+      return "image/jpeg";
+    }
+
+    if (mimeType === "image/png" || fileName.endsWith(".png")) {
+      return "image/png";
+    }
+
+    return null;
   }
 
   private buildListWhere(query: ListArtistSubmissionsQueryDto): Prisma.ArtistSubmissionWhereInput {

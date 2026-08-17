@@ -131,6 +131,8 @@ export function AdminAdmissionEditor({ disciplines, submission }: AdminAdmission
   }
 
   async function submitUpdate(forcedStatus?: ArtistSubmissionStatus) {
+    const blogUrl = formState.blogUrl.trim();
+
     setSaveState({
       kind: "saving",
       label:
@@ -148,7 +150,7 @@ export function AdminAdmissionEditor({ disciplines, submission }: AdminAdmission
         phone: formState.phone.trim(),
         biography: formState.biography.trim(),
         motto: formState.motto.trim(),
-        blogUrl: formState.blogUrl.trim(),
+        blogUrl: blogUrl || undefined,
         notes: formState.notes.trim(),
         adminNotes: formState.adminNotes.trim(),
         confirmedRules: formState.confirmedRules,

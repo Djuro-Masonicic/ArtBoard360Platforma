@@ -9,6 +9,7 @@ export const siteRoutes = {
   home: "/",
   about: "/#o-nama",
   artboard: "/artboard",
+  artboardContact: "/artboard/kontakt",
   artists: "/umjetnici",
   artistProfileBase: "/umjetnik",
   portfolioBuilder: "/portfolio-builder",
