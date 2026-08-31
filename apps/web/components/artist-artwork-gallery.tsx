@@ -132,6 +132,7 @@ export function ArtistArtworkGallery({ artistName, artworks }: ArtistArtworkGall
         <div
           aria-label="Pregled radova"
           aria-modal="true"
+          data-lenis-prevent
           className="fixed inset-0 z-[80] bg-[rgba(12,12,12,0.9)]"
           role="dialog"
         >

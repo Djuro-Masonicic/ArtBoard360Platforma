@@ -1,6 +1,8 @@
 import Link from "next/link";
 
 import { ArtBoardFaqSection } from "@/components/artboard-faq-section";
+import { ArtBoardLogo } from "@/components/artboard-logo";
+import { ArtBoardSideShortcuts } from "@/components/artboard-side-shortcuts";
 import { ArtBoardTemplateCarousel } from "@/components/artboard-template-carousel";
 import { ArtistCard } from "@/components/artist-card";
 import { SiteCtaButton } from "@/components/site-cta-button";
@@ -18,17 +20,17 @@ const benefits = [
   {
     title: "Besplatna prijava",
     text: "Umjetnik može početi bez troška, poslati prijavu i dobiti osnovni javni profil nakon odobrenja.",
-    color: "#dc1735",
+    color: "#ff151d",
   },
   {
     title: "Profesionalna digitalna prezentacija",
     text: "Profil, radovi, biografija, discipline i kontakt su organizovani kao ozbiljna digitalna vizit karta.",
-    color: "#182fc7",
+    color: "#0875ff",
   },
   {
     title: "Praktični alati za razvoj karijere",
     text: "Portfolio Builder, promo materijali i upravljanje sadržajem pomažu umjetniku da brže pripremi nastup.",
-    color: "#ffc41d",
+    color: "#ffd31a",
   },
   {
     title: "Zajednica i profesionalne prilike",
@@ -42,37 +44,37 @@ const tools = [
     title: "Pretraživač umjetnika",
     text: "Javni katalog sa profilima, disciplinama, radovima i direktnim linkovima ka umjetnicima.",
     href: siteRoutes.artists,
-    color: "#182fc7",
+    color: "#0875ff",
   },
   {
     title: "Umjetnički profil",
     text: "Umjetnik sam uređuje bio, moto, radove, linkove, cover i profilnu fotografiju.",
     href: siteRoutes.registration,
-    color: "#dc1735",
+    color: "#ff151d",
   },
   {
     title: "Portfolio Builder",
     text: "Vođeni alat za profesionalni PDF portfolio iz profila ili potpuno od nule.",
     href: `${siteRoutes.artboard}#portfolio-builder`,
-    color: "#ffc41d",
+    color: "#ffd31a",
   },
   {
     title: "Generator promotivnih materijala",
     text: "Priprema za QR vizitku, digitalne linkove i buduće formate za društvene mreže.",
     href: siteRoutes.account,
-    color: "#182fc7",
+    color: "#0875ff",
   },
   {
     title: "Premium članstvo i paketi",
     text: "Naprednije opcije za umjetnike kojima treba više vidljivosti, exporta i profesionalnih alata.",
     href: `${siteRoutes.artboard}#paketi`,
-    color: "#dc1735",
+    color: "#ff151d",
   },
   {
     title: "Oglasi i profesionalne prilike",
     text: "Mjesto za open calls, konkurse, rezidencije, saradnje, angažmane i druge prilike.",
     href: siteRoutes.opportunities,
-    color: "#ffc41d",
+    color: "#ffd31a",
   },
 ];
 
@@ -241,9 +243,9 @@ function TemplateLandscape({ className = "" }: { className?: string }) {
 function MiniBrandDots({ className = "" }: { className?: string }) {
   return (
     <span className={`inline-flex items-center gap-0.5 ${className}`} aria-hidden="true">
-      <span className="h-1.5 w-1.5 rounded-full bg-[#182fc7]" />
-      <span className="h-1.5 w-1.5 rounded-full bg-[#dc1735]" />
-      <span className="h-1.5 w-1.5 rounded-full bg-[#ffc41d]" />
+      <span className="h-1.5 w-1.5 rounded-full bg-[#0875ff]" />
+      <span className="h-1.5 w-1.5 rounded-full bg-[#ff151d]" />
+      <span className="h-1.5 w-1.5 rounded-full bg-[#ffd31a]" />
     </span>
   );
 }
@@ -296,9 +298,9 @@ function PortfolioTemplatePreview({
               <span>Portfolio, 2026</span>
             </p>
             <p className="hidden">
-              <span className="text-[#182fc7]">●</span>
-              <span className="text-[#dc1735]">●</span>
-              <span className="text-[#ffc41d]">●</span> Portfolio, 2026
+              <span className="text-[#0875ff]">●</span>
+              <span className="text-[#ff151d]">●</span>
+              <span className="text-[#ffd31a]">●</span> Portfolio, 2026
             </p>
           </div>
           <TemplateLandscape className="h-16 rounded-[7px]" />
@@ -309,7 +311,7 @@ function PortfolioTemplatePreview({
   }
 
   return (
-    <div className="mx-auto aspect-[0.72/1] max-h-[255px] rounded-[14px] bg-[linear-gradient(135deg,#ffc51d,#dc1735_52%,#1048c6)] p-[5px] shadow-[0_14px_34px_rgba(0,0,0,0.22)]">
+    <div className="mx-auto aspect-[0.72/1] max-h-[255px] rounded-[14px] bg-[linear-gradient(135deg,#0875ff,#7d35ff_28%,#ff151d_58%,#ff7a1f_76%,#ffd31a)] p-[5px] shadow-[0_14px_34px_rgba(0,0,0,0.22)]">
       <div className="flex h-full flex-col bg-white p-4 text-[#101827]">
         <div className="grid grid-cols-[54px_1fr] gap-3">
           <TemplateLandscape className="h-14 w-14 rounded-full" />
@@ -325,9 +327,9 @@ function PortfolioTemplatePreview({
               <span>Portfolio, 2026</span>
             </p>
             <p className="hidden">
-              <span className="text-[#182fc7]">●</span>
-              <span className="text-[#dc1735]">●</span>
-              <span className="text-[#ffc41d]">●</span> Portfolio, 2026
+              <span className="text-[#0875ff]">●</span>
+              <span className="text-[#ff151d]">●</span>
+              <span className="text-[#ffd31a]">●</span> Portfolio, 2026
             </p>
           </div>
         </div>
@@ -393,7 +395,7 @@ function PortfolioTemplatePreviewCard({
   }
 
   return (
-    <div className="mx-auto aspect-[0.72/1] max-h-[270px] rounded-[14px] bg-[linear-gradient(135deg,#ffc51d,#dc1735_52%,#1048c6)] p-[5px] shadow-[0_18px_40px_rgba(0,0,0,0.22)]">
+    <div className="mx-auto aspect-[0.72/1] max-h-[270px] rounded-[14px] bg-[linear-gradient(135deg,#0875ff,#7d35ff_28%,#ff151d_58%,#ff7a1f_76%,#ffd31a)] p-[5px] shadow-[0_18px_40px_rgba(0,0,0,0.22)]">
       <div className="flex h-full flex-col bg-white p-4 text-[#101827]">
         <div className="grid grid-cols-[56px_1fr] gap-3">
           <TemplateLandscape className="h-14 w-14 rounded-full" />
@@ -426,17 +428,17 @@ function ArtBoardSignalMapSection({
     {
       label: "Profil",
       text: "Umjetnik dobija jasno mjesto za bio, kontakte, discipline i radove.",
-      color: "#182fc7",
+      color: "#0875ff",
     },
     {
       label: "Portfolio",
       text: "Iz profila nastaje PDF ili link spreman za galerije, konkurse i saradnike.",
-      color: "#dc1735",
+      color: "#ff151d",
     },
     {
       label: "Promocija",
       text: "Rad se lakse dijeli kroz pretragu, QR materijale i profesionalne prilike.",
-      color: "#ffc41d",
+      color: "#ffd31a",
     },
   ];
   const previewImages = [secondaryImage, tertiaryImage, primaryImage].filter(
@@ -636,13 +638,10 @@ export default async function ArtBoardPage() {
     .filter((item) => item.imageUrl && item.slug);
 
   return (
-    <main className="relative isolate overflow-hidden bg-[#f8fbff] pb-20 pt-[13vh] text-[#252933]">
+    <main className="artboard-platform-page relative isolate overflow-hidden pb-20 pt-[13vh] text-[#252933]">
+      <ArtBoardSideShortcuts />
       <div
-        className="pointer-events-none absolute inset-0 -z-10 opacity-80"
-        style={{
-          backgroundImage:
-            "radial-gradient(circle at 16% 7%, rgba(24,47,199,0.1), transparent 25%), radial-gradient(circle at 88% 14%, rgba(220,23,53,0.09), transparent 24%), radial-gradient(circle at 52% 52%, rgba(255,196,29,0.12), transparent 26%)",
-        }}
+        className="artboard-platform-gradient-bg pointer-events-none absolute inset-0 -z-10 opacity-95"
       />
       <div className="pointer-events-none absolute left-[-18vw] top-[420px] -z-10 h-[56vw] w-[56vw] rounded-full border border-[#dce5f1]" />
       <div className="pointer-events-none absolute right-[-16vw] top-[860px] -z-10 h-[42vw] w-[42vw] rounded-full border border-[#dce5f1]" />
@@ -652,14 +651,17 @@ export default async function ArtBoardPage() {
           <span className="absolute bottom-[-160px] left-[45%] h-[320px] w-[320px] rounded-full bg-[#182fc7]/10" />
           <div className="relative grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
             <div>
-              <p className="text-[12px] font-bold uppercase tracking-[0.34em] text-[#7c8798]">
-                Created by Art Studio 360
-              </p>
+              <div className="flex flex-wrap items-center gap-4">
+                <ArtBoardLogo className="artboard-hero-logo" />
+                <p className="text-[12px] font-bold uppercase tracking-[0.34em] text-[#7c8798]">
+                  Created by Art Studio 360
+                </p>
+              </div>
               <h1 className="mt-5 max-w-[780px] text-[44px] font-bold leading-[0.94] tracking-[-0.055em] text-[#2f3138] sm:text-[72px]">
-                Profesionalni umjetnički profil, portfolio i alati za vidljivost.
+                <span className="artboard-gradient-text">ArtBoard</span><span className="text-[#ff151d]">.</span>
               </h1>
               <p className="mt-6 max-w-[680px] text-[20px] leading-[1.5] text-[#4e5560]">
-                ArtBoard pomaže umjetnicima da predstave radove, kreiraju portfolio,
+                Profesionalni umjetnički profil, portfolio i alati za vidljivost. ArtBoard pomaže umjetnicima da predstave radove, kreiraju portfolio,
                 upravljaju promocijom i lakše dođu do publike, saradnika i profesionalnih
                 prilika.
               </p>
@@ -667,7 +669,7 @@ export default async function ArtBoardPage() {
               <div className="mt-9 flex flex-col gap-4 sm:flex-row">
                 <SiteCtaButton href={siteRoutes.registration} label="Kreiraj profil" />
                 <Link
-                  className="inline-flex min-h-[54px] w-fit items-center justify-center rounded-full border border-[#ccd7e6] bg-white px-6 text-[17px] font-bold text-[#252933] transition hover:border-[#182fc7] hover:text-[#182fc7]"
+                  className="inline-flex min-h-[54px] w-fit items-center justify-center rounded-full border border-[#ccd7e6] bg-white px-6 text-[17px] font-bold text-[#252933] transition hover:border-[#0875ff] hover:text-[#0875ff]"
                   href={siteRoutes.artists}
                 >
                   Istraži umjetnike
@@ -678,9 +680,9 @@ export default async function ArtBoardPage() {
             <div className="relative min-h-[430px]">
               <div className="absolute left-1/2 top-1/2 h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#dce5f1]" />
               <div className="absolute left-1/2 top-1/2 h-[360px] w-[360px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#dce5f1]" />
-              <span className="absolute left-[10%] top-[20%] h-12 w-12 rounded-full bg-[#182fc7]" />
-              <span className="absolute right-[18%] top-[15%] h-16 w-16 rounded-full bg-[#dc1735]" />
-              <span className="absolute bottom-[14%] left-[28%] h-14 w-14 rounded-full bg-[#ffc41d]" />
+              <span className="absolute left-[10%] top-[20%] h-12 w-12 rounded-full bg-[#0875ff]" />
+              <span className="absolute right-[18%] top-[15%] h-16 w-16 rounded-full bg-[#ff151d]" />
+              <span className="absolute bottom-[14%] left-[28%] h-14 w-14 rounded-full bg-[#ffd31a]" />
 
               <div className="relative mx-auto grid max-w-[560px] grid-cols-3 gap-3 pt-10">
                 {heroMosaic.slice(0, 6).map((item, index) => (
@@ -718,9 +720,9 @@ export default async function ArtBoardPage() {
             >
               <span
                 className="absolute right-4 top-4 h-3 w-3 rounded-full"
-                style={{ backgroundColor: ["#182fc7", "#dc1735", "#ffc41d", "#2f3138"][index] }}
+                style={{ backgroundColor: ["#0875ff", "#ff151d", "#ffd31a", "#2f3138"][index] }}
               />
-              <p className="text-[34px] font-bold tracking-[-0.05em] text-[#182fc7]">{item.value}</p>
+              <p className="text-[34px] font-bold tracking-[-0.05em] text-[#0875ff]">{item.value}</p>
               <p className="mt-1 text-[13px] font-bold uppercase tracking-[0.22em] text-[#7c8798]">
                 {item.label}
               </p>
@@ -975,9 +977,9 @@ export default async function ArtBoardPage() {
       </section>
 
       <section className="relative z-10 mx-auto mt-20 max-w-[1240px] px-4 sm:px-6">
-        <div className="relative overflow-hidden rounded-[46px] bg-[#182fc7] p-8 text-white sm:p-12">
-          <span className="absolute right-[-70px] top-[-70px] h-52 w-52 rounded-full bg-[#ffc41d]" />
-          <span className="absolute bottom-[-60px] left-[-60px] h-44 w-44 rounded-full bg-[#dc1735]" />
+        <div className="relative overflow-hidden rounded-[46px] bg-[linear-gradient(135deg,#0875ff,#7d35ff_26%,#ff151d_58%,#ff7a1f_78%,#ffd31a)] p-8 text-white sm:p-12">
+          <span className="absolute right-[-70px] top-[-70px] h-52 w-52 rounded-full bg-white/18" />
+          <span className="absolute bottom-[-60px] left-[-60px] h-44 w-44 rounded-full bg-black/16" />
           <div className="relative">
             <p className="text-[13px] font-bold uppercase tracking-[0.32em] text-[#ffc41d]">
               Spreman/na za ArtBoard?

@@ -24,7 +24,7 @@ export function PortfolioBuilderLanding({
 
   async function handleCreateFromProfile() {
     if (!isArtistLoggedIn) {
-      router.push("/artist/login");
+      router.push(`/artist/login?returnTo=${encodeURIComponent("/portfolio-builder")}`);
       return;
     }
 

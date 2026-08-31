@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 
+import { MailModule } from "../../mail/mail.module";
 import { AuthModule } from "../auth/auth.module";
 import { OpportunitiesController } from "./opportunities.controller";
 import { OpportunitiesService } from "./opportunities.service";
@@ -12,7 +13,7 @@ import { OpportunitiesService } from "./opportunities.service";
  * can create and maintain them through guarded endpoints.
  */
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, MailModule],
   controllers: [OpportunitiesController],
   providers: [OpportunitiesService],
 })

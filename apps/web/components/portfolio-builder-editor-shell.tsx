@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import {
@@ -97,6 +97,48 @@ const studioInputClassName =
 
 const studioTextareaClassName =
   "resize-y rounded-xl border border-[#3b4658] bg-[#121b2a] px-3 py-3 text-[13px] font-semibold leading-6 text-[#f8fafc] shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_0_1px_rgba(255,255,255,0.02)] outline-none transition placeholder:text-[#8490a4] hover:border-[#566276] hover:bg-[#162033] focus:border-[#d6a94f]/90 focus:bg-[#172235] focus:ring-4 focus:ring-[#d6a94f]/18 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d6a94f]/70";
+
+const portfolioDisciplineOptions = [
+  "3D umjetnost",
+  "Digitalna umjetnost",
+  "Eksperimentalno",
+  "Film",
+  "Fotografija",
+  "Graficki dizajn",
+  "Grafika",
+  "Ilustracija",
+  "Instalacija",
+  "Mixed-media",
+  "Rukotvorine",
+  "Skulptura",
+  "Slikarstvo",
+  "Street art",
+  "Strip",
+  "Videografija",
+];
+
+function getPortfolioDisciplineOptions(currentDiscipline: string) {
+  // Existing projects store disciplines as a single text field. We keep that
+  // backend shape for now, but split comma-separated values so the editor can
+  // behave like a real multi-select.
+  const currentValues = parseDisciplineList(currentDiscipline);
+  return Array.from(new Set([...currentValues, ...portfolioDisciplineOptions]));
+}
+
+function parseDisciplineList(value: string) {
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function formatDisciplineList(values: string[]) {
+  return values.join(", ");
+}
+
+function toggleDisciplineValue(values: string[], value: string) {
+  return values.includes(value) ? values.filter((item) => item !== value) : [...values, value];
+}
 
 export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorShellProps) {
   const router = useRouter();
@@ -1046,7 +1088,15 @@ function ProfileWorkspace({
         <Panel title="Artist profile">
           <div className="grid gap-3 lg:grid-cols-3">
             <BuilderInput label="Ime umjetnika" value={artistName} onChange={onArtistNameChange} />
-            <BuilderInput label="Disciplina" value={discipline} onChange={onDisciplineChange} />
+            <BuilderMultiSelect
+              label="Disciplina"
+              onToggle={(value) => {
+                const nextValues = toggleDisciplineValue(parseDisciplineList(discipline), value);
+                onDisciplineChange(formatDisciplineList(nextValues));
+              }}
+              options={getPortfolioDisciplineOptions(discipline)}
+              selectedValues={parseDisciplineList(discipline)}
+            />
             <BuilderInput label="Email" value={email} onChange={onEmailChange} />
             <BuilderInput label="Lokacija" value={location} onChange={onLocationChange} />
             <BuilderInput label="Website" value={websiteUrl} onChange={onWebsiteUrlChange} />
@@ -1580,31 +1630,47 @@ function ArtworkEditModal({
   title: string;
   year: string;
 }) {
+  useEffect(() => {
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+
+    // The artwork editor is a true modal. While it is open, the builder behind it
+    // should not keep scrolling because that makes the modal feel like part of the
+    // page instead of a focused editing surface.
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, []);
+
   const modal = (
     <div
-      className="fixed inset-0 z-[999] flex min-h-screen items-center justify-center bg-[#02040a]/92 px-4 py-5 backdrop-blur-xl"
+      className="fixed inset-0 z-[99999] flex h-dvh w-dvw items-center justify-center overflow-hidden bg-[#02040a]/96 p-4 backdrop-blur-2xl sm:p-6"
       onMouseDown={onClose}
       role="presentation"
     >
       <section
         aria-label="Detalji rada"
         aria-modal="true"
-        className="grid max-h-[92vh] w-full max-w-[1180px] overflow-hidden rounded-3xl border border-white/[0.09] bg-[#080d16] text-white shadow-[0_40px_120px_rgba(0,0,0,0.65)] lg:grid-cols-[minmax(0,0.95fr)_minmax(420px,1.05fr)]"
+        className="relative grid h-[min(90dvh,860px)] w-[min(94dvw,1480px)] overflow-hidden rounded-[34px] border border-white/[0.14] bg-[#080d16] text-white shadow-[0_44px_150px_rgba(0,0,0,0.82)] lg:grid-cols-[minmax(0,0.95fr)_minmax(470px,1.05fr)]"
         onMouseDown={(event) => event.stopPropagation()}
         role="dialog"
       >
-        <div className="relative min-h-[300px] bg-[#050912] p-4 lg:min-h-0">
+        <div className="relative flex min-h-[300px] items-center justify-center border-b border-white/[0.08] bg-[#050912] p-4 lg:h-full lg:min-h-0 lg:border-b-0 lg:border-r lg:border-white/[0.08] lg:p-8">
           <div className="absolute left-4 top-4 z-10 rounded-full border border-white/[0.12] bg-black/45 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-[#a78bfa] backdrop-blur">
             Preview rada
           </div>
           <img
             alt={artwork.title || "Portfolio artwork"}
-            className="h-full max-h-[86vh] min-h-[300px] w-full rounded-2xl object-contain"
+            className="max-h-[34dvh] w-full rounded-2xl object-contain shadow-[0_26px_80px_rgba(0,0,0,0.32)] lg:max-h-[calc(90dvh-96px)]"
             src={artwork.imageUrl}
           />
         </div>
 
-        <div className="portfolio-builder-scroll min-h-0 overflow-y-auto p-5 sm:p-7">
+        <div className="portfolio-builder-scroll h-full min-h-0 overflow-y-auto p-5 sm:p-7 lg:p-9">
           <header className="flex items-start justify-between gap-4">
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#a78bfa]">
@@ -3689,6 +3755,81 @@ function BuilderInput({
         value={value}
       />
     </label>
+  );
+}
+
+function BuilderSelect({
+  label,
+  onChange,
+  options,
+  placeholder,
+  value,
+}: {
+  label: string;
+  onChange: (value: string) => void;
+  options: string[];
+  placeholder: string;
+  value: string;
+}) {
+  return (
+    <label className="grid gap-1.5 text-[11px] font-bold text-white/[0.62]">
+      {label}
+      <select
+        className={`${studioInputClassName} appearance-none pr-9`}
+        onChange={(event) => onChange(event.target.value)}
+        value={value}
+      >
+        <option value="">{placeholder}</option>
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function BuilderMultiSelect({
+  label,
+  onToggle,
+  options,
+  selectedValues,
+}: {
+  label: string;
+  onToggle: (value: string) => void;
+  options: string[];
+  selectedValues: string[];
+}) {
+  return (
+    <div className="grid gap-1.5 text-[11px] font-bold text-white/[0.62]">
+      <span>{label}</span>
+      <div className="rounded-[18px] border border-[#6b7280]/70 bg-[#111827] p-2 shadow-inner shadow-black/20">
+        <div className="grid gap-2 sm:grid-cols-2">
+          {options.map((option) => {
+            const isSelected = selectedValues.includes(option);
+
+            return (
+              <button
+                className={`rounded-full border px-3 py-2 text-left text-[12px] font-bold transition ${
+                  isSelected
+                    ? "border-[#8b5cf6] bg-[#8b5cf6] text-white shadow-[0_10px_28px_rgba(139,92,246,0.28)]"
+                    : "border-white/[0.12] bg-white/[0.04] text-white/70 hover:border-[#8b5cf6]/70 hover:bg-white/[0.08] hover:text-white"
+                }`}
+                key={option}
+                onClick={() => onToggle(option)}
+                type="button"
+              >
+                {option}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <p className="text-[11px] font-semibold leading-4 text-white/40">
+        Mozes izabrati vise disciplina. Izbor se cuva u draftu i koristi u PDF-u.
+      </p>
+    </div>
   );
 }
 

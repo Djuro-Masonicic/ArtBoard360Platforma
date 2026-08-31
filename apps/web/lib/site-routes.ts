@@ -96,12 +96,7 @@ export const artStudioNavigationItems = [
  */
 export const artBoardNavigationItems = [
   {
-    href: `${siteRoutes.artboard}#alati`,
-    label: "Alati",
-    activePrefixes: [],
-  },
-  {
-    href: `${siteRoutes.artboard}#portfolio-builder`,
+    href: siteRoutes.portfolioBuilder,
     label: "Portfolio Builder",
     activePrefixes: [siteRoutes.portfolioBuilder],
   },
@@ -111,18 +106,8 @@ export const artBoardNavigationItems = [
     activePrefixes: [siteRoutes.artists, siteRoutes.artistProfileBase, "/artists"],
   },
   {
-    href: `${siteRoutes.artboard}#paketi`,
-    label: "Paketi",
-    activePrefixes: [siteRoutes.pricing, siteRoutes.subscription, "/artist/subscription", "/artist/subscribe"],
-  },
-  {
     href: siteRoutes.opportunities,
     label: "Oglasi",
     activePrefixes: [siteRoutes.opportunities],
-  },
-  {
-    href: siteRoutes.application,
-    label: "Prijavi se",
-    activePrefixes: [siteRoutes.application, siteRoutes.artistApplication],
   },
 ] as const;

@@ -2,10 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import type Lenis from "lenis";
+import { useLenis } from "lenis/react";
 
 import { logoutAdminAction } from "@/actions/admin-auth";
 import { logoutArtistAction } from "@/app/artist/login/actions";
+import { ArtBoardHeaderLogo } from "@/components/artboard-header-logo";
 import { SiteCtaButton } from "@/components/site-cta-button";
 import {
   artBoardNavigationItems,
@@ -95,7 +98,7 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
     pathname.startsWith(siteRoutes.login) ||
     pathname.startsWith(siteRoutes.account) ||
     pathname.startsWith(siteRoutes.subscription);
-  const navColors = isArtBoardUnit ? ["#182fc7", "#dc1735", "#ffc41d"] : ["#ffc41d", "#182fc7", "#dc1735"];
+  const navColors = isArtBoardUnit ? ["#ff151d", "#0875ff", "#ffd31a"] : ["#ffc41d", "#182fc7", "#dc1735"];
   const navigationItems = isArtBoardUnit
     ? artBoardNavigationItems
     : isArtStudioUnit
@@ -103,14 +106,17 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
       : publicNavigationItems;
   const logoHref = isArtBoardUnit ? siteRoutes.artboard : siteRoutes.home;
   const headerCtaHref = isArtBoardUnit
-    ? siteRoutes.registration
+    ? siteRoutes.login
     : isArtStudioUnit
       ? siteRoutes.artboard
       : siteRoutes.login;
-  const resolvedHeaderCtaLabel = isArtBoardUnit ? "Kreiraj profil" : isArtStudioUnit ? "Istrazi ArtBoard" : "Prijavi se";
+  const resolvedHeaderCtaLabel = isArtStudioUnit ? "Istražite ArtBoard" : "Prijavi se";
   const [isTransparentHeader, setIsTransparentHeader] = useState(isArtistHeroPage);
+  const [isArtBoardHeaderScrolled, setIsArtBoardHeaderScrolled] = useState(false);
   const isAuthenticated = Boolean(session);
   const shouldShowAccountMenu = isAuthenticated && !isArtStudioUnit;
+  const shouldShowHeaderCta = isArtStudioUnit || !isAuthenticated;
+  const shouldCondenseArtBoardHeader = isArtBoardHeaderScrolled && !isTransparentHeader;
 
   const isMobileMenuVisible = mobileMenuState !== "closed";
   const isMobileMenuOpen = mobileMenuState !== "closed";
@@ -125,17 +131,37 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
       return;
     }
 
-    const updateHeaderMode = () => {
-      setIsTransparentHeader(window.scrollY < window.innerHeight * 0.72);
+    setIsTransparentHeader(window.scrollY < window.innerHeight * 0.72);
+  }, [isArtistHeroPage]);
+
+  const handleLenisScroll = useCallback(
+    (lenis: Lenis) => {
+      if (isArtistHeroPage) {
+        setIsTransparentHeader(lenis.scroll < window.innerHeight * 0.72);
+      }
+    },
+    [isArtistHeroPage],
+  );
+
+  useLenis(handleLenisScroll, [handleLenisScroll]);
+
+  useEffect(() => {
+    if (!isArtBoardUnit) {
+      setIsArtBoardHeaderScrolled(false);
+      return;
+    }
+
+    const updateArtBoardHeader = () => {
+      setIsArtBoardHeaderScrolled(window.scrollY > 24);
     };
 
-    updateHeaderMode();
-    window.addEventListener("scroll", updateHeaderMode, { passive: true });
+    updateArtBoardHeader();
+    window.addEventListener("scroll", updateArtBoardHeader, { passive: true });
 
     return () => {
-      window.removeEventListener("scroll", updateHeaderMode);
+      window.removeEventListener("scroll", updateArtBoardHeader);
     };
-  }, [isArtistHeroPage]);
+  }, [isArtBoardUnit]);
 
   useEffect(() => {
     if (mobileMenuState === "opening") {
@@ -176,38 +202,73 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
     openMobileMenu();
   }
 
-  const desktopNavLinkClass = isTransparentHeader ? "home-nav-link home-nav-link--light" : "home-nav-link";
-  const desktopAvatarButtonClass = isTransparentHeader
-    ? "flex h-[54px] w-[54px] items-center justify-center overflow-hidden rounded-full border border-white/35 bg-white/10 shadow-none backdrop-blur-sm transition-all duration-500 ease-out hover:scale-[1.02]"
-    : "flex h-[54px] w-[54px] items-center justify-center overflow-hidden rounded-full border border-[#dde4ef] bg-[#fbfdff] shadow-[0_10px_24px_rgba(38,51,71,0.08)] transition-all duration-500 ease-out hover:scale-[1.02]";
-  const desktopAvatarTextClass = isTransparentHeader
-    ? "text-[16px] font-semibold uppercase text-white"
-    : "text-[16px] font-semibold uppercase text-[#2f3138]";
-  const desktopHeaderClass = isTransparentHeader
-    ? "relative z-20 mx-auto grid h-[88px] w-full max-w-[1192px] grid-cols-[minmax(0,160px)_1fr_auto] items-center bg-transparent px-6 transition-[background-color,box-shadow,border-radius,backdrop-filter] duration-500 ease-out sm:px-8 lg:grid-cols-[220px_1fr_220px] lg:px-[40px]"
-    : "relative z-20 mx-auto grid h-[88px] w-full max-w-[1192px] grid-cols-[minmax(0,160px)_1fr_auto] items-center rounded-full bg-white px-6 shadow-[0_14px_38px_rgba(38,51,71,0.08)] transition-[background-color,box-shadow,border-radius,backdrop-filter] duration-500 ease-out sm:px-8 lg:grid-cols-[220px_1fr_220px] lg:px-[40px]";
+  const desktopNavLinkClass = isArtBoardUnit
+    ? "home-nav-link artboard-header-nav__link"
+    : isTransparentHeader
+      ? "home-nav-link home-nav-link--light"
+      : "home-nav-link";
+  const desktopAvatarButtonClass = isArtBoardUnit
+    ? `artboard-header-account-button ${shouldCondenseArtBoardHeader ? "artboard-header-account-button--compact" : ""}`
+    : isTransparentHeader
+      ? "flex h-[54px] w-[54px] items-center justify-center overflow-hidden rounded-full border border-white/35 bg-white/10 shadow-none backdrop-blur-sm transition-all duration-500 ease-out hover:scale-[1.02]"
+      : "flex h-[54px] w-[54px] items-center justify-center overflow-hidden rounded-full border border-[#dde4ef] bg-[#fbfdff] shadow-[0_10px_24px_rgba(38,51,71,0.08)] transition-all duration-500 ease-out hover:scale-[1.02]";
+  const desktopAvatarTextClass = isArtBoardUnit
+    ? "text-[14px] font-semibold uppercase text-[#2f3138]"
+    : isTransparentHeader
+      ? "text-[16px] font-semibold uppercase text-white"
+      : "text-[16px] font-semibold uppercase text-[#2f3138]";
+  const desktopHeaderClass = isArtBoardUnit
+    ? `artboard-header-shell ${shouldCondenseArtBoardHeader ? "artboard-header-shell--scrolled" : ""} ${
+        shouldCondenseArtBoardHeader ? "artboard-header-shell--compact" : ""
+      }`
+    : isTransparentHeader
+      ? "relative z-20 mx-auto grid h-[88px] w-full max-w-[1192px] grid-cols-[minmax(0,160px)_1fr_auto] items-center bg-transparent px-6 transition-[background-color,box-shadow,border-radius,backdrop-filter] duration-500 ease-out sm:px-8 lg:grid-cols-[220px_1fr_220px] lg:px-[40px]"
+      : "relative z-20 mx-auto grid h-[88px] w-full max-w-[1192px] grid-cols-[minmax(0,160px)_1fr_auto] items-center rounded-full bg-white px-6 shadow-[0_14px_38px_rgba(38,51,71,0.08)] transition-[background-color,box-shadow,border-radius,backdrop-filter] duration-500 ease-out sm:px-8 lg:grid-cols-[220px_1fr_220px] lg:px-[40px]";
   const logoSrc = isTransparentHeader
     ? "https://cdn.prod.website-files.com/681b5dac4415aa941af374fe/68c978c51b6638fa49b92f6b_360%20Logo%20White.svg"
     : "https://cdn.prod.website-files.com/681b5dac4415aa941af374fe/682344cfd8a98907bbb50f8e_7e491909af25e7cd587505a1141c670a_360%20Logo%20Black.svg";
 
   return (
-    <div className="fixed z-30 w-[100vw] px-[5vw] pt-[5vh]">
+    <div
+      className={`fixed z-30 w-[100vw] ${
+        isArtBoardUnit
+          ? `artboard-header-frame ${shouldCondenseArtBoardHeader ? "artboard-header-frame--scrolled" : ""}`
+          : "px-[5vw] pt-[5vh]"
+      }`}
+    >
       <header className={desktopHeaderClass}>
-        <div className="relative z-10 flex min-w-0 items-center justify-start">
+        <div
+          className={`relative z-10 flex min-w-0 items-center justify-start ${
+            isArtBoardUnit ? "artboard-header-brand-cell" : ""
+          }`}
+        >
           <Link
-            className="inline-flex h-full items-center"
+            className={`inline-flex h-full items-center ${isArtBoardUnit ? "artboard-header-brand" : ""}`}
             href={logoHref}
             aria-label={isArtBoardUnit ? "ArtBoard" : "Art Studio 360"}
           >
-            <img
-              alt="Art Studio 360 logo"
-              className="block w-[78px] translate-y-[1px] transition-opacity duration-300 sm:w-[96px] lg:w-[112px]"
-              src={logoSrc}
-            />
+            {isArtBoardUnit ? (
+              <ArtBoardHeaderLogo
+                reactive={pathname === siteRoutes.artboard}
+                tone="dark"
+              />
+            ) : (
+              <img
+                alt="Art Studio 360 logo"
+                className="block w-[78px] translate-y-[1px] transition-opacity duration-300 sm:w-[96px] lg:w-[112px]"
+                data-art-studio-logo
+                src={logoSrc}
+              />
+            )}
           </Link>
         </div>
 
-        <nav aria-label="Primary navigation" className="hidden h-full items-center justify-center lg:flex">
+        <nav
+          aria-label="Primary navigation"
+          className={`hidden h-full items-center justify-center lg:flex ${
+            isArtBoardUnit ? "artboard-header-nav" : ""
+          }`}
+        >
           {navigationItems.map((item, index) => (
             <Link
               key={item.label}
@@ -217,22 +278,34 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
               href={item.href}
               style={{ ["--nav-accent" as string]: navColors[index % navColors.length] }}
             >
-              <span className="home-nav-link__label">{item.label}</span>
+              <span className="home-nav-link__label">
+                {isArtBoardUnit ? <span className="artboard-header-nav__signal" aria-hidden="true" /> : null}
+                {item.label}
+              </span>
             </Link>
           ))}
         </nav>
 
         {!shouldShowAccountMenu ? (
-          <div className="hidden items-center justify-end lg:flex">
-            <SiteCtaButton
-              asLink
-              href={headerCtaHref}
-              label={resolvedHeaderCtaLabel}
-              withArtBoardTransition={isArtStudioUnit}
-            />
+          <div
+            className={`hidden items-center justify-end lg:flex ${
+              isArtBoardUnit ? "artboard-header-action" : ""
+            }`}
+          >
+            {shouldShowHeaderCta ? (
+              <SiteCtaButton
+                asLink
+                className={isArtBoardUnit ? "artboard-header-cta" : ""}
+                href={headerCtaHref}
+                label={resolvedHeaderCtaLabel}
+                withArtBoardTransition={isArtStudioUnit}
+              />
+            ) : null}
           </div>
         ) : (
-          <div className="hidden justify-end lg:flex">
+          <div
+            className={`hidden justify-end lg:flex ${isArtBoardUnit ? "artboard-header-action" : ""}`}
+          >
             <div className="group relative">
               <button
                 aria-label="Otvori korisnicki meni"
@@ -315,12 +388,18 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
           </div>
         )}
 
-        <div className="relative z-10 flex items-center justify-end lg:hidden">
+        <div
+          className={`relative z-10 flex items-center justify-end lg:hidden ${
+            isArtBoardUnit ? "artboard-header-mobile-control" : ""
+          }`}
+        >
           <button
             aria-controls="mobile-site-menu"
             aria-expanded={isMobileMenuOpen}
             aria-label={isMobileMenuOpen ? "Zatvori meni" : "Otvori meni"}
-            className={`site-header-mobile-toggle ${isTransparentHeader ? "text-white" : ""}`}
+            className={`site-header-mobile-toggle ${isTransparentHeader && !isArtBoardUnit ? "text-white" : ""} ${
+              isArtBoardUnit ? "artboard-header-mobile-toggle" : ""
+            }`}
             onClick={toggleMobileMenu}
             type="button"
           >
@@ -330,7 +409,12 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
       </header>
 
       {isMobileMenuVisible ? (
-        <div className="site-mobile-menu" data-state={mobileMenuState} id="mobile-site-menu">
+        <div
+          className={`site-mobile-menu ${isArtBoardUnit ? "site-mobile-menu--artboard" : ""}`}
+          data-lenis-prevent
+          data-state={mobileMenuState}
+          id="mobile-site-menu"
+        >
           <div className="site-mobile-menu__sweep" />
 
           <div className="site-mobile-menu__content">
@@ -351,14 +435,16 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
             </nav>
 
             {!shouldShowAccountMenu ? (
-              <div className="site-mobile-menu__actions">
-                <SiteCtaButton
-                  asLink
-                  href={headerCtaHref}
-                  label={resolvedHeaderCtaLabel}
-                  withArtBoardTransition={isArtStudioUnit}
-                />
-              </div>
+              shouldShowHeaderCta ? (
+                <div className="site-mobile-menu__actions">
+                  <SiteCtaButton
+                    asLink
+                    href={headerCtaHref}
+                    label={resolvedHeaderCtaLabel}
+                    withArtBoardTransition={isArtStudioUnit}
+                  />
+                </div>
+              ) : null
             ) : (
               <div className="w-full max-w-[240px] rounded-[24px] border border-[#dde4ef] bg-white/95 px-4 py-4 text-center shadow-[0_14px_38px_rgba(38,51,71,0.08)]">
                 <div className="mx-auto flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border border-[#e1e7ef] bg-[#f3f6fb]">

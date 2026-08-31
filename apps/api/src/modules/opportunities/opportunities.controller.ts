@@ -8,10 +8,12 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseGuards,
 } from "@nestjs/common";
 
 import { AdminAuthGuard } from "../auth/admin-auth.guard";
+import { ArtistAuthGuard, ArtistRequest } from "../auth/artist-auth.guard";
 import {
   CreateOpportunityDto,
   ListOpportunitiesQueryDto,
@@ -38,6 +40,15 @@ export class OpportunitiesController {
   @Get(":id")
   getOpportunity(@Param("id", ParseUUIDPipe) id: string) {
     return this.opportunitiesService.getOpportunityById(id);
+  }
+
+  @UseGuards(ArtistAuthGuard)
+  @Post(":id/apply")
+  applyToOpportunity(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Req() request: ArtistRequest,
+  ) {
+    return this.opportunitiesService.applyToOpportunity(id, request.artistUser!.id);
   }
 
   @UseGuards(AdminAuthGuard)

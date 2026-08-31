@@ -146,3 +146,29 @@ async function parseOpportunityMutationResponse(response: Response) {
 
   return payload as Opportunity;
 }
+
+/**
+ * Browser-side artist application helper.
+ *
+ * The request goes through a Next route handler first because the artist auth
+ * token is stored in an HTTP-only cookie. The route handler forwards the token
+ * to the Nest API and the API sends the application email to the publisher.
+ */
+export async function applyToOpportunity(id: string) {
+  const response = await fetch(`/api/artist/opportunities/${id}/apply`, {
+    method: "POST",
+    cache: "no-store",
+  });
+
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    const error = new Error(payload?.message || "Prijava nije mogla biti poslata.") as Error & {
+      status?: number;
+    };
+    error.status = response.status;
+    throw error;
+  }
+
+  return payload as { message: string };
+}

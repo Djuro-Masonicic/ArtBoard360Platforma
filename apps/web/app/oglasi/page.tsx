@@ -1,4 +1,5 @@
 import { NavigationButton } from "@/components/navigation-button";
+import { OpportunityApplyButton } from "@/components/opportunity-apply-button";
 import { getOpportunities, type Opportunity, type OpportunityType } from "@/services/opportunities";
 
 export const dynamic = "force-dynamic";
@@ -139,24 +140,19 @@ export default async function OglasiPage() {
                 </div>
 
                 <div className="mt-auto pt-7">
-                  {opportunity.applyUrl ? (
+                  {opportunity.contactEmail ? (
+                    <OpportunityApplyButton opportunityId={opportunity.id} />
+                  ) : opportunity.applyUrl ? (
                     <NavigationButton
                       className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-[#e9153a] px-5 text-[15px] font-bold text-white transition hover:-translate-y-0.5 hover:bg-[#c81030]"
                       href={opportunity.applyUrl}
                     >
                       Otvori prijavu
                     </NavigationButton>
-                  ) : opportunity.contactEmail ? (
-                    <NavigationButton
-                      className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-[#e9153a] px-5 text-[15px] font-bold text-white transition hover:-translate-y-0.5 hover:bg-[#c81030]"
-                      href={`mailto:${opportunity.contactEmail}`}
-                    >
-                      Kontakt
-                    </NavigationButton>
                   ) : (
                     <NavigationButton
                       className="inline-flex min-h-[48px] items-center justify-center rounded-full border border-[#d4deec] px-5 text-[15px] font-bold text-[#2f3138] transition hover:border-[#182fc7] hover:text-[#182fc7]"
-                      href="/kontakt"
+                      href="/artboard/kontakt"
                     >
                       Pitaj za detalje
                     </NavigationButton>

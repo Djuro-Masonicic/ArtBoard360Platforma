@@ -2,6 +2,8 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import { Opportunity, OpportunityType, Prisma } from "@prisma/client";
 
 import { PaginatedResponse } from "../../common/dto/pagination-query.dto";
+import { env } from "../../config/env";
+import { ResendMailService } from "../../mail/resend-mail.service";
 import { PrismaService } from "../../prisma/prisma.service";
 import {
   CreateOpportunityDto,
@@ -18,7 +20,10 @@ import {
  */
 @Injectable()
 export class OpportunitiesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mailService: ResendMailService,
+  ) {}
 
   async listOpportunities(query: ListOpportunitiesQueryDto): Promise<PaginatedResponse<unknown>> {
     const where = this.buildWhere({
@@ -191,6 +196,87 @@ export class OpportunitiesService {
     return {
       id,
       deleted: true,
+    };
+  }
+
+  async applyToOpportunity(
+    id: string,
+    artistAccountId: string,
+  ): Promise<{ message: string }> {
+    const opportunity = await this.getOpportunityById(id);
+
+    if (opportunity.isArchived || opportunity.isDraft) {
+      throw new BadRequestException("Ovaj oglas trenutno nije otvoren za prijave.");
+    }
+
+    if (!opportunity.contactEmail) {
+      throw new BadRequestException(
+        "Oglas nema podesenu email adresu izdavaoca. Koristi vanjski link za prijavu.",
+      );
+    }
+
+    const artistAccount = await this.prisma.artistAccount.findUnique({
+      where: {
+        id: artistAccountId,
+      },
+      include: {
+        artist: {
+          include: {
+            disciplines: {
+              include: {
+                discipline: true,
+              },
+            },
+            socialLinks: true,
+            artworks: {
+              orderBy: [
+                {
+                  isFeatured: "desc",
+                },
+                {
+                  orderIndex: "asc",
+                },
+                {
+                  createdAt: "asc",
+                },
+              ],
+              take: 8,
+            },
+          },
+        },
+      },
+    });
+
+    if (!artistAccount || !artistAccount.artist) {
+      throw new NotFoundException("Artist account was not found.");
+    }
+
+    if (artistAccount.artist.isArchived || artistAccount.artist.isDraft) {
+      throw new BadRequestException("Profil umjetnika nije javno aktivan.");
+    }
+
+    const siteBaseUrl = env.siteBaseUrl.replace(/\/$/, "");
+    const artistProfileUrl = `${siteBaseUrl}/umjetnik/${artistAccount.artist.slug}`;
+
+    await this.mailService.sendOpportunityApplicationNotification({
+      publisherEmail: opportunity.contactEmail,
+      opportunityTitle: opportunity.title,
+      opportunityOrganization: opportunity.organization,
+      artistName: artistAccount.artist.name,
+      artistEmail: artistAccount.artist.email ?? artistAccount.email,
+      artistProfileUrl,
+      artistBio: artistAccount.artist.bio,
+      disciplines: artistAccount.artist.disciplines.map(
+        (artistDiscipline) => artistDiscipline.discipline.name,
+      ),
+      socialLinks: artistAccount.artist.socialLinks.map(
+        (link) => `${link.platform}: ${link.url}`,
+      ),
+      artworkUrls: artistAccount.artist.artworks.map((artwork) => artwork.imageUrl),
+    });
+
+    return {
+      message: "Prijava je poslata izdavaocu oglasa.",
     };
   }
 

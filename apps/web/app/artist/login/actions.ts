@@ -7,6 +7,21 @@ import { clearArtistSessionToken, setArtistSessionToken } from "@/lib/artist-ses
 import { ApiError } from "@/services/api";
 import { loginAdmin, loginArtist } from "@/services/auth";
 
+function readSafeReturnTo(formData: FormData): string | null {
+  const returnTo = String(formData.get("returnTo") ?? "").trim();
+
+  if (!returnTo) {
+    return null;
+  }
+
+  // Keep redirects inside this app only. External URLs should never be accepted from a form field.
+  if (!returnTo.startsWith("/") || returnTo.startsWith("//") || returnTo.includes("://")) {
+    return null;
+  }
+
+  return returnTo;
+}
+
 /**
  * One shared login action keeps the public login page simple:
  * if the entered email matches the configured admin email, we use the admin
@@ -18,6 +33,7 @@ export async function loginArtistAction(
 ): Promise<{ error: string | null }> {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const returnTo = readSafeReturnTo(formData);
 
   if (!email || !password) {
     return {
@@ -47,7 +63,7 @@ export async function loginArtistAction(
     const response = await loginArtist({ email, password });
     await clearAdminSessionToken();
     await setArtistSessionToken(response.token);
-    redirect("/artist/dashboard");
+    redirect(returnTo ?? "/artist/dashboard");
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) {
       return {

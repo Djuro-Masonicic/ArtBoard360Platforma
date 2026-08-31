@@ -15,7 +15,7 @@ const initialState = {
  * A dedicated artist login form keeps the account-entry flow separate from
  * admin auth while still following the same server-action pattern.
  */
-export function ArtistLoginForm() {
+export function ArtistLoginForm({ returnTo }: { returnTo?: string | null }) {
   const [state, formAction, isPending] = useActionState(loginArtistAction, initialState);
   const { showAlert } = useUiFeedback();
 
@@ -35,6 +35,8 @@ export function ArtistLoginForm() {
 
   return (
     <form action={formAction} className="space-y-5">
+      {returnTo ? <input name="returnTo" type="hidden" value={returnTo} /> : null}
+
       <label className="block space-y-2">
         <span className="text-[15px] font-semibold text-[#2f3138]">E-mail</span>
         <input

@@ -35,6 +35,19 @@ interface ArtistPasswordResetMailData {
   expiresAt: Date;
 }
 
+interface OpportunityApplicationMailData {
+  publisherEmail: string;
+  opportunityTitle: string;
+  opportunityOrganization?: string | null;
+  artistName: string;
+  artistEmail?: string | null;
+  artistProfileUrl: string;
+  artistBio?: string | null;
+  disciplines: string[];
+  socialLinks: string[];
+  artworkUrls: string[];
+}
+
 /**
  * We keep the existing service name so the rest of the application does not
  * need to change, but the transport is the Resend API.
@@ -167,6 +180,82 @@ export class ResendMailService {
     await this.sendWithLogging({
       mailType: "artist password reset",
       recipients: [data.email],
+      subject,
+      text,
+      html,
+    });
+  }
+
+  async sendOpportunityApplicationNotification(data: OpportunityApplicationMailData) {
+    this.assertConfigured();
+
+    const subject = `Prijava na oglas: ${data.opportunityTitle}`;
+    const artistEmail = data.artistEmail || "Email nije naveden";
+
+    const text = [
+      "Postovani,",
+      "",
+      `${data.artistName} se prijavio/la na oglas "${data.opportunityTitle}" putem ArtBoard platforme.`,
+      data.opportunityOrganization ? `Organizacija: ${data.opportunityOrganization}` : null,
+      "",
+      `Profil umjetnika: ${data.artistProfileUrl}`,
+      `Email umjetnika: ${artistEmail}`,
+      data.disciplines.length ? `Discipline: ${data.disciplines.join(", ")}` : null,
+      "",
+      data.artistBio ? `Biografija:\n${data.artistBio}` : null,
+      "",
+      data.socialLinks.length
+        ? `Drustvene mreze / portfolio linkovi:\n${data.socialLinks.join("\n")}`
+        : null,
+      data.artworkUrls.length ? `Odabrani radovi:\n${data.artworkUrls.join("\n")}` : null,
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #1f2430;">
+        <p>Postovani,</p>
+        <p>
+          <strong>${escapeHtml(data.artistName)}</strong> se prijavio/la na oglas
+          <strong>${escapeHtml(data.opportunityTitle)}</strong> putem ArtBoard platforme.
+        </p>
+        ${
+          data.opportunityOrganization
+            ? `<p><strong>Organizacija:</strong> ${escapeHtml(data.opportunityOrganization)}</p>`
+            : ""
+        }
+        <p><strong>Profil umjetnika:</strong> <a href="${escapeHtml(data.artistProfileUrl)}">${escapeHtml(data.artistProfileUrl)}</a></p>
+        <p><strong>Email umjetnika:</strong> ${escapeHtml(artistEmail)}</p>
+        ${
+          data.disciplines.length
+            ? `<p><strong>Discipline:</strong> ${escapeHtml(data.disciplines.join(", "))}</p>`
+            : ""
+        }
+        ${
+          data.artistBio
+            ? `<p><strong>Biografija:</strong><br>${escapeHtml(data.artistBio).replaceAll("\n", "<br>")}</p>`
+            : ""
+        }
+        ${
+          data.socialLinks.length
+            ? `<p><strong>Drustvene mreze / portfolio linkovi:</strong><br>${data.socialLinks
+                .map((link) => escapeHtml(link))
+                .join("<br>")}</p>`
+            : ""
+        }
+        ${
+          data.artworkUrls.length
+            ? `<p><strong>Odabrani radovi:</strong><br>${data.artworkUrls
+                .map((url) => `<a href="${escapeHtml(url)}">${escapeHtml(url)}</a>`)
+                .join("<br>")}</p>`
+            : ""
+        }
+      </div>
+    `;
+
+    await this.sendWithLogging({
+      mailType: "opportunity application",
+      recipients: [data.publisherEmail],
       subject,
       text,
       html,
