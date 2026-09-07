@@ -1,90 +1,118 @@
+import type { CSSProperties } from "react";
+
+import { Layers3, Palette, PenTool, type LucideIcon } from "lucide-react";
+
 import { NavigationButton } from "@/components/navigation-button";
 import { siteRoutes } from "@/lib/site-routes";
 
-const workAreas = [
+const assetRoot = "https://cdn.prod.website-files.com/681b5dac4415aa941af374fe";
+
+type WorkArea = {
+  color: string;
+  description: string;
+  href: string;
+  icon: LucideIcon;
+  imageAlt: string;
+  imageUrl: string;
+  ink: string;
+  label: string;
+  title: string;
+};
+
+const workAreas: WorkArea[] = [
   {
-    color: "#182fc7",
+    color: "#2947e8",
     description:
-      "Vizuelni identiteti, kampanje, digitalni materijali i kreativna komunikacija za brendove, institucije i projekte.",
+      "Kreiramo dizajnerska rješenja, pružamo usluge digitalnog marketinga i stvaramo multimedijalni sadržaj za kompanije i pojedince.",
     href: siteRoutes.services,
+    icon: Palette,
+    imageAlt: "Radni sto za grafički dizajn",
+    imageUrl: `${assetRoot}/68ac86c0503ee2cb8b45c150_30647fcaa8b2a8367a314d5e5aa53ad2_graficki%20dizajn%201.webp`,
+    ink: "#ffffff",
     label: "Pogledaj usluge",
-    title: "Dizajn i vizuelni identitet",
+    title: "Usluge",
   },
   {
-    color: "#dc1735",
+    color: "#f3311b",
     description:
-      "Koncepti, produkcija i organizacija kulturnih programa koji povezuju umjetnike, publiku i partnere.",
+      "Razvijamo ArtBoard platformu i druge umjetničke projekte koji podržavaju vidljivost, povezivanje i razvoj umjetnika.",
     href: siteRoutes.artboard,
+    icon: Layers3,
+    imageAlt: "Digitalna ilustracija u nastajanju",
+    imageUrl: `${assetRoot}/687cc9e8daebd9a75c7256a0_img--services-hero-01.webp`,
+    ink: "#ffffff",
     label: "Istraži ArtBoard",
-    title: "Kreativni i kulturni projekti",
+    title: "Projekti",
   },
   {
-    color: "#ffc41d",
+    color: "#ffbf2c",
     description:
-      "Web platforme, digitalni alati i proizvodi za umjetnike, kreativce i organizacije u kulturi.",
+      "Gradimo praktične digitalne alate koji umjetnicima i kreativcima olakšavaju predstavljanje, promociju i profesionalni razvoj.",
     href: siteRoutes.portfolioBuilder,
-    label: "Portfolio Builder",
-    title: "Web i digitalni proizvodi",
+    icon: PenTool,
+    imageAlt: "Korišćenje digitalnih alata na telefonu",
+    imageUrl: `${assetRoot}/687cc9e86da8dd5b2a7c9446_img--services-hero-05.webp`,
+    ink: "#171717",
+    label: "Isprobaj alate",
+    title: "Digitalni alati",
   },
 ];
 
 export function ArtStudioWorkAreasSection() {
   return (
-    <section className="bg-[#f8fbff] px-5 py-16 sm:px-8 lg:px-10">
-      <div className="mx-auto max-w-[1280px]">
-        <div className="max-w-[760px]">
-          <p className="text-[13px] font-bold uppercase tracking-[0.28em] text-[#8a94a5]">
-            Oblasti rada
-          </p>
-          <h2 className="mt-4 text-[2.5rem] font-bold leading-[0.98] tracking-[-0.05em] text-[#2f3138] sm:text-[3.4rem]">
-            Studio razvija ideje od vizuelnog identiteta do digitalnog proizvoda
-            <span className="text-[#ffc41d]">.</span>
+    <section className="art-studio-areas" id="work-areas">
+      <div className="art-studio-areas__inner">
+        <header className="art-studio-areas__heading">
+          <span aria-hidden="true" className="art-studio-areas__dots">
+            <span />
+            <span />
+            <span />
+          </span>
+          <h2>
+            Tri oblasti, jedan studio<span>.</span>
           </h2>
-        </div>
+        </header>
 
-        <div className="mt-10 grid gap-5 lg:grid-cols-3">
-          {workAreas.map((area) => (
-            <article
-              className="group flex min-h-[320px] flex-col justify-between rounded-[32px] border border-[#dde6f2] bg-white p-7 shadow-[0_20px_54px_rgba(37,51,73,0.07)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(37,51,73,0.12)]"
-              key={area.title}
-            >
-              <div>
-                <div
-                  className="flex h-16 w-16 items-center justify-center rounded-full text-white"
-                  style={{ backgroundColor: area.color }}
-                >
-                  <span
-                    className="h-4 w-4 rounded-full bg-white"
-                    aria-hidden="true"
-                  />
+        <div className="art-studio-areas__grid">
+          {workAreas.map((area, index) => {
+            const Icon = area.icon;
+            const areaStyle = {
+              "--area-color": area.color,
+              "--area-ink": area.ink,
+            } as CSSProperties;
+
+            return (
+              <article className="art-studio-area-card" key={area.title} style={areaStyle}>
+                <div className="art-studio-area-card__body">
+                  <div className="art-studio-area-card__body-fill" aria-hidden="true" />
+                  <div className="art-studio-area-card__header">
+                    <span className="art-studio-area-card__icon" aria-hidden="true">
+                      <Icon strokeWidth={1.9} />
+                    </span>
+                    <h3>{area.title}</h3>
+                    <span className="art-studio-area-card__number">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                  </div>
+                  <p>{area.description}</p>
                 </div>
-                <h3 className="mt-7 text-[1.85rem] font-bold leading-[1.03] tracking-[-0.04em] text-[#252933]">
-                  {area.title}
-                </h3>
-                <p className="mt-4 text-[18px] font-medium leading-[1.35] text-[#566174]">
-                  {area.description}
-                </p>
-              </div>
-              <NavigationButton
-                className="relative isolate mt-8 inline-flex min-h-[46px] w-fit items-center gap-3 overflow-hidden rounded-full border bg-[var(--area-color)] px-5 text-[15px] font-bold text-white transition [border-color:var(--area-color)] group-hover:bg-white group-hover:text-[var(--area-color)]"
-                style={
-                  {
-                    "--area-color": area.color,
-                  } as React.CSSProperties
-                }
-                href={area.href}
-                title={area.label}
-                withArtBoardTransition={area.href === siteRoutes.artboard}
-              >
-                <span
-                  className="relative z-10 h-3 w-3 rounded-full bg-current transition-colors"
-                  aria-hidden="true"
-                />
 
-                <span className="relative z-10">{area.label}</span>
-              </NavigationButton>
-            </article>
-          ))}
+                <figure className="art-studio-area-card__image">
+                  <img alt={area.imageAlt} src={area.imageUrl} />
+                </figure>
+
+                <NavigationButton
+                  className="art-studio-area-card__action"
+                  href={area.href}
+                  title={area.label}
+                  withArtBoardTransition={area.href === siteRoutes.artboard}
+                >
+                  <span aria-hidden="true" />
+                  {area.label}
+                </NavigationButton>
+              </article>
+            );
+          })}
         </div>
       </div>
     </section>

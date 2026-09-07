@@ -1,132 +1,140 @@
-import type { Artist } from "@/types/api";
+import type { LucideIcon } from "lucide-react";
+import { BookOpen, Eye, Sparkles, Wrench } from "lucide-react";
+import Image from "next/image";
 
-import { SiteCtaButton } from "./site-cta-button";
+import { ArtBoardLogo } from "@/components/artboard-logo";
+import { ArtBoardTransitionLink } from "@/components/artboard-transition-link";
+import { siteRoutes } from "@/lib/site-routes";
 
-interface HomeArtboardArtistsSectionProps {
-  artists: Artist[];
-}
+type Feature = {
+  accent: "blue" | "red" | "yellow" | "violet";
+  description: string;
+  href: string;
+  icon: LucideIcon;
+  image: string;
+  imageClassName?: string;
+  label: string;
+  title: string;
+};
 
-interface ArtistShowcaseImage {
-  alt: string;
-  imageUrl: string;
-}
+const features: Feature[] = [
+  {
+    accent: "blue",
+    description: "Umjetnički profil, portfolio i prostor za predstavljanje umjetničkog rada.",
+    href: siteRoutes.artists,
+    icon: Eye,
+    image: "/artboard-features/visibility-bust-v2.png",
+    imageClassName: "home-artboard-feature-card__object--bust",
+    label: "Vidljivost",
+    title: "Predstavi svoj rad",
+  },
+  {
+    accent: "red",
+    description: "Digitalni alati za prezentaciju, promociju i profesionalni razvoj karijere.",
+    href: siteRoutes.portfolioBuilder,
+    icon: Wrench,
+    image: "/artboard-features/tools-sculpture.png",
+    label: "Alati",
+    title: "Koristi praktične alate",
+  },
+  {
+    accent: "yellow",
+    description: "Edukativni sadržaji, resursi i mjesto za razmjenu znanja i ideja.",
+    href: siteRoutes.artboard,
+    icon: BookOpen,
+    image: "/artboard-features/education-books-v2.png",
+    imageClassName: "home-artboard-feature-card__object--books",
+    label: "Edukacija",
+    title: "Uči i razmjenjuj znanje",
+  },
+  {
+    accent: "violet",
+    description: "Konkursi, poslovi, saradnje i druge prilike za karijerni razvoj i zaradu.",
+    href: siteRoutes.opportunities,
+    icon: Sparkles,
+    image: "/artboard-features/opportunities-hand.png",
+    imageClassName: "home-artboard-feature-card__object--hand",
+    label: "Karijera",
+    title: "Pronađi nove prilike",
+  },
+];
 
-/**
- * Homepage showcase for ArtBoard artists.
- * The two marquee rows intentionally move in opposite directions to echo the
- * original Webflow feeling without coupling this code to Webflow internals.
- */
-export function HomeArtboardArtistsSection({ artists }: HomeArtboardArtistsSectionProps) {
-  const showcaseImages = getArtistShowcaseImages(artists);
-
-  if (showcaseImages.length === 0) {
-    return null;
-  }
-
-  const largeImages = repeatImages(showcaseImages, 2);
-  const smallImages = repeatImages([...showcaseImages].reverse(), 2);
-
+export function HomeArtboardArtistsSection() {
   return (
-    <section id="umjetnici" className="relative -mx-5 overflow-hidden bg-[#f8fbff] py-20 sm:-mx-8 sm:py-24 lg:-mx-10 lg:py-28">
-      <div className="mx-auto flex max-w-[1080px] flex-col items-center px-5 text-center sm:px-8 lg:px-10">
-        <h2 className="text-[3.2rem] font-normal leading-[0.94] text-[#555b64] sm:text-[4.2rem] lg:text-[5rem]">
-          Umjetnici
-          <strong className="block font-bold text-[#2f3138]">
-            ArtBoard platforme<span className="text-[#dc1735]">.</span>
-          </strong>
-        </h2>
+    <section id="artboard-platforma" className="home-artboard-platform">
+      <div className="home-artboard-platform__intro">
+        <div className="home-artboard-platform__copy">
+          <p className="home-artboard-platform__eyebrow">Created by Art Studio 360</p>
+          <h2>
+            <span>ArtBoard.</span>
+            Tvoj prostor
+            <br />
+            za umjetnost.
+          </h2>
+          <p className="home-artboard-platform__description">
+            ArtBoard je digitalna platforma koja pruža umjetnicima prostor za profesionalno
+            predstavljanje, praktične alate, nova znanja i prilike za razvoj umjetničke karijere.
+          </p>
+        </div>
 
-        <p className="mt-7 max-w-[960px] text-[22px] font-medium leading-[1.16] text-[#2f3138] sm:text-[26px]">
-          ArtBoard okuplja umjetnike, njihove portfolije i profesionalne priče.
-          <br className="hidden sm:block" />
-          Platforma pomaže da rad bude vidljiv, organizovan i spreman za saradnju.
-        </p>
-
-        <SiteCtaButton className="mt-10" href="/umjetnici" label="Vidi sve umjetnike" />
+        <div className="home-artboard-platform__logo-stage" aria-hidden="true">
+          <span className="home-artboard-platform__logo-halo" />
+          <ArtBoardLogo className="home-artboard-platform__logo" showWordmark={false} />
+        </div>
       </div>
 
-      <div className="mt-20 -rotate-[3deg] space-y-5">
-        <MovingImageRow direction="left" images={largeImages} size="large" />
-        <MovingImageRow direction="right" images={smallImages} size="small" />
+      <div className="home-artboard-platform__features">
+        {features.map((feature) => (
+          <FeatureCard feature={feature} key={feature.title} />
+        ))}
+      </div>
+
+      <div className="home-artboard-platform__actions">
+        <ArtBoardTransitionLink
+          className="home-artboard-platform__button home-artboard-platform__button--primary"
+          href={siteRoutes.artboard}
+        >
+          Istraži ArtBoard platformu
+        </ArtBoardTransitionLink>
+        <ArtBoardTransitionLink
+          className="home-artboard-platform__button home-artboard-platform__button--secondary"
+          href={siteRoutes.registration}
+        >
+          Kreiraj profil besplatno
+        </ArtBoardTransitionLink>
       </div>
     </section>
   );
 }
 
-function MovingImageRow({
-  direction,
-  images,
-  size,
-}: {
-  direction: "left" | "right";
-  images: ArtistShowcaseImage[];
-  size: "large" | "small";
-}) {
-  const trackClassName =
-    direction === "left"
-      ? "home-artists-marquee__track home-artists-marquee__track--left"
-      : "home-artists-marquee__track home-artists-marquee__track--right";
+function FeatureCard({ feature }: { feature: Feature }) {
+  const Icon = feature.icon;
 
   return (
-    <div className="home-artists-marquee" aria-hidden="true">
-      <div className={trackClassName}>
-        {images.map((image, index) => (
-          <div
-            className={
-              size === "large"
-                ? "home-artists-marquee__card home-artists-marquee__card--large"
-                : "home-artists-marquee__card home-artists-marquee__card--small"
-            }
-            key={`${image.imageUrl}-${index}`}
-          >
-            <img alt={image.alt} className="h-full w-full object-cover" src={image.imageUrl} />
-          </div>
-        ))}
-      </div>
-    </div>
+    <ArtBoardTransitionLink
+      className={`home-artboard-feature-card home-artboard-feature-card--${feature.accent}`}
+      href={feature.href}
+    >
+      <span className="home-artboard-feature-card__object-wrap" aria-hidden="true">
+        <Image
+          alt=""
+          className={`home-artboard-feature-card__object ${feature.imageClassName ?? ""}`}
+          fill
+          sizes="(max-width: 640px) 72vw, (max-width: 1024px) 40vw, 22vw"
+          src={feature.image}
+        />
+      </span>
+
+      <span className="home-artboard-feature-card__body">
+        <strong>{feature.title}</strong>
+        <span className="home-artboard-feature-card__description">{feature.description}</span>
+        <span className="home-artboard-feature-card__tag">
+          <span className="home-artboard-feature-card__tag-icon" aria-hidden="true">
+            <Icon size={14} strokeWidth={2.25} />
+          </span>
+          {feature.label}
+        </span>
+      </span>
+    </ArtBoardTransitionLink>
   );
-}
-
-function getArtistShowcaseImages(artists: Artist[]) {
-  const images: ArtistShowcaseImage[] = [];
-  const seenUrls = new Set<string>();
-
-  for (const artist of artists) {
-    const candidateUrls = [
-      ...artist.artworks
-        .filter((artwork) => artwork.isFeatured)
-        .map((artwork) => artwork.imageUrl),
-      ...artist.artworks.map((artwork) => artwork.imageUrl),
-      artist.coverImageUrl,
-      artist.thumbnailUrl,
-      artist.profileImageUrl,
-    ].filter(Boolean);
-
-    for (const imageUrl of candidateUrls) {
-      if (!imageUrl || seenUrls.has(imageUrl)) {
-        continue;
-      }
-
-      seenUrls.add(imageUrl);
-      images.push({
-        alt: artist.name,
-        imageUrl,
-      });
-
-      break;
-    }
-  }
-
-  return images.slice(0, 18);
-}
-
-function repeatImages(images: ArtistShowcaseImage[], minimumRepeats: number) {
-  const repeatedImages: ArtistShowcaseImage[] = [];
-  const repeatCount = Math.max(minimumRepeats, Math.ceil(16 / Math.max(images.length, 1)));
-
-  for (let index = 0; index < repeatCount; index += 1) {
-    repeatedImages.push(...images);
-  }
-
-  return repeatedImages;
 }

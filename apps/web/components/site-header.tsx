@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type Lenis from "lenis";
 import { useLenis } from "lenis/react";
 
 import { logoutAdminAction } from "@/actions/admin-auth";
 import { logoutArtistAction } from "@/app/artist/login/actions";
 import { ArtBoardHeaderLogo } from "@/components/artboard-header-logo";
+import { ArtBoardTransitionLink } from "@/components/artboard-transition-link";
 import { SiteCtaButton } from "@/components/site-cta-button";
 import {
   artBoardNavigationItems,
@@ -108,11 +109,13 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
   const headerCtaHref = isArtBoardUnit
     ? siteRoutes.login
     : isArtStudioUnit
-      ? siteRoutes.artboard
+      ? siteRoutes.contact
       : siteRoutes.login;
-  const resolvedHeaderCtaLabel = isArtStudioUnit ? "Istražite ArtBoard" : "Prijavi se";
+  const resolvedHeaderCtaLabel = isArtStudioUnit ? "Kontakt" : "Prijavi se";
   const [isTransparentHeader, setIsTransparentHeader] = useState(isArtistHeroPage);
   const [isArtBoardHeaderScrolled, setIsArtBoardHeaderScrolled] = useState(false);
+  const [isArtStudioHeaderHidden, setIsArtStudioHeaderHidden] = useState(false);
+  const lastArtStudioScrollRef = useRef(0);
   const isAuthenticated = Boolean(session);
   const shouldShowAccountMenu = isAuthenticated && !isArtStudioUnit;
   const shouldShowHeaderCta = isArtStudioUnit || !isAuthenticated;
@@ -124,6 +127,11 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
   useEffect(() => {
     setMobileMenuState("closed");
   }, [pathname]);
+
+  useEffect(() => {
+    lastArtStudioScrollRef.current = window.scrollY;
+    setIsArtStudioHeaderHidden(false);
+  }, [isArtStudioUnit, pathname]);
 
   useEffect(() => {
     if (!isArtistHeroPage) {
@@ -139,8 +147,29 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
       if (isArtistHeroPage) {
         setIsTransparentHeader(lenis.scroll < window.innerHeight * 0.72);
       }
+
+      if (!isArtStudioUnit || isMobileMenuVisible) {
+        setIsArtStudioHeaderHidden(false);
+        lastArtStudioScrollRef.current = lenis.scroll;
+        return;
+      }
+
+      if (lenis.scroll <= 24) {
+        setIsArtStudioHeaderHidden(false);
+        lastArtStudioScrollRef.current = lenis.scroll;
+        return;
+      }
+
+      const scrollDelta = lenis.scroll - lastArtStudioScrollRef.current;
+
+      if (Math.abs(scrollDelta) < 6) {
+        return;
+      }
+
+      setIsArtStudioHeaderHidden(scrollDelta > 0);
+      lastArtStudioScrollRef.current = lenis.scroll;
     },
-    [isArtistHeroPage],
+    [isArtistHeroPage, isArtStudioUnit, isMobileMenuVisible],
   );
 
   useLenis(handleLenisScroll, [handleLenisScroll]);
@@ -204,6 +233,8 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
 
   const desktopNavLinkClass = isArtBoardUnit
     ? "home-nav-link artboard-header-nav__link"
+    : isArtStudioUnit
+      ? "home-nav-link art-studio-header-nav__link"
     : isTransparentHeader
       ? "home-nav-link home-nav-link--light"
       : "home-nav-link";
@@ -221,6 +252,8 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
     ? `artboard-header-shell ${shouldCondenseArtBoardHeader ? "artboard-header-shell--scrolled" : ""} ${
         shouldCondenseArtBoardHeader ? "artboard-header-shell--compact" : ""
       }`
+    : isArtStudioUnit
+      ? "art-studio-header-shell"
     : isTransparentHeader
       ? "relative z-20 mx-auto grid h-[88px] w-full max-w-[1192px] grid-cols-[minmax(0,160px)_1fr_auto] items-center bg-transparent px-6 transition-[background-color,box-shadow,border-radius,backdrop-filter] duration-500 ease-out sm:px-8 lg:grid-cols-[220px_1fr_220px] lg:px-[40px]"
       : "relative z-20 mx-auto grid h-[88px] w-full max-w-[1192px] grid-cols-[minmax(0,160px)_1fr_auto] items-center rounded-full bg-white px-6 shadow-[0_14px_38px_rgba(38,51,71,0.08)] transition-[background-color,box-shadow,border-radius,backdrop-filter] duration-500 ease-out sm:px-8 lg:grid-cols-[220px_1fr_220px] lg:px-[40px]";
@@ -230,20 +263,24 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
 
   return (
     <div
-      className={`fixed z-30 w-[100vw] ${
+      className={`site-header-frame-control fixed z-30 w-[100vw] ${
         isArtBoardUnit
           ? `artboard-header-frame ${shouldCondenseArtBoardHeader ? "artboard-header-frame--scrolled" : ""}`
+          : isArtStudioUnit
+            ? "art-studio-header-frame"
           : "px-[5vw] pt-[5vh]"
-      }`}
+      } ${isArtStudioUnit && isArtStudioHeaderHidden ? "site-header-frame-control--hidden" : ""}`}
     >
       <header className={desktopHeaderClass}>
         <div
           className={`relative z-10 flex min-w-0 items-center justify-start ${
-            isArtBoardUnit ? "artboard-header-brand-cell" : ""
+            isArtBoardUnit ? "artboard-header-brand-cell" : isArtStudioUnit ? "art-studio-header-brand-cell" : ""
           }`}
         >
           <Link
-            className={`inline-flex h-full items-center ${isArtBoardUnit ? "artboard-header-brand" : ""}`}
+            className={`inline-flex h-full items-center ${
+              isArtBoardUnit ? "artboard-header-brand" : isArtStudioUnit ? "art-studio-header-brand" : ""
+            }`}
             href={logoHref}
             aria-label={isArtBoardUnit ? "ArtBoard" : "Art Studio 360"}
           >
@@ -252,6 +289,15 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
                 reactive={pathname === siteRoutes.artboard}
                 tone="dark"
               />
+            ) : isArtStudioUnit ? (
+              <span className="art-studio-header-logo" aria-hidden="true">
+                <span className="art-studio-header-logo__dots" data-art-studio-logo>
+                  <span data-art-studio-dot="blue" />
+                  <span data-art-studio-dot="red" />
+                  <span data-art-studio-dot="yellow" />
+                </span>
+                <span className="art-studio-header-logo__word">Art Studio 360</span>
+              </span>
             ) : (
               <img
                 alt="Art Studio 360 logo"
@@ -266,39 +312,46 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
         <nav
           aria-label="Primary navigation"
           className={`hidden h-full items-center justify-center lg:flex ${
-            isArtBoardUnit ? "artboard-header-nav" : ""
+            isArtBoardUnit ? "artboard-header-nav" : isArtStudioUnit ? "art-studio-header-nav" : ""
           }`}
         >
-          {navigationItems.map((item, index) => (
-            <Link
-              key={item.label}
-              className={`${desktopNavLinkClass} h-full px-2 xl:px-3 ${
-                isRouteActive(pathname, item.activePrefixes) ? "home-nav-link--active" : ""
-              }`}
-              href={item.href}
-              style={{ ["--nav-accent" as string]: navColors[index % navColors.length] }}
-            >
+          {navigationItems.map((item, index) => {
+            const className = `${desktopNavLinkClass} h-full px-2 xl:px-3 ${
+              isRouteActive(pathname, item.activePrefixes) ? "home-nav-link--active" : ""
+            }`;
+            const style = { ["--nav-accent" as string]: navColors[index % navColors.length] };
+            const content = (
               <span className="home-nav-link__label">
                 {isArtBoardUnit ? <span className="artboard-header-nav__signal" aria-hidden="true" /> : null}
                 {item.label}
               </span>
-            </Link>
-          ))}
+            );
+
+            return isArtStudioUnit && item.href === siteRoutes.artboard ? (
+              <ArtBoardTransitionLink className={className} href={item.href} key={item.label} style={style}>
+                {content}
+              </ArtBoardTransitionLink>
+            ) : (
+              <Link className={className} href={item.href} key={item.label} style={style}>
+                {content}
+              </Link>
+            );
+          })}
         </nav>
 
         {!shouldShowAccountMenu ? (
           <div
             className={`hidden items-center justify-end lg:flex ${
-              isArtBoardUnit ? "artboard-header-action" : ""
+              isArtBoardUnit ? "artboard-header-action" : isArtStudioUnit ? "art-studio-header-action" : ""
             }`}
           >
             {shouldShowHeaderCta ? (
               <SiteCtaButton
                 asLink
-                className={isArtBoardUnit ? "artboard-header-cta" : ""}
+                className={isArtBoardUnit ? "artboard-header-cta" : isArtStudioUnit ? "art-studio-header-cta" : ""}
                 href={headerCtaHref}
                 label={resolvedHeaderCtaLabel}
-                withArtBoardTransition={isArtStudioUnit}
+                withArtBoardTransition={false}
               />
             ) : null}
           </div>
@@ -390,7 +443,11 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
 
         <div
           className={`relative z-10 flex items-center justify-end lg:hidden ${
-            isArtBoardUnit ? "artboard-header-mobile-control" : ""
+            isArtBoardUnit
+              ? "artboard-header-mobile-control"
+              : isArtStudioUnit
+                ? "art-studio-header-mobile-control"
+                : ""
           }`}
         >
           <button
@@ -398,7 +455,7 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
             aria-expanded={isMobileMenuOpen}
             aria-label={isMobileMenuOpen ? "Zatvori meni" : "Otvori meni"}
             className={`site-header-mobile-toggle ${isTransparentHeader && !isArtBoardUnit ? "text-white" : ""} ${
-              isArtBoardUnit ? "artboard-header-mobile-toggle" : ""
+              isArtBoardUnit ? "artboard-header-mobile-toggle" : isArtStudioUnit ? "art-studio-header-mobile-toggle" : ""
             }`}
             onClick={toggleMobileMenu}
             type="button"
@@ -410,7 +467,9 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
 
       {isMobileMenuVisible ? (
         <div
-          className={`site-mobile-menu ${isArtBoardUnit ? "site-mobile-menu--artboard" : ""}`}
+          className={`site-mobile-menu ${
+            isArtBoardUnit ? "site-mobile-menu--artboard" : isArtStudioUnit ? "site-mobile-menu--artstudio" : ""
+          }`}
           data-lenis-prevent
           data-state={mobileMenuState}
           id="mobile-site-menu"
@@ -419,19 +478,34 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
 
           <div className="site-mobile-menu__content">
             <nav aria-label="Mobile navigation" className="site-mobile-menu__nav">
-              {navigationItems.map((item, index) => (
-                <Link
-                  key={item.label}
-                  className={`site-mobile-menu__link ${
-                    isRouteActive(pathname, item.activePrefixes) ? "site-mobile-menu__link--active" : ""
-                  }`}
-                  href={item.href}
-                  onClick={closeMobileMenu}
-                  style={{ ["--nav-accent" as string]: navColors[index % navColors.length] }}
-                >
-                  {item.label}
-                </Link>
-              ))}
+              {navigationItems.map((item, index) => {
+                const className = `site-mobile-menu__link ${
+                  isRouteActive(pathname, item.activePrefixes) ? "site-mobile-menu__link--active" : ""
+                }`;
+                const style = { ["--nav-accent" as string]: navColors[index % navColors.length] };
+
+                return isArtStudioUnit && item.href === siteRoutes.artboard ? (
+                  <ArtBoardTransitionLink
+                    className={className}
+                    href={item.href}
+                    key={item.label}
+                    onClick={closeMobileMenu}
+                    style={style}
+                  >
+                    {item.label}
+                  </ArtBoardTransitionLink>
+                ) : (
+                  <Link
+                    className={className}
+                    href={item.href}
+                    key={item.label}
+                    onClick={closeMobileMenu}
+                    style={style}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
             </nav>
 
             {!shouldShowAccountMenu ? (
@@ -441,7 +515,7 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
                     asLink
                     href={headerCtaHref}
                     label={resolvedHeaderCtaLabel}
-                    withArtBoardTransition={isArtStudioUnit}
+                    withArtBoardTransition={false}
                   />
                 </div>
               ) : null

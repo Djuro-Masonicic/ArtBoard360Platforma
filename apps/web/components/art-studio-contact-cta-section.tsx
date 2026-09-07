@@ -1,42 +1,125 @@
-import { NavigationButton } from "@/components/navigation-button";
-import { siteRoutes } from "@/lib/site-routes";
+"use client";
+
+import { useRef, useState } from "react";
+
+const contactEmail = "hello@artstudio360.me";
 
 export function ArtStudioContactCtaSection() {
+  const [topic, setTopic] = useState("Usluge");
+  const formRef = useRef<HTMLFormElement>(null);
+
+  function chooseTopic(nextTopic: string) {
+    setTopic(nextTopic);
+    formRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const data = new FormData(event.currentTarget);
+    const name = String(data.get("name") ?? "").trim();
+    const email = String(data.get("email") ?? "").trim();
+    const message = String(data.get("message") ?? "").trim();
+    const subject = `[${topic}] Upit sa Art Studio 360 sajta - ${name}`;
+    const body = [`Ime i prezime: ${name}`, `Email: ${email}`, `Tema: ${topic}`, "", message].join("\n");
+
+    window.location.href = `mailto:${contactEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  }
+
   return (
-    <section className="bg-[#f8fbff] px-5 py-16 sm:px-8 sm:py-20 lg:px-10">
-      <div className="mx-auto grid max-w-[1280px] overflow-hidden rounded-[34px] border border-[#dfe7f2] bg-white shadow-[0_24px_70px_rgba(37,51,73,0.08)] lg:grid-cols-2">
-        <div className="flex flex-col border-b border-[#e6ecf5] p-8 sm:p-10 lg:min-h-[430px] lg:border-b-0 lg:border-r lg:p-12">
-          <p className="text-[13px] font-bold uppercase tracking-[0.28em] text-[#8a94a5]">Kreativne usluge</p>
-          <h2 className="mt-4 text-[2.2rem] font-bold leading-[1] tracking-[-0.045em] text-[#2f3138] sm:text-[3rem] lg:min-h-[180px]">
-            Treba vam studio za dizajn ili kreativni projekat?
-          </h2>
-          <p className="mt-5 text-[18px] font-medium leading-[1.4] text-[#566174] lg:min-h-[76px]">
-            Pošaljite upit za vizuelni identitet, kampanju, produkciju ili razvoj digitalnog proizvoda.
-          </p>
-          <NavigationButton
-            className="mt-8 inline-flex min-h-[50px] w-fit items-center gap-3 self-end rounded-full border-2 border-[#182fc7] bg-[#182fc7] px-6 text-[16px] font-bold text-white outline outline-1 outline-offset-2 outline-[#182fc7] transition hover:bg-white hover:text-[#182fc7]"
-            href={`${siteRoutes.contact}?forma=studio`}
-          >
-            <span className="h-3 w-3 rounded-full bg-current" aria-hidden="true" />
-            Kontakt za usluge
-          </NavigationButton>
+    <section className="home-contact" id="kontakt">
+      <div className="home-contact__panel">
+        <div className="home-contact__intro">
+          <div className="home-contact__stars" aria-hidden="true" />
+
+          <div className="home-contact__intro-content">
+            <p className="home-contact__eyebrow">
+              <span className="home-contact__dots" aria-hidden="true">
+                <i />
+                <i />
+                <i />
+              </span>
+              Javi nam se
+            </p>
+
+            <h2>
+              Imaš ideju ili
+              <br />
+              pitanje? <strong>Piši nam.</strong>
+            </h2>
+
+            <p className="home-contact__lead">
+              Bilo da tražiš kreativnog partnera za novi projekat ili ti je potrebna podrška vezana
+              za ArtBoard platformu, javi nam se putem kontakt forme ili nam piši na email.
+            </p>
+
+            <div className="home-contact__choices">
+              <button onClick={() => chooseTopic("Usluge i saradnje")} type="button">
+                <span>
+                  <small>Usluge i saradnje</small>
+                  Projekat na kojem želiš da radimo zajedno
+                </span>
+                <i aria-hidden="true">→</i>
+              </button>
+
+              <button onClick={() => chooseTopic("ArtBoard podrška")} type="button">
+                <span>
+                  <small>ArtBoard podrška</small>
+                  Pitanje o profilu, alatima ili platformi
+                </span>
+                <i aria-hidden="true">→</i>
+              </button>
+            </div>
+
+            <a className="home-contact__email" href={`mailto:${contactEmail}`}>
+              {contactEmail}
+            </a>
+          </div>
         </div>
 
-        <div className="flex flex-col p-8 sm:p-10 lg:min-h-[430px] lg:p-12">
-          <p className="text-[13px] font-bold uppercase tracking-[0.28em] text-[#8a94a5]">ArtBoard podrška</p>
-          <h2 className="mt-4 text-[2.2rem] font-bold leading-[1] tracking-[-0.045em] text-[#2f3138] sm:text-[3rem] lg:min-h-[180px]">
-            Želite saradnju ili podršku oko ArtBoarda?
-          </h2>
-          <p className="mt-5 text-[18px] font-medium leading-[1.4] text-[#566174] lg:min-h-[76px]">
-            Za umjetnike, partnere i organizacije: prijave, profili, portfolio alati i profesionalne prilike.
-          </p>
-          <NavigationButton
-            className="mt-8 inline-flex min-h-[50px] w-fit items-center gap-3 self-end rounded-full border-2 border-[#dc1735] bg-[#dc1735] px-6 text-[16px] font-bold text-white outline outline-1 outline-offset-2 outline-[#dc1735] transition hover:bg-white hover:text-[#dc1735]"
-            href={`${siteRoutes.contact}?forma=artboard`}
-          >
-            <span className="h-3 w-3 rounded-full bg-current" aria-hidden="true" />
-            Kontakt za ArtBoard
-          </NavigationButton>
+        <div className="home-contact__form-side">
+          <form className="home-contact__form" onSubmit={handleSubmit} ref={formRef}>
+            <p className="home-contact__form-label">Kontakt forma</p>
+
+            <label>
+              <span>Ime i prezime</span>
+              <input autoComplete="name" name="name" placeholder="Tvoje ime" required type="text" />
+            </label>
+
+            <label>
+              <span>Email</span>
+              <input autoComplete="email" name="email" placeholder="ime@email.com" required type="email" />
+            </label>
+
+            <label>
+              <span>Tema</span>
+              <select name="topic" onChange={(event) => setTopic(event.target.value)} value={topic}>
+                <option value="Usluge">Usluge</option>
+                <option value="ArtBoard">ArtBoard</option>
+                <option value="Saradnja">Saradnja</option>
+                <option value="Usluge i saradnje">Usluge i saradnje</option>
+                <option value="ArtBoard podrška">ArtBoard podrška</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Poruka</span>
+              <textarea
+                name="message"
+                placeholder="Ukratko o ideji, projektu ili pitanju..."
+                required
+                rows={5}
+              />
+            </label>
+
+            <button className="home-contact__submit" type="submit">
+              Pošalji poruku <span aria-hidden="true">→</span>
+            </button>
+
+            <p className="home-contact__form-note">
+              Odgovaramo direktno na email koji ostaviš u formi.
+            </p>
+          </form>
         </div>
       </div>
     </section>

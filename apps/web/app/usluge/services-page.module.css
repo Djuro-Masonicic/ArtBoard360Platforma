@@ -440,7 +440,7 @@
   padding: 8px max(1.25rem, 5vw) 24px;
   overscroll-behavior-inline: contain;
   scroll-padding-inline: max(1.25rem, 5vw);
-  scroll-snap-type: inline mandatory;
+  scroll-snap-type: none;
   scrollbar-width: none;
 }
 
@@ -494,6 +494,23 @@
   border-radius: 50%;
   object-fit: cover;
 }
+
+.testimonialAvatarFallback {
+  display: grid !important;
+  width: 50px;
+  height: 50px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  color: #ffffff !important;
+  font-size: 0.76rem !important;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.testimonialAvatarRed { background: #e7193f; }
+.testimonialAvatarBlue { background: #203bd2; }
+.testimonialAvatarYellow { background: #ffc520; color: #292e37 !important; }
 
 .testimonialAuthor strong,
 .testimonialAuthor span {

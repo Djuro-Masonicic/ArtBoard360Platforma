@@ -71,18 +71,18 @@ export const publicNavigationItems = [
 export const artStudioNavigationItems = [
   {
     href: siteRoutes.home,
-    label: "Homepage",
+    label: "Studio",
     activePrefixes: [siteRoutes.home],
+  },
+  {
+    href: siteRoutes.artboard,
+    label: "ArtBoard",
+    activePrefixes: [siteRoutes.artboard],
   },
   {
     href: siteRoutes.services,
     label: "Usluge",
     activePrefixes: [siteRoutes.services],
-  },
-  {
-    href: siteRoutes.contact,
-    label: "Kontakt",
-    activePrefixes: [siteRoutes.contact],
   },
 ] as const;
 

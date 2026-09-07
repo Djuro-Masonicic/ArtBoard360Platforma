@@ -1,76 +1,109 @@
-import { NavigationButton } from "@/components/navigation-button";
+import type { LucideIcon } from "lucide-react";
+import {
+  BriefcaseBusiness,
+  CalendarDays,
+  GraduationCap,
+  Megaphone,
+  QrCode,
+  Search,
+} from "lucide-react";
+
+import { ArtBoardTransitionLink } from "@/components/artboard-transition-link";
 import { siteRoutes } from "@/lib/site-routes";
 
-const tools = [
+type Tool = {
+  description: string;
+  href: string;
+  icon: LucideIcon;
+  title: string;
+};
+
+const tools: Tool[] = [
   {
-    description: "Profesionalni javni profili za predstavljanje umjetnika, radova, biografije i kontakta.",
-    tone: "blue",
-    title: "ArtBoard profili",
+    description: "Postani dio ArtBoard kataloga i predstavi svoj rad kroz umjetnički profil koji mogu pronaći publika, galerije i potencijalni poslodavci.",
+    href: siteRoutes.artists,
+    icon: Search,
+    title: "Pretraživač umjetnika",
   },
   {
-    description: "Builder za pripremu PDF portfolija, draftova i linkova za konkurse, galerije i saradnike.",
-    tone: "red",
+    description: "Kreiraj profesionalni portfolio u nekoliko jednostavnih koraka, spreman za galerije, konkurse, klijente i nove prilike.",
+    href: siteRoutes.portfolioBuilder,
+    icon: BriefcaseBusiness,
     title: "Portfolio Builder",
   },
   {
-    description: "Mjesto za otvorene pozive, izložbe, konkurse, rezidencije i profesionalne prilike.",
-    tone: "yellow",
-    title: "Oglasi i prilike",
+    description: "Podijeli svoj profil, portfolio i kontakt putem personalizovane kartice sa QR kodom, spremne za digitalno dijeljenje i štampu.",
+    href: siteRoutes.account,
+    icon: QrCode,
+    title: "QR vizit karta",
   },
   {
-    description: "Alati za uredjivanje radova, označavanje istaknutih radova i organizaciju portfolija.",
-    tone: "blue",
-    title: "Uredjivanje sadržaja",
+    description: "Kreiraj promotivne materijale za društvene mreže brzo i jednostavno, koristeći podatke i radove sa svog ArtBoard profila.",
+    href: siteRoutes.account,
+    icon: Megaphone,
+    title: "Promotivni generator",
   },
   {
-    description: "Podrška za prijave, selekciju, pregled materijala i komunikaciju sa umjetnicima.",
-    tone: "red",
-    title: "Prijave umjetnika",
+    description: "Pronađi konkurse, poslove, otvorene pozive, saradnje i druge prilike namijenjene umjetnicima i kreativcima.",
+    href: siteRoutes.opportunities,
+    icon: CalendarDays,
+    title: "Oglasna tabla",
   },
   {
-    description: "Prostor za buduće premium funkcije, pakete, plaćanja i profesionalne alate.",
-    tone: "yellow",
-    title: "Premium alati",
+    description: "Pristupi kursevima i praktičnim online edukacijama ili podijeli sopstveno znanje i iskustvo sa ArtBoard zajednicom.",
+    href: siteRoutes.artboard,
+    icon: GraduationCap,
+    title: "ArtBoard Edu",
   },
 ];
 
 export function ArtStudioToolsSection() {
   return (
-    <section className="bg-[#f8fbff] px-5 py-16 sm:px-8 lg:px-10">
-      <div className="mx-auto max-w-[1280px]">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-          <div className="max-w-[760px]">
-            <p className="text-[13px] font-bold uppercase tracking-[0.28em] text-[#8a94a5]">ArtBoard alati</p>
-            <h2 className="mt-4 text-[2.4rem] font-bold leading-[0.98] tracking-[-0.05em] text-[#2f3138] sm:text-[3.4rem]">
-              Više od kataloga: platforma za profesionalni rad umjetnika<span className="text-[#182fc7]">.</span>
-            </h2>
+    <section className="artboard-tools-showcase" id="artboard-alati">
+      <span className="artboard-tools-showcase__stars" aria-hidden="true" />
+
+      <div className="artboard-tools-showcase__inner">
+        <header className="artboard-tools-showcase__heading">
+          <p>
+            <span aria-hidden="true" />
+            ArtBoard alati
+          </p>
+          <h2>Sve što umjetnicima treba za predstavljanje, razvoj i saradnju.</h2>
+          <div>
+            Pretraživač, umjetnički portfolio, promocija, edukacija i profesionalne prilike
+            objedinjeni su na jednom mjestu i prilagođeni potrebama umjetnika.
           </div>
+        </header>
 
-          <NavigationButton
-            className="inline-flex min-h-[48px] w-fit items-center gap-3 rounded-full border-2 border-[#182fc7] bg-[#182fc7] px-6 text-[16px] font-bold text-white outline outline-1 outline-offset-2 outline-[#182fc7] transition hover:bg-white hover:text-[#182fc7]"
-            href={siteRoutes.artboard}
-            withArtBoardTransition
-          >
-            <span className="h-3 w-3 rounded-full bg-current" aria-hidden="true" />
-            Istraži ArtBoard
-          </NavigationButton>
-        </div>
-
-        <div className="mt-10 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="artboard-tools-showcase__grid">
           {tools.map((tool) => (
-            <article
-              className="rounded-[28px] border border-[#e4eaf3] bg-white p-7 shadow-[0_18px_44px_rgba(37,51,73,0.06)]"
-              key={tool.title}
-            >
-              <div className={`home-benefits-icon home-benefits-icon--${tool.tone}`}>
-                <span className="h-4 w-4 rounded-full bg-current" aria-hidden="true" />
-              </div>
-              <h3 className="mt-6 text-[1.45rem] font-bold leading-[1.08] text-[#252933]">{tool.title}</h3>
-              <p className="mt-3 text-[17px] font-medium leading-[1.35] text-[#566174]">{tool.description}</p>
-            </article>
+            <ToolCard key={tool.title} tool={tool} />
           ))}
         </div>
+
+        <ArtBoardTransitionLink
+          className="artboard-tools-showcase__cta"
+          href={siteRoutes.registration}
+        >
+          Besplatno isprobaj alate
+        </ArtBoardTransitionLink>
       </div>
     </section>
+  );
+}
+
+function ToolCard({ tool }: { tool: Tool }) {
+  const Icon = tool.icon;
+
+  return (
+    <ArtBoardTransitionLink className="artboard-tool-card" href={tool.href}>
+      <span className="artboard-tool-card__icon" aria-hidden="true">
+        <Icon size={27} strokeWidth={2} />
+      </span>
+      <span className="artboard-tool-card__content">
+        <strong>{tool.title}</strong>
+        <span>{tool.description}</span>
+      </span>
+    </ArtBoardTransitionLink>
   );
 }

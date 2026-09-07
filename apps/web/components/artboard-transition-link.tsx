@@ -1106,8 +1106,25 @@ function getArtStudioLogoSourceDots(): ArtBoardTransitionSourceDots {
 
   const rect = logo.getBoundingClientRect();
 
-  if (rect.width <= 0 || rect.height <= 0) {
+  if (
+    rect.width <= 0 ||
+    rect.height <= 0 ||
+    rect.bottom <= 0 ||
+    rect.top >= window.innerHeight
+  ) {
     return getFallbackTransitionSourceDots();
+  }
+
+  const blueDot = logo.querySelector<HTMLElement>('[data-art-studio-dot="blue"]');
+  const redDot = logo.querySelector<HTMLElement>('[data-art-studio-dot="red"]');
+  const yellowDot = logo.querySelector<HTMLElement>('[data-art-studio-dot="yellow"]');
+
+  if (blueDot && redDot && yellowDot) {
+    return {
+      blue: getElementCenter(blueDot),
+      red: getElementCenter(redDot),
+      yellow: getElementCenter(yellowDot),
+    };
   }
 
   const centerX = rect.left + rect.width * 0.5;
@@ -1118,6 +1135,15 @@ function getArtStudioLogoSourceDots(): ArtBoardTransitionSourceDots {
     red: { x: centerX, y: centerY - dotSpacing * 0.58 },
     blue: { x: centerX - dotSpacing, y: centerY + dotSpacing * 0.58 },
     yellow: { x: centerX + dotSpacing, y: centerY + dotSpacing * 0.58 },
+  };
+}
+
+function getElementCenter(element: HTMLElement): ArtBoardTransitionDotPoint {
+  const rect = element.getBoundingClientRect();
+
+  return {
+    x: rect.left + rect.width * 0.5,
+    y: rect.top + rect.height * 0.5,
   };
 }
 
