@@ -3,13 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { publicNavigationItems, siteRoutes } from "@/lib/site-routes";
-
-const socialLinks = [
-  { href: "https://www.instagram.com/", label: "Instagram" },
-  { href: "https://www.behance.net/", label: "Behance" },
-  { href: "https://www.linkedin.com/", label: "Linkedin" },
-];
+import { siteRoutes } from "@/lib/site-routes";
 
 export function SiteFooter() {
   const pathname = usePathname();
@@ -33,11 +27,7 @@ export function SiteFooter() {
     return <ArtStudioFooter />;
   }
 
-  const footerNavigationItems = publicNavigationItems.map((item) =>
-    item.label === "Kontakt" ? { ...item, href: siteRoutes.artboardContact } : item,
-  );
-
-  return <ArtBoardFooter navigationItems={footerNavigationItems} />;
+  return <ArtBoardFooter />;
 }
 
 function ArtStudioFooter() {
@@ -110,79 +100,52 @@ function FooterColumn({ children, title }: { children: React.ReactNode; title: s
   );
 }
 
-type FooterNavigationItem = (typeof publicNavigationItems)[number] | {
-  href: string;
-  label: string;
-  activePrefixes: readonly string[];
-};
-
-function ArtBoardFooter({ navigationItems }: { navigationItems: FooterNavigationItem[] }) {
+function ArtBoardFooter() {
   return (
-    <footer className="site-footer relative mt-24 overflow-hidden text-[#4a4f59]">
-      <div className="site-footer__shape" aria-hidden="true" />
-
-      <div className="relative mx-auto w-full max-w-[1280px] px-[5vw] pb-20 pt-28 sm:pb-24 sm:pt-32">
-        <div className="grid gap-14 lg:grid-cols-[1.45fr_0.7fr_0.7fr] lg:gap-10">
-          <div className="flex flex-col gap-12">
-            <Link className="inline-flex w-fit items-center" href="/" aria-label="Art Studio 360">
-              <img
-                alt="Art Studio 360 logo"
-                className="w-[112px]"
-                src="https://cdn.prod.website-files.com/681b5dac4415aa941af374fe/682344cfd8a98907bbb50f8e_7e491909af25e7cd587505a1141c670a_360%20Logo%20Black.svg"
-              />
-            </Link>
-
-            <div className="space-y-10 text-[18px] leading-[1.2] text-[#9ca3af]">
-              <p className="max-w-[240px]">
-                &copy; 2025 ArtStudio 360
-                <br />
-                All Rights Reserved
-              </p>
-
-              <Link className="site-footer__muted-link inline-block underline underline-offset-4" href="/uslovi-koriscenja">
-                Uslovi koriscenja
-              </Link>
-            </div>
+    <footer className="site-footer">
+      <div className="site-footer__stars" aria-hidden="true" />
+      <div className="site-footer__inner">
+        <div className="site-footer__grid">
+          <div className="site-footer__identity">
+            <Link className="site-footer__brand" href={siteRoutes.artboard}>ArtBoard</Link>
+            <p className="site-footer__tagline">Tvoj prostor za umjetnost.</p>
+            <p className="site-footer__credit">Created by Art Studio 360</p>
+            <a className="site-footer__email" href="mailto:artboardproject2025@gmail.com">artboardproject2025@gmail.com</a>
           </div>
 
-          <div className="space-y-6">
-            <p className="text-[18px] font-medium text-[#8d97a6]">Navigacija</p>
-            <nav aria-label="Footer navigation" className="flex flex-col gap-4">
-              {navigationItems.map((item) => (
-                <Link key={item.label} className="site-footer__link" href={item.href}>
-                  {item.label}
-                </Link>
-              ))}
+          <div className="site-footer__column">
+            <p className="site-footer__column-title">Linkovi</p>
+            <nav aria-label="ArtBoard linkovi">
+              <Link href={siteRoutes.artists}>Umjetnici</Link>
+              <Link href={siteRoutes.portfolioBuilder}>Portfolio Builder</Link>
+              <Link href={siteRoutes.opportunities}>Oglasi</Link>
+              <Link href={siteRoutes.pricing}>Paketi</Link>
+              <Link href={`${siteRoutes.artboard}#faq`}>FAQ</Link>
             </nav>
           </div>
 
-          <div className="space-y-6">
-            <p className="text-[18px] font-medium text-[#8d97a6]">Drustvene mreze</p>
-            <div className="flex flex-col gap-4">
-              {socialLinks.map((item) => (
-                <a
-                  key={item.label}
-                  className="site-footer__link inline-flex items-center gap-3"
-                  href={item.href}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <span>{item.label}</span>
-                  <span aria-hidden="true" className="site-footer__icon">
-                    <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path
-                        d="M4 12L12 4M6 4H12V10"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </span>
-                </a>
-              ))}
-            </div>
+          <div className="site-footer__column">
+            <p className="site-footer__column-title">Korisnički nalog</p>
+            <nav aria-label="Korisnički nalog">
+              <Link href={siteRoutes.artistApplication}>Prijavi se</Link>
+              <Link href={siteRoutes.login}>Uloguj se</Link>
+              <Link href={siteRoutes.artboardContact}>Kontakt</Link>
+            </nav>
           </div>
+
+          <div className="site-footer__column">
+            <p className="site-footer__column-title">Pravne informacije</p>
+            <nav aria-label="Pravne informacije">
+              <Link href="/uslovi-koriscenja">Uslovi korišćenja</Link>
+              <Link href="/uslovi-koriscenja#privatnost">Politika privatnosti</Link>
+              <Link href="/uslovi-koriscenja#kolacici">Politika kolačića</Link>
+            </nav>
+          </div>
+        </div>
+
+        <div className="site-footer__bottom">
+          <p>© 2026 ArtBoard · Art Studio 360</p>
+          <p>Podgorica, Montenegro</p>
         </div>
       </div>
     </footer>

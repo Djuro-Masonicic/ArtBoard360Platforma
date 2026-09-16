@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { UserRound } from "lucide-react";
 
 import styles from "@/app/usluge/services-page.module.css";
 
@@ -156,7 +157,7 @@ function getInitials(name: string) {
     .join("");
 }
 
-export function ServicesTestimonialRail() {
+export function ServicesTestimonialRail({ variant }: { variant?: "artboard" }) {
   const railRef = useRef<HTMLDivElement>(null);
   const interactionPausedRef = useRef(false);
   const pauseUntilRef = useRef(0);
@@ -216,6 +217,32 @@ export function ServicesTestimonialRail() {
 
     pauseTemporarily();
     rail.scrollBy({ left: distance * direction, behavior: "smooth" });
+  }
+
+  if (variant === "artboard") {
+    return (
+      <div className={`${styles.testimonialRailShell} ${styles.artboardVariant}`}>
+        <div className={styles.artboardGrid}>
+          {testimonials.slice(0, 6).map((testimonial, index) => (
+            <article className={styles.testimonialCard} key={testimonial.author}>
+              <span aria-hidden="true" className={`${styles.testimonialQuote} ${index % 3 === 2 ? styles.artboardQuoteWarm : styles.artboardQuoteCool}`}>
+                &ldquo;
+              </span>
+              <p className={styles.testimonialText}>{testimonial.content}</p>
+              <div className={styles.testimonialAuthor}>
+                <span aria-hidden="true" className={`${styles.testimonialAvatarFallback} ${[styles.artboardAvatarBlue, styles.artboardAvatarPurple, styles.artboardAvatarOrange][index % 3]}`}>
+                  <UserRound size={17} strokeWidth={1.8} />
+                </span>
+                <div>
+                  <strong>{testimonial.author}</strong>
+                  <span>{testimonial.company}</span>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -1,11 +1,17 @@
 import Link from "next/link";
 
 import { ArtBoardFaqSection } from "@/components/artboard-faq-section";
-import { ArtBoardLogo } from "@/components/artboard-logo";
-import { ArtBoardSideShortcuts } from "@/components/artboard-side-shortcuts";
-import { ArtBoardTemplateCarousel } from "@/components/artboard-template-carousel";
-import { ArtistCard } from "@/components/artist-card";
-import { SiteCtaButton } from "@/components/site-cta-button";
+import { ArtBoardCommunitySection } from "@/components/artboard-community-section";
+import { ArtBoardDisciplinesSection } from "@/components/artboard-disciplines-section";
+import { ArtBoardJourneySection } from "@/components/artboard-journey-section";
+import { ArtBoardOpportunitiesSection } from "@/components/artboard-opportunities-section";
+import { ArtBoardPricingSection } from "@/components/artboard-pricing-section";
+import { ArtBoardPlatformHero } from "@/components/artboard-platform-hero";
+import { ArtBoardPortfolioShowcase } from "@/components/artboard-portfolio-showcase";
+import { ArtBoardToolsSection } from "@/components/artboard-tools-section";
+import { ArtBoardTestimonialsSection } from "@/components/artboard-testimonials-section";
+import { ArtBoardVerificationSection } from "@/components/artboard-verification-section";
+import { ArtBoardWhySection } from "@/components/artboard-why-section";
 import { siteRoutes } from "@/lib/site-routes";
 import { getArtists } from "@/services/artists";
 import { getArtBoardStats } from "@/services/stats";
@@ -16,188 +22,61 @@ import type { Artist } from "@/types/api";
 // and old stats into a cached/static page during production builds.
 export const dynamic = "force-dynamic";
 
-const benefits = [
-  {
-    title: "Besplatna prijava",
-    text: "Umjetnik može početi bez troška, poslati prijavu i dobiti osnovni javni profil nakon odobrenja.",
-    color: "#ff151d",
-  },
-  {
-    title: "Profesionalna digitalna prezentacija",
-    text: "Profil, radovi, biografija, discipline i kontakt su organizovani kao ozbiljna digitalna vizit karta.",
-    color: "#0875ff",
-  },
-  {
-    title: "Praktični alati za razvoj karijere",
-    text: "Portfolio Builder, promo materijali i upravljanje sadržajem pomažu umjetniku da brže pripremi nastup.",
-    color: "#ffd31a",
-  },
-  {
-    title: "Zajednica i profesionalne prilike",
-    text: "ArtBoard povezuje umjetnike sa publikom, saradnicima, institucijama i oglasima za profesionalni razvoj.",
-    color: "#2f3138",
-  },
-];
-
-const tools = [
-  {
-    title: "Pretraživač umjetnika",
-    text: "Javni katalog sa profilima, disciplinama, radovima i direktnim linkovima ka umjetnicima.",
-    href: siteRoutes.artists,
-    color: "#0875ff",
-  },
-  {
-    title: "Umjetnički profil",
-    text: "Umjetnik sam uređuje bio, moto, radove, linkove, cover i profilnu fotografiju.",
-    href: siteRoutes.registration,
-    color: "#ff151d",
-  },
-  {
-    title: "Portfolio Builder",
-    text: "Vođeni alat za profesionalni PDF portfolio iz profila ili potpuno od nule.",
-    href: `${siteRoutes.artboard}#portfolio-builder`,
-    color: "#ffd31a",
-  },
-  {
-    title: "Generator promotivnih materijala",
-    text: "Priprema za QR vizitku, digitalne linkove i buduće formate za društvene mreže.",
-    href: siteRoutes.account,
-    color: "#0875ff",
-  },
-  {
-    title: "Premium članstvo i paketi",
-    text: "Naprednije opcije za umjetnike kojima treba više vidljivosti, exporta i profesionalnih alata.",
-    href: `${siteRoutes.artboard}#paketi`,
-    color: "#ff151d",
-  },
-  {
-    title: "Oglasi i profesionalne prilike",
-    text: "Mjesto za open calls, konkurse, rezidencije, saradnje, angažmane i druge prilike.",
-    href: siteRoutes.opportunities,
-    color: "#ffd31a",
-  },
-];
-
-const portfolioSteps = [
-  "Odaberi da li krećeš iz ArtBoard profila ili od nule.",
-  "Unesi podatke, bio, statement, kontakt i CV.",
-  "Izaberi radove, redosljed i template.",
-  "Pregledaj PDF preview i preuzmi čistu verziju nakon plaćanja ili kroz Premium.",
-];
-
-const portfolioTemplates: {
-  title: string;
-  text: string;
-  eyebrow: string;
-  imageSrc: string;
-  variant: "institutional" | "editorial" | "sales";
-}[] = [
-  {
-    title: "Institutional Minimal",
-    text: "Mirno, galerijski i cisto. Fokus je na radu, biografiji i jasnom kontaktu.",
-    eyebrow: "Template 01",
-    imageSrc: "/portfolio-templates/template-basic.png",
-    variant: "institutional",
-  },
-  {
-    title: "ArtBoard Editorial",
-    text: "Dinamicniji katalog sa vecim vizuelnim ritmom i ArtBoard potpisom.",
-    eyebrow: "Template 02",
-    imageSrc: "/portfolio-templates/builder-template-selection.png",
-    variant: "editorial",
-  },
-  {
-    title: "Sales / Pro",
-    text: "Prodajni portfolio za cijene, dostupnost, kolekcije i direktan kontakt.",
-    eyebrow: "Template 03",
-    imageSrc: "/portfolio-templates/builder-editor.png",
-    variant: "sales",
-  },
-];
-
-const platformSteps = [
-  "Kreiraj nalog.",
-  "Popuni profil i dodaj radove.",
-  "Kreiraj profesionalni portfolio.",
-  "Izaberi besplatni ili premium paket.",
-  "Podijeli rad putem portfolija, promo materijala i ArtBoard pretraživača.",
-];
-
-const packageCards = [
-  {
-    title: "Basic profil",
-    label: "Besplatno",
-    text: "Javni profil, osnovni podaci, portfolio radovi i prisustvo u katalogu umjetnika.",
-    href: siteRoutes.registration,
-  },
-  {
-    title: "Premium članstvo",
-    label: "Napredni paket",
-    text: "Čisti PDF export, dodatni alati, bolja priprema materijala i buduće premium funkcije.",
-    href: siteRoutes.subscription,
-  },
-  {
-    title: "Jednokratni portfolio",
-    label: "Po potrebi",
-    text: "Kreiraj i plati jedan profesionalni PDF portfolio bez prelaska na premium članstvo.",
-    href: siteRoutes.portfolioBuilder,
-  },
-];
-
-const opportunityTypes = [
-  "poslovi",
-  "konkursi",
-  "otvoreni pozivi",
-  "rezidencije",
-  "saradnje",
-  "profesionalne prilike",
-];
-
 const artBoardFaqs = [
   {
-    question: "Da li je registracija na ArtBoard besplatna?",
+    question: "Šta uključuje besplatna prijava na ArtBoard?",
     answer:
-      "Da. Osnovna prijava i Basic profil su besplatni. Premium opcije se biraju samo ako umjetniku trebaju dodatni alati i exporti.",
+      "Besplatna prijava uključuje kreiranje profila, prisustvo u ArtBoard pretraživaču, uređivanje profila jednom mjesečno, prvi Portfolio Builder export, ograničen broj promotivnih materijala i pregled oglasne table.",
   },
   {
-    question: "Kako se kreira i uređuje profil?",
+    question: "Ko može da se prijavi?",
     answer:
-      "Umjetnik prvo šalje prijavu. Nakon odobrenja dobija nalog preko kojeg može uređivati biografiju, moto, kontakt, društvene mreže, profilnu sliku i radove.",
+      "ArtBoard je namijenjen vizuelnim umjetnicima različitih disciplina i nivoa iskustva. Svaka prijava prolazi kroz pregled prije objavljivanja profila.",
   },
   {
-    question: "Koliko radova mogu objaviti?",
+    question: "Koliko često mogu da mijenjam profil?",
     answer:
-      "Profil može sadržati više radova, a za Portfolio Builder se bira do 30 radova koji ulaze u profesionalni PDF ili draft link.",
+      "Besplatni korisnici mogu da ažuriraju profil jednom mjesečno, dok Premium korisnici imaju mogućnost neograničenog uređivanja.",
   },
   {
-    question: "Koja je razlika između Basic i Premium paketa?",
+    question: "Mogu li da koristim Portfolio Builder bez ArtBoard profila?",
     answer:
-      "Basic pokriva osnovni javni profil. Premium otključava naprednije opcije kao što su čisti PDF export, dodatni alati i bolja priprema profesionalnih materijala.",
+      "Da. Portfolio Builder možeš koristiti i bez objavljenog profila. Potreban ti je samo nalog kako bi sačuvao projekat i nastavio rad kasnije.",
   },
   {
-    question: "Šta dobijam kroz Portfolio Builder?",
+    question: "Da li je Portfolio Builder besplatan?",
     answer:
-      "Dobijaš vođeni alat za unos podataka, izbor radova, redosljed, template i PDF preview, uz mogućnost exporta kada je portfolio plaćen ili uključen u paket.",
+      "Alat možeš isprobati besplatno, a prvi export je uključen. Nakon toga možeš kupiti pojedinačni export ili koristiti neograničene exporte kroz Premium članstvo.",
   },
   {
-    question: "Da li mogu kupiti samo jedan portfolio bez Premium paketa?",
+    question: "Kako funkcioniše fleksibilna Premium cijena?",
     answer:
-      "Da. Portfolio Builder podržava jednokratnu kupovinu čistog PDF-a, dok Premium članovi imaju export uključen u paket.",
+      "Sam biraš iznos između 5€ i 50€. Bez obzira na izabrani iznos, dobijaš pristup istim Premium funkcionalnostima.",
   },
   {
-    question: "Šta su promo materijali?",
+    question: "Mogu li da promijenim ili otkažem Premium članstvo?",
     answer:
-      "To su pripremljeni digitalni materijali poput QR vizitke, linkova i budućih formata za društvene mreže koji pomažu umjetniku da lakše dijeli svoj rad.",
+      "Da. Iznos članstva možeš promijeniti, a članstvo otkazati kroz svoj korisnički nalog.",
   },
   {
-    question: "Kako funkcionišu oglasi?",
+    question: "Ko može da objavi oglas?",
     answer:
-      "Oglasi su javni za pregled, a prijavljeni umjetnici mogu lakše povezati prilike sa svojim profilom i portfolijem.",
+      "Oglase mogu besplatno objavljivati kompanije, kulturne organizacije, galerije, institucije i drugi pojedinci ili timovi koji traže umjetnike i kreativne saradnike.",
   },
   {
-    question: "Kako dobijam podršku ako zapnem?",
+    question: "Kako funkcioniše prijava na oglas jednim klikom?",
     answer:
-      "Za pitanja oko prijave, profila, Portfolio Buildera, plaćanja ili oglasa korisnik može kontaktirati ArtBoard podršku kroz kontakt stranicu.",
+      "Premium korisnici mogu izabrati podatke sa profila, CV i portfolio koje žele da pošalju, a ArtBoard od tih materijala automatski formira prijavu.",
+  },
+  {
+    question: "Da li zadržavam prava na svoje radove?",
+    answer:
+      "Da. Umjetnik zadržava autorska prava nad svojim radovima. ArtBoard ih prikazuje i koristi samo u skladu sa dozvolama i uslovima koje korisnik prihvati.",
+  },
+  {
+    question: "Kako mogu da dobijem podršku?",
+    answer:
+      "Za pitanja u vezi sa prijavom, profilom, alatima ili članstvom možeš nam pisati putem kontakt forme ili na artboardproject2025@gmail.com.",
   },
 ];
 
@@ -606,7 +485,6 @@ export default async function ArtBoardPage() {
   const artistData = artBoardData?.artistData ?? null;
   const stats = artBoardData?.stats ?? null;
   const artists = artistData?.items ?? [];
-  const previewArtists = getRandomArtists(artists, 4);
   const disciplines = getDisciplines(artists);
   const artworkCount = artists.reduce(
     (total, artist) => total + (artist.counts?.artworks ?? artist.artworks.length),
@@ -617,395 +495,92 @@ export default async function ArtBoardPage() {
   // catalog first, so the homepage number stays aligned with /umjetnici.
   const artistCount = artistData?.meta.total ?? stats?.artists;
   const proofItems = [
-    { label: "Umjetnika", value: artistCount ? `${artistCount}+` : "U rastu" },
+    { label: "Objavljenih umjetnika", value: `${artistCount ?? 70}+` },
     {
-      label: "Radova u katalogu",
-      value: stats?.artworks ? `${stats.artworks}+` : artworkCount ? `${artworkCount}+` : "U pripremi",
+      label: "Radova kroz ArtBoard pilot",
+      value: `${stats?.artworks ?? (artworkCount || 1013)}+`,
     },
     {
-      label: "Disciplina",
-      value: stats?.disciplines ? `${stats.disciplines}+` : disciplines.size ? `${disciplines.size}+` : "Više oblasti",
+      label: "Umjetničkih disciplina",
+      value: `${stats?.disciplines ?? (disciplines.size || 15)}+`,
     },
-    { label: "Podrška i razvoj", value: "Art Studio 360" },
   ];
-  const heroMosaic = getRandomArtists(artists, 8)
-    .map((artist) => ({
+  const communityArtists = getRandomArtists(artists, artists.length).flatMap((artist) => {
+    const seenArtworkUrls = new Set<string>();
+    const artworks = [...artist.artworks.filter((item) => item.isFeatured), ...artist.artworks]
+      .filter((item) => {
+        if (!item.imageUrl || seenArtworkUrls.has(item.imageUrl)) return false;
+        seenArtworkUrls.add(item.imageUrl);
+        return true;
+      })
+      .slice(0, 6)
+      .map((item) => ({
+        url: item.imageUrl,
+        alt: item.altText || item.title || `Rad umjetnika ${artist.name}`,
+      }));
+
+    if (artworks.length === 0) return [];
+
+    return [{
       id: artist.id,
       name: artist.name,
       slug: artist.slug,
-      imageUrl: artist.artworks[0]?.imageUrl ?? artist.profileImageUrl ?? "",
-    }))
-    .filter((item) => item.imageUrl && item.slug);
+      artworks,
+      avatarUrl: artist.profileThumbnailUrl || artist.profileImageUrl || null,
+      disciplines: artist.disciplines.map((discipline) => discipline.name),
+    }];
+  }).sort((left, right) => Number(right.artworks.length > 1) - Number(left.artworks.length > 1));
 
   return (
-    <main className="artboard-platform-page relative isolate overflow-hidden pb-20 pt-[13vh] text-[#252933]">
-      <ArtBoardSideShortcuts />
+    <main className="artboard-platform-page relative isolate -mx-5 -mt-8 overflow-x-clip pb-0 pt-[88px] text-[#252933] sm:-mx-8 sm:-mt-10 lg:-mx-10 lg:-mt-12">
       <div
         className="artboard-platform-gradient-bg pointer-events-none absolute inset-0 -z-10 opacity-95"
       />
       <div className="pointer-events-none absolute left-[-18vw] top-[420px] -z-10 h-[56vw] w-[56vw] rounded-full border border-[#dce5f1]" />
       <div className="pointer-events-none absolute right-[-16vw] top-[860px] -z-10 h-[42vw] w-[42vw] rounded-full border border-[#dce5f1]" />
-      <section className="relative z-10 mx-auto max-w-[1320px] px-4 sm:px-6">
-        <div className="relative overflow-hidden rounded-[50px] border border-[#dce5f1] bg-white/90 p-7 shadow-[0_32px_110px_rgba(38,51,71,0.1)] backdrop-blur sm:p-10 lg:min-h-[620px] lg:p-14">
-          <span className="absolute right-[-110px] top-[-120px] h-[360px] w-[360px] rounded-full bg-[#ffc41d]/25" />
-          <span className="absolute bottom-[-160px] left-[45%] h-[320px] w-[320px] rounded-full bg-[#182fc7]/10" />
-          <div className="relative grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
-            <div>
-              <div className="flex flex-wrap items-center gap-4">
-                <ArtBoardLogo className="artboard-hero-logo" />
-                <p className="text-[12px] font-bold uppercase tracking-[0.34em] text-[#7c8798]">
-                  Created by Art Studio 360
-                </p>
-              </div>
-              <h1 className="mt-5 max-w-[780px] text-[44px] font-bold leading-[0.94] tracking-[-0.055em] text-[#2f3138] sm:text-[72px]">
-                <span className="artboard-gradient-text">ArtBoard</span><span className="text-[#ff151d]">.</span>
-              </h1>
-              <p className="mt-6 max-w-[680px] text-[20px] leading-[1.5] text-[#4e5560]">
-                Profesionalni umjetnički profil, portfolio i alati za vidljivost. ArtBoard pomaže umjetnicima da predstave radove, kreiraju portfolio,
-                upravljaju promocijom i lakše dođu do publike, saradnika i profesionalnih
-                prilika.
-              </p>
+      <ArtBoardPlatformHero />
 
-              <div className="mt-9 flex flex-col gap-4 sm:flex-row">
-                <SiteCtaButton href={siteRoutes.registration} label="Kreiraj profil" />
-                <Link
-                  className="inline-flex min-h-[54px] w-fit items-center justify-center rounded-full border border-[#ccd7e6] bg-white px-6 text-[17px] font-bold text-[#252933] transition hover:border-[#0875ff] hover:text-[#0875ff]"
-                  href={siteRoutes.artists}
-                >
-                  Istraži umjetnike
-                </Link>
-              </div>
+      <section className="artboard-proof-strip" id="artboard-statistika" aria-label="ArtBoard u brojevima">
+        <div className="artboard-proof-strip__inner">
+          {proofItems.map((item) => (
+            <div className="artboard-proof-strip__metric" key={item.label}>
+              <strong>{item.value}</strong>
+              <span>{item.label}</span>
             </div>
-
-            <div className="relative min-h-[430px]">
-              <div className="absolute left-1/2 top-1/2 h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#dce5f1]" />
-              <div className="absolute left-1/2 top-1/2 h-[360px] w-[360px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#dce5f1]" />
-              <span className="absolute left-[10%] top-[20%] h-12 w-12 rounded-full bg-[#0875ff]" />
-              <span className="absolute right-[18%] top-[15%] h-16 w-16 rounded-full bg-[#ff151d]" />
-              <span className="absolute bottom-[14%] left-[28%] h-14 w-14 rounded-full bg-[#ffd31a]" />
-
-              <div className="relative mx-auto grid max-w-[560px] grid-cols-3 gap-3 pt-10">
-                {heroMosaic.slice(0, 6).map((item, index) => (
-                  <Link
-                    className={[
-                      "group overflow-hidden rounded-[28px] border-4 border-white bg-[#e9eef5] shadow-[0_22px_60px_rgba(38,51,71,0.16)] transition duration-300 hover:-translate-y-2",
-                      index === 1 ? "translate-y-8 rotate-2" : "",
-                      index === 2 ? "-translate-y-3 -rotate-3" : "",
-                      index === 3 ? "translate-y-2 -rotate-2" : "",
-                      index === 4 ? "-translate-y-6 rotate-3" : "",
-                    ].join(" ")}
-                    href={`${siteRoutes.artistProfileBase}/${item.slug}`}
-                    key={item.id}
-                    title={item.name}
-                  >
-                    <img
-                      alt=""
-                      className="h-40 w-full object-cover transition duration-500 group-hover:scale-110"
-                      src={item.imageUrl}
-                    />
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="relative z-10 mx-auto mt-[-28px] max-w-[1180px] px-4 sm:px-6">
-        <div className="relative z-10 grid gap-3 rounded-[30px] border border-[#dce5f1] bg-white/95 p-4 shadow-[0_18px_60px_rgba(38,51,71,0.08)] sm:grid-cols-2 lg:grid-cols-4">
-          {proofItems.map((item, index) => (
-            <article
-              className="relative overflow-hidden rounded-[24px] bg-[#f8fbff] p-5"
-              key={item.label}
-            >
-              <span
-                className="absolute right-4 top-4 h-3 w-3 rounded-full"
-                style={{ backgroundColor: ["#0875ff", "#ff151d", "#ffd31a", "#2f3138"][index] }}
-              />
-              <p className="text-[34px] font-bold tracking-[-0.05em] text-[#0875ff]">{item.value}</p>
-              <p className="mt-1 text-[13px] font-bold uppercase tracking-[0.22em] text-[#7c8798]">
-                {item.label}
-              </p>
-            </article>
           ))}
-        </div>
-      </section>
-
-      <ArtBoardSignalMapSection items={heroMosaic} />
-
-      <section className="relative z-10 mx-auto mt-20 grid max-w-[1240px] gap-10 px-4 sm:px-6 lg:grid-cols-[0.75fr_1.25fr]">
-        <div className="lg:sticky lg:top-32 lg:self-start">
-          <p className="text-[13px] font-bold uppercase tracking-[0.32em] text-[#dc1735]">
-            Zašto ArtBoard
-          </p>
-          <h2 className="mt-3 text-[40px] font-bold leading-[1] tracking-[-0.04em] sm:text-[58px]">
-            Manje haosa. Više profesionalnog prisustva.
-          </h2>
-          <p className="mt-5 text-[18px] leading-[1.55] text-[#5d6675]">
-            Umjesto da radovi, linkovi, prijave i portfolio žive na deset različitih mjesta,
-            ArtBoard ih spaja u jedan čist tok.
-          </p>
-        </div>
-        <div className="space-y-5">
-          {benefits.map((benefit, index) => (
-            <article
-              className={[
-                "group relative overflow-hidden rounded-[34px] border border-[#dce5f1] bg-white p-7 shadow-[0_18px_60px_rgba(38,51,71,0.05)] transition hover:-translate-y-1 hover:shadow-[0_28px_90px_rgba(38,51,71,0.1)]",
-                index % 2 === 1 ? "lg:ml-12" : "lg:mr-12",
-              ].join(" ")}
-              key={benefit.title}
-            >
-              <span
-                className="absolute right-[-44px] top-[-44px] h-28 w-28 rounded-full opacity-15 transition group-hover:scale-125"
-                style={{ backgroundColor: benefit.color }}
-                aria-hidden="true"
-              />
-              <div className="flex gap-5">
-                <span
-                  className="mt-1 grid h-10 w-10 shrink-0 place-items-center rounded-full text-[13px] font-bold text-white"
-                  style={{ backgroundColor: benefit.color }}
-                >
-                  {index + 1}
-                </span>
-                <div>
-                  <h3 className="text-[26px] font-bold tracking-[-0.03em]">{benefit.title}</h3>
-                  <p className="mt-3 text-[16px] leading-[1.55] text-[#5d6675]">{benefit.text}</p>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="relative z-10 mx-auto mt-20 max-w-[1240px] scroll-mt-36 px-4 sm:px-6" id="alati">
-        <div className="relative overflow-hidden rounded-[44px] border border-[#dce5f1] bg-white p-6 shadow-[0_26px_90px_rgba(38,51,71,0.08)] sm:p-9">
-          <span className="absolute right-[-90px] top-[-90px] h-60 w-60 rounded-full bg-[#182fc7]/10" />
-          <div className="relative flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
-            <div>
-              <p className="text-[13px] font-bold uppercase tracking-[0.32em] text-[#182fc7]">
-                Alati i servisi
-              </p>
-              <h2 className="mt-3 max-w-[780px] text-[40px] font-bold leading-[1] tracking-[-0.04em] sm:text-[58px]">
-                Digitalni atelje sa praktičnim alatima.
-              </h2>
-            </div>
-          </div>
-          <div className="relative mt-8 grid auto-rows-[minmax(210px,auto)] gap-5 md:grid-cols-2 xl:grid-cols-6">
-            {tools.map((tool, index) => (
-              <Link
-                className={[
-                  "group flex flex-col rounded-[30px] border bg-[#f8fbff] p-7 transition hover:-translate-y-1 hover:bg-white hover:shadow-[0_24px_80px_rgba(38,51,71,0.11)]",
-                  index === 0 || index === 2 ? "xl:col-span-3" : "xl:col-span-2",
-                ].join(" ")}
-                href={tool.href}
-                key={tool.title}
-                style={{ borderColor: `${tool.color}33` }}
-              >
-                <div className="flex items-center justify-between gap-4">
-                  <p className="text-[13px] font-bold uppercase tracking-[0.28em] text-[#9aa4b5]">
-                    0{index + 1}
-                  </p>
-                  <span
-                    className="h-4 w-4 rounded-full transition group-hover:scale-125"
-                    style={{ backgroundColor: tool.color }}
-                    aria-hidden="true"
-                  />
-                </div>
-                <h3 className="mt-5 text-[25px] font-bold tracking-[-0.03em]">{tool.title}</h3>
-                <p className="mt-3 text-[16px] leading-[1.5] text-[#5d6675]">{tool.text}</p>
-                <p className="mt-auto pt-6 text-[15px] font-bold" style={{ color: tool.color }}>
-                  Otvori →
-                </p>
-              </Link>
-            ))}
+          <div className="artboard-proof-strip__support">
+            <span>Uz podršku</span>
+            <p>Ministarstva kulture i medija Crne Gore i Sekretarijata za kulturu Glavnog grada</p>
           </div>
         </div>
       </section>
 
-      <section
-        className="relative z-10 mx-auto mt-16 max-w-[1240px] scroll-mt-36 px-4 sm:px-6"
-        id="portfolio-builder"
-      >
-        <div className="relative grid gap-5 overflow-hidden rounded-[38px] border border-[#25314a] bg-[#101827] p-5 text-white shadow-[0_28px_90px_rgba(16,24,39,0.2)] sm:p-6 lg:grid-cols-[0.82fr_1.18fr] lg:p-7">
-          <span className="absolute left-[-90px] top-[-90px] h-64 w-64 rounded-full bg-[#dc1735]/25 blur-3xl" />
-          <span className="absolute bottom-[-100px] right-[-80px] h-72 w-72 rounded-full bg-[#182fc7]/35 blur-3xl" />
-          <div className="relative">
-            <p className="text-[11px] font-bold uppercase tracking-[0.26em] text-[#ffc41d]">
-              Portfolio Builder
-            </p>
-            <h2 className="mt-2.5 text-[31px] font-bold leading-[0.98] tracking-[-0.04em] sm:text-[40px]">
-              Profesionalni PDF portfolio bez dizajniranja od nule.
-            </h2>
-            <p className="mt-3.5 text-[15px] leading-[1.42] text-[#d7deea]">
-              Korisnik dobija PDF portfolio spreman za galerije, konkurse, saradnike i kupce.
-              Preview ostaje dostupan sa watermarkom, a čisti export je uključen u Premium ili se
-              može kupiti jednokratno.
-            </p>
-            <ol className="mt-4 space-y-2">
-              {portfolioSteps.map((step, index) => (
-                <li className="flex gap-2.5 text-[13px] leading-snug text-[#d7deea]" key={step}>
-                  <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[#ffc41d] text-[11px] font-bold text-[#101827]">
-                    {index + 1}
-                  </span>
-                  {step}
-                </li>
-              ))}
-            </ol>
-            <div className="mt-5">
-              <SiteCtaButton href={siteRoutes.portfolioBuilder} label="Kreiraj portfolio" />
-            </div>
-          </div>
+      <ArtBoardWhySection />
 
-          <div className="relative">
-            <ArtBoardTemplateCarousel templates={portfolioTemplates} />
-            <div className="mt-2.5 rounded-[18px] border border-white/12 bg-white/6 p-3.5 text-[13px] leading-relaxed text-[#d7deea]">
-              Cijena može biti jednokratna za jedan PDF ili uključena u Premium članstvo.
-            </div>
-          </div>
-        </div>
-      </section>
+      <ArtBoardToolsSection />
 
-      <section className="relative z-10 mx-auto mt-20 max-w-[1240px] px-4 sm:px-6">
-        <div className="grid gap-8 lg:grid-cols-[0.72fr_1.28fr] lg:items-center">
-          <div>
-            <p className="text-[13px] font-bold uppercase tracking-[0.32em] text-[#dc1735]">
-              Umjetnici
-            </p>
-            <h2 className="mt-3 text-[40px] font-bold leading-[1] tracking-[-0.04em] sm:text-[58px]">
-              Katalog koji se mijenja kao živa galerija.
-            </h2>
-            <p className="mt-5 text-[18px] leading-[1.55] text-[#5d6675]">
-              Svako učitavanje donosi novi presjek umjetnika, radova i disciplina.
-            </p>
-            <div className="mt-8">
-              <SiteCtaButton href={siteRoutes.artists} label="Pogledajte sve umjetnike" />
-            </div>
-          </div>
-          <div className="grid gap-5 md:grid-cols-2">
-            {previewArtists.length > 0 ? (
-              previewArtists.map((artist) => <ArtistCard artist={artist} key={artist.id} />)
-            ) : (
-              <div className="rounded-[30px] border border-[#dce5f1] bg-white p-8 text-[#5d6675] md:col-span-2">
-                Preview umjetnika će se prikazati čim je backend dostupan.
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
+      <ArtBoardPortfolioShowcase />
 
-      <section className="relative z-10 mx-auto mt-20 max-w-[1240px] px-4 sm:px-6">
-        <div className="relative rounded-[44px] border border-[#dce5f1] bg-white p-7 sm:p-10">
-          <p className="text-[13px] font-bold uppercase tracking-[0.32em] text-[#ffc41d]">
-            Kako funkcioniše ArtBoard
-          </p>
-          <div className="mt-8 grid gap-0 overflow-hidden rounded-[30px] border border-[#dce5f1] md:grid-cols-5">
-            {platformSteps.map((step, index) => (
-              <article className="border-b border-[#dce5f1] bg-[#f8fbff] p-5 md:border-b-0 md:border-r last:border-r-0" key={step}>
-                <p className="text-[28px] font-bold text-[#182fc7]">{index + 1}</p>
-                <h3 className="mt-5 text-[18px] font-bold leading-[1.2]">{step}</h3>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
+      <ArtBoardCommunitySection artists={communityArtists} />
 
-      <section className="relative z-10 mx-auto mt-20 max-w-[1240px] scroll-mt-36 px-4 sm:px-6" id="paketi">
-        <div>
-          <p className="text-[13px] font-bold uppercase tracking-[0.32em] text-[#182fc7]">
-            Paketi i cijene
-          </p>
-          <h2 className="mt-3 max-w-[760px] text-[40px] font-bold leading-[1] tracking-[-0.04em] sm:text-[58px]">
-            Jednostavan izbor za početak i rast.
-          </h2>
-        </div>
-        <div className="mt-8 grid gap-5 lg:grid-cols-3">
-          {packageCards.map((card, index) => (
-            <article
-              className="grid min-h-[410px] grid-rows-[auto_96px_132px_auto] rounded-[36px] border border-[#dce5f1] bg-white p-8 shadow-[0_18px_60px_rgba(38,51,71,0.05)]"
-              key={card.title}
-            >
-              <p className="text-[13px] font-bold uppercase tracking-[0.32em] text-[#9aa4b5]">
-                {card.label}
-              </p>
-              <h3 className="mt-4 self-start text-[32px] font-bold leading-[1.05] tracking-[-0.04em]">
-                {card.title}
-              </h3>
-              <p className="mt-4 self-start text-[17px] leading-[1.5] text-[#5d6675]">
-                {card.text}
-              </p>
-              <div className="self-end pt-8">
-                <SiteCtaButton
-                  href={card.href}
-                  label={index === 1 ? "Upravljaj premiumom" : "Pogledaj opciju"}
-                />
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
+      <ArtBoardJourneySection />
 
-      <section className="relative z-10 mx-auto mt-20 max-w-[1240px] px-4 sm:px-6">
-        <div className="relative overflow-hidden rounded-[42px] border border-[#dce5f1] bg-white p-7 sm:p-10">
-          <span className="absolute bottom-[-90px] right-[-60px] h-56 w-56 rounded-full bg-[#ffc41d]/35" />
-          <div className="relative grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
-            <div>
-              <p className="text-[13px] font-bold uppercase tracking-[0.32em] text-[#dc1735]">
-                Oglasi i profesionalne prilike
-              </p>
-              <h2 className="mt-4 text-[40px] font-bold leading-[1] tracking-[-0.04em] sm:text-[56px]">
-                Jedno mjesto za konkurse, saradnje i angažmane.
-              </h2>
-            </div>
-            <div className="self-end">
-              <p className="text-[19px] leading-[1.55] text-[#4e5560]">
-                Umjetnici mogu pratiti relevantne prilike, dok organizacije i poslodavci dobijaju
-                jasniji kanal ka kreativnoj zajednici.
-              </p>
-              <div className="mt-5 flex flex-wrap gap-2">
-                {opportunityTypes.map((type) => (
-                  <span className="rounded-full border border-[#ccd7e6] bg-[#f8fbff] px-4 py-2 text-[14px]" key={type}>
-                    {type}
-                  </span>
-                ))}
-              </div>
-              <div className="mt-7">
-                <SiteCtaButton href={siteRoutes.opportunities} label="Istražite oglase" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <ArtBoardVerificationSection />
 
-      <section className="relative z-10 mx-auto mt-20 max-w-[1240px] px-4 sm:px-6">
-        <div className="relative overflow-hidden rounded-[46px] bg-[linear-gradient(135deg,#0875ff,#7d35ff_26%,#ff151d_58%,#ff7a1f_78%,#ffd31a)] p-8 text-white sm:p-12">
-          <span className="absolute right-[-70px] top-[-70px] h-52 w-52 rounded-full bg-white/18" />
-          <span className="absolute bottom-[-60px] left-[-60px] h-44 w-44 rounded-full bg-black/16" />
-          <div className="relative">
-            <p className="text-[13px] font-bold uppercase tracking-[0.32em] text-[#ffc41d]">
-              Spreman/na za ArtBoard?
-            </p>
-            <h2 className="mt-4 max-w-[860px] text-[42px] font-bold leading-[1] tracking-[-0.04em] sm:text-[62px]">
-              Kreiraj svoj ArtBoard profil i predstavi rad kroz profesionalne alate.
-            </h2>
-            <div className="mt-8 flex flex-wrap gap-3">
-              {["Slikarstvo", "Fotografija", "Dizajn", "Skulptura", "Ilustracija", "Digitalna umjetnost"].map(
-                (discipline) => (
-                  <span className="rounded-full border border-white/25 px-4 py-2 text-[15px]" key={discipline}>
-                    {discipline}
-                  </span>
-                ),
-              )}
-            </div>
-            <div className="mt-8">
-              <SiteCtaButton href={siteRoutes.registration} label="Kreiraj svoj ArtBoard profil" />
-            </div>
-          </div>
-        </div>
-      </section>
+      <ArtBoardTestimonialsSection />
 
-      <div className="relative z-10">
-        <ArtBoardFaqSection items={artBoardFaqs} />
-      </div>
+      <ArtBoardOpportunitiesSection />
+
+      <ArtBoardPricingSection />
+
+      <ArtBoardDisciplinesSection />
+
+      <div className="artboard-disciplines-to-faq" aria-hidden="true" />
+
+      <ArtBoardFaqSection items={artBoardFaqs} />
+
+      <div className="relative z-[1] h-20 bg-white" aria-hidden="true" />
+
     </main>
   );
 }

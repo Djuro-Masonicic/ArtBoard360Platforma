@@ -107,7 +107,7 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
       : publicNavigationItems;
   const logoHref = isArtBoardUnit ? siteRoutes.artboard : siteRoutes.home;
   const headerCtaHref = isArtBoardUnit
-    ? siteRoutes.login
+    ? siteRoutes.artistApplication
     : isArtStudioUnit
       ? siteRoutes.contact
       : siteRoutes.login;
@@ -120,7 +120,6 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
   const shouldShowAccountMenu = isAuthenticated && !isArtStudioUnit;
   const shouldShowHeaderCta = isArtStudioUnit || !isAuthenticated;
   const shouldCondenseArtBoardHeader = isArtBoardHeaderScrolled && !isTransparentHeader;
-
   const isMobileMenuVisible = mobileMenuState !== "closed";
   const isMobileMenuOpen = mobileMenuState !== "closed";
 
@@ -346,13 +345,20 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
             }`}
           >
             {shouldShowHeaderCta ? (
-              <SiteCtaButton
-                asLink
-                className={isArtBoardUnit ? "artboard-header-cta" : isArtStudioUnit ? "art-studio-header-cta" : ""}
-                href={headerCtaHref}
-                label={resolvedHeaderCtaLabel}
-                withArtBoardTransition={false}
-              />
+              <>
+                {isArtBoardUnit ? (
+                  <Link className="artboard-header-login" href={siteRoutes.login}>
+                    Uloguj se
+                  </Link>
+                ) : null}
+                <SiteCtaButton
+                  asLink
+                  className={isArtBoardUnit ? "artboard-header-cta" : isArtStudioUnit ? "art-studio-header-cta" : ""}
+                  href={headerCtaHref}
+                  label={resolvedHeaderCtaLabel}
+                  withArtBoardTransition={false}
+                />
+              </>
             ) : null}
           </div>
         ) : (

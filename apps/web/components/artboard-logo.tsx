@@ -63,13 +63,13 @@ export function ArtBoardLogo({
           </defs>
           <path
             className="artboard-logo__curve artboard-logo__curve--left"
-            d="M18 96C38 76 51 52 62 28"
+            d="M18 96C38 76 51 53 64 20"
             pathLength="100"
             stroke={`url(#${leftGradientId})`}
           />
           <path
             className="artboard-logo__curve artboard-logo__curve--right"
-            d="M70 28C77 53 90 77 110 96"
+            d="M64 20C77 53 90 77 110 96"
             pathLength="100"
             stroke={`url(#${rightGradientId})`}
           />
@@ -83,13 +83,13 @@ export function ArtBoardLogo({
             <>
               <path
                 className="artboard-logo__progress-curve artboard-logo__progress-curve--left"
-                d="M18 96C38 76 51 52 62 28"
+                d="M18 96C38 76 51 53 64 20"
                 pathLength="100"
                 stroke={`url(#${leftGradientId})`}
               />
               <path
                 className="artboard-logo__progress-curve artboard-logo__progress-curve--right"
-                d="M70 28C77 53 90 77 110 96"
+                d="M64 20C77 53 90 77 110 96"
                 pathLength="100"
                 stroke={`url(#${rightGradientId})`}
               />

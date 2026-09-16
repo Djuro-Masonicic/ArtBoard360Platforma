@@ -96,18 +96,28 @@ export const artStudioNavigationItems = [
  */
 export const artBoardNavigationItems = [
   {
-    href: siteRoutes.portfolioBuilder,
-    label: "Portfolio Builder",
-    activePrefixes: [siteRoutes.portfolioBuilder],
-  },
-  {
     href: siteRoutes.artists,
     label: "Umjetnici",
     activePrefixes: [siteRoutes.artists, siteRoutes.artistProfileBase, "/artists"],
   },
   {
+    href: siteRoutes.portfolioBuilder,
+    label: "Portfolio Builder",
+    activePrefixes: [siteRoutes.portfolioBuilder],
+  },
+  {
     href: siteRoutes.opportunities,
     label: "Oglasi",
     activePrefixes: [siteRoutes.opportunities],
+  },
+  {
+    href: siteRoutes.pricing,
+    label: "Paketi",
+    activePrefixes: [siteRoutes.pricing, siteRoutes.subscription],
+  },
+  {
+    href: `${siteRoutes.artboard}#faq`,
+    label: "FAQ",
+    activePrefixes: [`${siteRoutes.artboard}#faq`],
   },
 ] as const;
