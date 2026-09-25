@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { FilePlus2, FileText, PenLine, UserRound } from "lucide-react";
+import { FilePlus2, Paintbrush, Save, UserRoundArrowLeft } from "lucide-react";
 
+import { ArtBoardPortfolioTemplatePreview } from "@/components/artboard-portfolio-template-preview";
 import { siteRoutes } from "@/lib/site-routes";
 
 const steps = [
@@ -8,21 +9,21 @@ const steps = [
     number: "01",
     title: "Generiši iz profila",
     description: "Automatski izvezi podatke i odabrane radove sa svog ArtBoard profila.",
-    icon: UserRound,
+    icon: UserRoundArrowLeft,
     tone: "blue",
   },
   {
     number: "02",
     title: "Odaberi šablon",
     description: "Odaberi gotov dizajnerski šablon i prilagodi izgled svake sekcije.",
-    icon: PenLine,
+    icon: Paintbrush,
     tone: "violet",
   },
   {
     number: "03",
     title: "Sačuvaj i nastavi kasnije",
     description: "Portfolio mijenjaj i dopunjavaj novim radovima kad god ti zatreba.",
-    icon: FileText,
+    icon: Save,
     tone: "coral",
   },
 ] as const;
@@ -45,11 +46,20 @@ export function ArtBoardPortfolioShowcase() {
 
           <div className="artboard-portfolio__grid">
             <div className="artboard-portfolio__steps">
+              <svg className="artboard-portfolio__icon-definitions" aria-hidden="true">
+                <defs>
+                  <linearGradient id="artboard-portfolio-icon-gradient" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stopColor="#317cf4" />
+                    <stop offset="0.48" stopColor="#d72c92" />
+                    <stop offset="1" stopColor="#ffbd31" />
+                  </linearGradient>
+                </defs>
+              </svg>
               <ol className="artboard-portfolio__timeline">
                 {steps.map(({ number, title, description, icon: Icon, tone }) => (
                   <li className={`artboard-portfolio__step artboard-portfolio__step--${tone}`} key={number}>
                     <span className="artboard-portfolio__step-icon" aria-hidden="true">
-                      <Icon size={15} strokeWidth={1.8} />
+                      <Icon size={20} strokeWidth={1.8} />
                     </span>
                     <div className="artboard-portfolio__step-card">
                       <h3><span>{number}</span> {title}</h3>
@@ -63,7 +73,7 @@ export function ArtBoardPortfolioShowcase() {
                 <p>Ili bez profila</p>
                 <Link className="artboard-portfolio__step artboard-portfolio__step--manual" href={siteRoutes.portfolioBuilder}>
                   <span className="artboard-portfolio__step-icon" aria-hidden="true">
-                    <FilePlus2 size={15} strokeWidth={1.8} />
+                    <FilePlus2 size={20} strokeWidth={1.8} />
                   </span>
                   <span className="artboard-portfolio__step-card">
                     <strong><span>04</span> Kreiraj od nule</strong>
@@ -73,13 +83,7 @@ export function ArtBoardPortfolioShowcase() {
               </div>
             </div>
 
-            <div className="artboard-why__ribbon artboard-why__ribbon--gold artboard-portfolio__artwork" aria-hidden="true">
-              <span className="artboard-why__ribbon-wave artboard-why__ribbon-wave--one" />
-              <span className="artboard-why__ribbon-wave artboard-why__ribbon-wave--two" />
-              <span className="artboard-why__ribbon-wave artboard-why__ribbon-wave--three" />
-              <span className="artboard-why__ribbon-wave artboard-why__ribbon-wave--four" />
-              <span className="artboard-why__ribbon-wave artboard-why__ribbon-wave--five" />
-            </div>
+            <ArtBoardPortfolioTemplatePreview />
           </div>
 
           <Link className="artboard-portfolio__cta" href={siteRoutes.portfolioBuilder}>

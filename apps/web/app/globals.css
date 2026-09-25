@@ -8498,20 +8498,28 @@ select {
 
 .artboard-portfolio__grid {
   display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
   align-items: center;
   gap: 42px;
   margin-top: 34px;
 }
 
 .artboard-portfolio__steps {
+  position: relative;
   min-width: 0;
+}
+
+.artboard-portfolio__icon-definitions {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
 }
 
 .artboard-portfolio__timeline {
   position: relative;
   display: grid;
-  gap: 13px;
+  gap: 24px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -8520,10 +8528,10 @@ select {
 .artboard-portfolio__timeline::before {
   position: absolute;
   z-index: 0;
-  top: 17px;
-  bottom: 17px;
-  left: 13px;
-  width: 2px;
+  top: 40px;
+  bottom: 37px;
+  left: 26px;
+  width: 3px;
   background: linear-gradient(#3978ff, #ab52d5 44%, #ff4b71 72%, #ffce31);
   content: "";
 }
@@ -8533,9 +8541,9 @@ select {
   --step-end: #7b59f2;
   position: relative;
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr);
+  grid-template-columns: 54px minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
+  gap: 25px;
   min-width: 0;
 }
 
@@ -8553,35 +8561,47 @@ select {
   position: relative;
   z-index: 1;
   display: grid;
-  width: 28px;
-  height: 28px;
+  width: 54px;
+  height: 54px;
   place-items: center;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--step-start), var(--step-end));
   color: #fff;
+  transition: background-color 240ms ease, box-shadow 240ms ease, color 240ms ease, transform 240ms ease;
+}
+
+.artboard-portfolio__step--blue .artboard-portfolio__step-icon svg {
+  transform: scaleX(-1);
 }
 
 .artboard-portfolio__step-card {
-  display: block;
+  display: flex;
   min-width: 0;
-  min-height: 65px;
-  padding: 12px 14px;
-  border-radius: 11px;
+  min-height: 129px;
+  flex-direction: column;
+  justify-content: center;
+  padding: 22px 24px;
+  border-radius: 20px;
   background: #f8faff;
+  background-position: 0 50%;
+  background-size: 100% 100%;
   color: #4a5262;
-  transition: background-color 240ms ease, color 240ms ease, box-shadow 240ms ease;
+  transition: color 240ms ease, box-shadow 240ms ease, transform 240ms ease;
 }
 
 .artboard-portfolio__step-card h3,
 .artboard-portfolio__step-card strong {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
   margin: 0;
-  font-size: 15px;
+  font-size: 24px;
   font-weight: 800;
-  line-height: 1.2;
+  line-height: 1.15;
 }
 
 .artboard-portfolio__step-card h3 span {
-  margin-right: 5px;
+  margin-right: 0;
   color: #2e73e7;
 }
 
@@ -8592,21 +8612,39 @@ select {
 .artboard-portfolio__step-card p,
 .artboard-portfolio__step-card small {
   display: block;
-  margin: 4px 0 0;
+  margin: 10px 0 0;
   color: #717986;
-  font-size: 11px;
-  line-height: 1.32;
+  font-size: 15px;
+  line-height: 1.35;
 }
 
 .artboard-portfolio__timeline .artboard-portfolio__step:hover .artboard-portfolio__step-card {
-  background: linear-gradient(110deg, var(--step-start), var(--step-end));
+  animation: artboardPortfolioStepGradient 2.8s ease-in-out infinite alternate;
+  background: linear-gradient(110deg, #317cf4, #7455e4 27%, #d72c92 52%, #ff4f62 73%, #f39b2f);
+  background-size: 240% 100%;
   color: #fff;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.25);
 }
 
 .artboard-portfolio__timeline .artboard-portfolio__step:hover .artboard-portfolio__step-card h3 span,
 .artboard-portfolio__timeline .artboard-portfolio__step:hover .artboard-portfolio__step-card p {
   color: #fff;
+}
+
+.artboard-portfolio__timeline .artboard-portfolio__step:hover .artboard-portfolio__step-icon {
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+  color: var(--step-start);
+  transform: scale(1.02);
+}
+
+.artboard-portfolio__timeline .artboard-portfolio__step:hover .artboard-portfolio__step-icon svg {
+  stroke: url(#artboard-portfolio-icon-gradient);
+}
+
+@keyframes artboardPortfolioStepGradient {
+  from { background-position: 0 50%; }
+  to { background-position: 100% 50%; }
 }
 
 .artboard-portfolio__without-profile {
@@ -8632,7 +8670,7 @@ select {
 }
 
 .artboard-portfolio__step--manual .artboard-portfolio__step-card {
-  min-height: 70px;
+  min-height: 112px;
   border: 1px solid transparent;
   background: linear-gradient(#17191e, #17191e) padding-box,
     linear-gradient(90deg, #3d7df1, #f0ba35) border-box;
@@ -8659,10 +8697,108 @@ select {
   outline-offset: 3px;
 }
 
-.artboard-portfolio__artwork {
+.artboard-portfolio__preview {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.055);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+}
+
+.artboard-portfolio__preview-stage {
+  position: relative;
   width: 100%;
-  height: 350px;
-  border-radius: 15px;
+  height: 500px;
+  overflow: hidden;
+  border-radius: 13px;
+  background:
+    radial-gradient(circle at 20% 15%, rgba(49, 124, 244, 0.13), transparent 40%),
+    radial-gradient(circle at 82% 82%, rgba(237, 59, 128, 0.12), transparent 42%),
+    #0e1015;
+}
+
+.artboard-portfolio__preview-slide {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  margin: 0;
+  padding: 20px;
+  place-items: center;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(24px) scale(0.975);
+  transition: opacity 650ms ease, transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.artboard-portfolio__preview-slide.is-active {
+  z-index: 1;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0) scale(1);
+}
+
+.artboard-portfolio__preview-slide img {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  object-fit: contain;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.34);
+}
+
+.artboard-portfolio__preview-footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 14px 5px 3px;
+}
+
+.artboard-portfolio__preview-footer > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.artboard-portfolio__preview-footer span {
+  color: #9ca0a8;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.artboard-portfolio__preview-footer strong {
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.15;
+}
+
+.artboard-portfolio__preview-dots {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.artboard-portfolio__preview-dots button {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.32);
+  cursor: pointer;
+  transition: width 220ms ease, background-color 220ms ease;
+}
+
+.artboard-portfolio__preview-dots button.is-active {
+  width: 26px;
+  background: linear-gradient(90deg, #317cf4, #ed3b80 58%, #ffca34);
+}
+
+.artboard-portfolio__preview-dots button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
 }
 
 .artboard-portfolio__cta {
@@ -8711,6 +8847,15 @@ select {
   .artboard-portfolio__title { font-size: 42px; }
   .artboard-portfolio__grid { gap: 30px; }
   .artboard-portfolio__content { padding: 34px; }
+  .artboard-portfolio__timeline { gap: 16px; }
+  .artboard-portfolio__timeline::before { top: 22px; bottom: 22px; left: 20px; width: 2px; }
+  .artboard-portfolio__step { grid-template-columns: 42px minmax(0, 1fr); gap: 15px; }
+  .artboard-portfolio__step-icon { width: 42px; height: 42px; }
+  .artboard-portfolio__step-card { min-height: 102px; padding: 17px 18px; border-radius: 16px; }
+  .artboard-portfolio__step-card h3,
+  .artboard-portfolio__step-card strong { font-size: 18px; }
+  .artboard-portfolio__step-card p,
+  .artboard-portfolio__step-card small { margin-top: 7px; font-size: 12px; }
 }
 
 @media (max-width: 700px) {
@@ -8719,22 +8864,42 @@ select {
   .artboard-portfolio__title { font-size: 36px; }
   .artboard-portfolio__intro { font-size: 14px; }
   .artboard-portfolio__grid { grid-template-columns: 1fr; gap: 28px; }
-  .artboard-portfolio__artwork { height: 290px; }
+  .artboard-portfolio__timeline { gap: 20px; }
+  .artboard-portfolio__timeline::before { top: 25px; bottom: 25px; left: 23px; }
+  .artboard-portfolio__step { grid-template-columns: 48px minmax(0, 1fr); gap: 18px; }
+  .artboard-portfolio__step-icon { width: 48px; height: 48px; }
+  .artboard-portfolio__step-card { min-height: 112px; padding: 19px 20px; border-radius: 18px; }
+  .artboard-portfolio__step-card h3,
+  .artboard-portfolio__step-card strong { font-size: 20px; }
+  .artboard-portfolio__step-card p,
+  .artboard-portfolio__step-card small { font-size: 13px; }
+  .artboard-portfolio__preview-stage { height: 430px; }
 }
 
 @media (max-width: 440px) {
   .artboard-portfolio { padding-right: 16px; padding-left: 16px; }
   .artboard-portfolio__content { padding: 24px 18px; }
   .artboard-portfolio__title { font-size: 30px; }
-  .artboard-portfolio__step-card { padding: 11px 12px; }
+  .artboard-portfolio__timeline { gap: 14px; }
+  .artboard-portfolio__timeline::before { top: 21px; bottom: 21px; left: 19px; }
+  .artboard-portfolio__step { grid-template-columns: 40px minmax(0, 1fr); gap: 12px; }
+  .artboard-portfolio__step-icon { width: 40px; height: 40px; }
+  .artboard-portfolio__step-card { min-height: 100px; padding: 15px 14px; border-radius: 15px; }
   .artboard-portfolio__step-card h3,
-  .artboard-portfolio__step-card strong { font-size: 13px; }
-  .artboard-portfolio__artwork { height: 240px; }
+  .artboard-portfolio__step-card strong { gap: 6px; font-size: 16px; }
+  .artboard-portfolio__step-card p,
+  .artboard-portfolio__step-card small { margin-top: 6px; font-size: 11px; }
+  .artboard-portfolio__preview { padding: 9px; }
+  .artboard-portfolio__preview-stage { height: 360px; }
+  .artboard-portfolio__preview-slide { padding: 14px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .artboard-portfolio__step-card,
   .artboard-portfolio__cta::before { transition: none; }
+  .artboard-portfolio__timeline .artboard-portfolio__step:hover .artboard-portfolio__step-card {
+    animation: none;
+  }
 }
 
 .artboard-community {
