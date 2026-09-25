@@ -6,6 +6,7 @@ import {
   FileText,
   GraduationCap,
   ImageIcon,
+  Info,
   QrCode,
   Search,
   SlidersHorizontal,
@@ -19,7 +20,7 @@ import { siteRoutes } from "@/lib/site-routes";
 
 const groups = [
   {
-    label: "Predstavljanje",
+    label: "Vidljivost",
     tone: "blue",
     items: [
       {
@@ -43,7 +44,7 @@ const groups = [
     ],
   },
   {
-    label: "Kreiranje",
+    label: "Razvoj",
     tone: "red",
     items: [
       {
@@ -67,7 +68,7 @@ const groups = [
     ],
   },
   {
-    label: "Razvoj",
+    label: "Prilike",
     tone: "yellow",
     items: [
       {
@@ -97,11 +98,16 @@ export function ArtBoardToolsSection() {
 
   useEffect(() => {
     const section = sectionRef.current;
-    if (!section || !("IntersectionObserver" in window) || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    if (
+      !section ||
+      !("IntersectionObserver" in window) ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
       return;
     }
 
-    const elements = section.querySelectorAll<HTMLElement>("[data-tool-reveal]");
+    const elements =
+      section.querySelectorAll<HTMLElement>("[data-tool-reveal]");
     section.classList.add("artboard-tools--reveal-ready");
 
     const observer = new IntersectionObserver(
@@ -132,17 +138,23 @@ export function ArtBoardToolsSection() {
           <span aria-hidden="true" /> ArtBoard alati
         </p>
         <h2 className="artboard-tools__title" data-tool-reveal>
-          <span>Sve što umjetnicima treba za</span>
-          <span>predstavljanje, razvoj i saradnju.</span>
+          <span>
+            Sve što je umjetnicima <br></br> potrebno,
+          </span>
+          <span>na jednom mjestu.</span>
         </h2>
         <p className="artboard-tools__intro" data-tool-reveal>
-          Pretraživač, umjetnički portfolio, promocija, edukacija i profesionalne prilike
-          objedinjeni su na jednom mjestu i prilagođeni potrebama umjetnika.
+          ArtBoard alati ti pomažu u različitim fazama razvoja umjetničke
+          karijere, bilo da uređuješ profil, kreiraš portfolio ili tražiš nove
+          prilike.
         </p>
 
         <div className="artboard-tools__groups">
           {groups.map((group) => (
-            <div className={`artboard-tools__group artboard-tools__group--${group.tone}`} key={group.label}>
+            <div
+              className={`artboard-tools__group artboard-tools__group--${group.tone}`}
+              key={group.label}
+            >
               <h3 className="artboard-tools__group-label" data-tool-reveal>
                 <span aria-hidden="true" /> {group.label}
               </h3>
@@ -151,13 +163,36 @@ export function ArtBoardToolsSection() {
                   const Icon = item.icon;
                   const content = (
                     <>
-                      <span className="artboard-tools__item-icon" aria-hidden="true">
+                      <span
+                        className="artboard-tools__item-icon"
+                        aria-hidden="true"
+                      >
                         <Icon size={20} strokeWidth={1.8} />
                       </span>
                       <span className="artboard-tools__item-copy">
                         <strong>
                           {item.title}
-                          {"soon" in item && item.soon ? <small>Uskoro</small> : null}
+                          {"soon" in item && item.soon ? (
+                            <span className="artboard-tools__soon">
+                              <button
+                                className="artboard-tools__soon-trigger"
+                                type="button"
+                                aria-describedby="artboard-edu-tooltip"
+                              >
+                                Uskoro <Info size={13} strokeWidth={2} aria-hidden="true" />
+                              </button>
+                              <span
+                                className="artboard-tools__soon-tooltip"
+                                id="artboard-edu-tooltip"
+                                role="tooltip"
+                              >
+                                ArtBoard Edu je u pripremi. Ako te zanima kreiranje i prodaja
+                                kurseva, radionica ili drugih edukativnih sadržaja na platformi,
+                                prijavi svoje interesovanje putem{" "}
+                                <Link href={siteRoutes.artboardContact}>kontakt forme</Link>.
+                              </span>
+                            </span>
+                          ) : null}
                         </strong>
                         <span>{item.text}</span>
                       </span>
@@ -169,12 +204,18 @@ export function ArtBoardToolsSection() {
                       className="artboard-tools__item-reveal"
                       data-tool-reveal
                       key={item.title}
-                      style={{ "--reveal-delay": `${index * 75}ms` } as CSSProperties}
+                      style={
+                        { "--reveal-delay": `${index * 75}ms` } as CSSProperties
+                      }
                     >
                       {"href" in item ? (
-                        <Link className="artboard-tools__item" href={item.href}>{content}</Link>
+                        <Link className="artboard-tools__item" href={item.href}>
+                          {content}
+                        </Link>
                       ) : (
-                        <article className="artboard-tools__item">{content}</article>
+                        <article className="artboard-tools__item artboard-tools__item--soon">
+                          {content}
+                        </article>
                       )}
                     </div>
                   );
@@ -185,7 +226,10 @@ export function ArtBoardToolsSection() {
         </div>
 
         <div data-tool-reveal>
-          <Link className="artboard-tools__cta" href={siteRoutes.artistApplication}>
+          <Link
+            className="artboard-tools__cta"
+            href={siteRoutes.artistApplication}
+          >
             Besplatno isprobaj alate
           </Link>
         </div>

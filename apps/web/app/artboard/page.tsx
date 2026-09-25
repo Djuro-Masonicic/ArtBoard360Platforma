@@ -12,7 +12,7 @@ import { ArtBoardPortfolioShowcase } from "@/components/artboard-portfolio-showc
 import { ArtBoardToolsSection } from "@/components/artboard-tools-section";
 import { ArtBoardTestimonialsSection } from "@/components/artboard-testimonials-section";
 import { ArtBoardVerificationSection } from "@/components/artboard-verification-section";
-import { ArtBoardWhySection } from "@/components/artboard-why-section";
+import { ArtBoardWhySection, type WhyArtworkPreview } from "@/components/artboard-why-section";
 import { siteRoutes } from "@/lib/site-routes";
 import { getArtists } from "@/services/artists";
 import { getArtBoardStats } from "@/services/stats";
@@ -114,6 +114,34 @@ function getRandomHeroArtworks(artists: Artist[], count: number): HeroArtworkPre
       return [{
         id: artwork.id,
         imageUrl: artwork.imageUrl,
+      }];
+    }),
+  );
+
+  for (let index = artworks.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1));
+    const currentArtwork = artworks[index]!;
+    artworks[index] = artworks[randomIndex]!;
+    artworks[randomIndex] = currentArtwork;
+  }
+
+  return artworks.slice(0, count);
+}
+
+function getRandomWhyArtworks(artists: Artist[], count: number): WhyArtworkPreview[] {
+  const seenUrls = new Set<string>();
+  const artworks = artists.flatMap((artist) =>
+    artist.artworks.flatMap((artwork) => {
+      if (!artwork.imageUrl || seenUrls.has(artwork.imageUrl)) return [];
+
+      seenUrls.add(artwork.imageUrl);
+
+      return [{
+        id: artwork.id,
+        imageUrl: artwork.imageUrl,
+        artistName: artist.name,
+        artistSlug: artist.slug,
+        altText: artwork.altText || artwork.title || `Rad umjetnika ${artist.name}`,
       }];
     }),
   );
@@ -555,6 +583,7 @@ export default async function ArtBoardPage() {
     }];
   }).sort((left, right) => Number(right.artworks.length > 1) - Number(left.artworks.length > 1));
   const heroArtworks = getRandomHeroArtworks(artists, 8);
+  const whyArtworks = getRandomWhyArtworks(artists, 9);
 
   return (
     <main className="artboard-platform-page relative isolate -mx-5 -mt-8 overflow-x-clip pb-0 pt-[73px] text-[#252933] sm:-mx-8 sm:-mt-10 lg:-mx-10 lg:-mt-12 xl:pt-[77px]">
@@ -582,7 +611,7 @@ export default async function ArtBoardPage() {
         </section>
       </div>
 
-      <ArtBoardWhySection />
+      <ArtBoardWhySection artworks={whyArtworks} />
 
       <ArtBoardToolsSection />
 

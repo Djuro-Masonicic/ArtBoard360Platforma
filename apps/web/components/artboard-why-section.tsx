@@ -21,7 +21,7 @@ const cards = [
       "Predstavi sebe i svoje radove na umjetničkom profilu i povećaj vidljivost kroz ArtBoard pretraživač.",
     action: "Prijavi se besplatno",
     href: siteRoutes.artistApplication,
-    image: "/artboard-why/visibility.webp",
+    image: "/artboard-why/01 bw.jpg",
     imageAlt: "Apstraktne sive trake koje se ukrštaju",
     icon: UserRound,
     tone: "blue",
@@ -32,7 +32,7 @@ const cards = [
       "Generiši portfolio, kreiraj digitalnu vizit kartu i sadržaj za promociju, bez komplikovanih programa.",
     action: "Isprobaj Portfolio Builder",
     href: siteRoutes.portfolioBuilder,
-    image: "/artboard-why/tools.webp",
+    image: "/artboard-why/02 bw.jpg",
     imageAlt: "Složeni listovi papira za umjetnički portfolio",
     icon: PenLine,
     tone: "red",
@@ -43,29 +43,41 @@ const cards = [
       "Istraži oglase, pozive, konkurse, rezidencije i saradnje relevantne za tvoj rad i dalji razvoj.",
     action: "Pogledaj oglase",
     href: siteRoutes.opportunities,
-    image: "/artboard-why/opportunities.webp",
+    image: "/artboard-why/03 bw.jpg",
     imageAlt: "Apstraktna kompozicija sivih geometrijskih oblika",
     icon: BriefcaseBusiness,
     tone: "yellow",
   },
 ] as const;
 
-const ribbonTones = ["sunset", "violet", "gold", "aqua", "orchid", "blue", "coral"] as const;
+export type WhyArtworkPreview = {
+  id: string;
+  imageUrl: string;
+  artistName: string;
+  artistSlug: string;
+  altText: string;
+};
 
-export function ArtBoardWhySection() {
-  const [activeIndex, setActiveIndex] = useState(0);
+export function ArtBoardWhySection({ artworks }: { artworks: WhyArtworkPreview[] }) {
+  const [wordState, setWordState] = useState<{ activeIndex: number; previousIndex: number | null }>({
+    activeIndex: 0,
+    previousIndex: null,
+  });
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const interval = window.setInterval(() => {
-      setActiveIndex((index) => (index + 1) % words.length);
-    }, 3200);
+      setWordState((current) => ({
+        activeIndex: (current.activeIndex + 1) % words.length,
+        previousIndex: current.activeIndex,
+      }));
+    }, 2400);
 
     return () => window.clearInterval(interval);
   }, []);
 
-  const activeWord = words[activeIndex] ?? words[0];
+  const activeWord = words[wordState.activeIndex] ?? words[0];
 
   return (
     <section className="artboard-why" id="zasto-artboard">
@@ -82,9 +94,20 @@ export function ArtBoardWhySection() {
           <h2 className="artboard-why__headline" aria-label="Više vidljivosti, alata i prilika.">
             <span className="artboard-why__more" aria-hidden="true">Više</span>
             <span className="artboard-why__word-slot" aria-hidden="true">
-              <span className="artboard-why__word" key={activeWord.label}>
-                {activeWord.label}
-              </span>
+              {words.map((word, index) => (
+                <span
+                  className={`artboard-why__word ${
+                    index === wordState.activeIndex
+                      ? "artboard-why__word--active"
+                      : index === wordState.previousIndex
+                        ? "artboard-why__word--previous"
+                        : ""
+                  }`}
+                  key={word.label}
+                >
+                  {word.label}
+                </span>
+              ))}
             </span>
           </h2>
         </div>
@@ -123,25 +146,40 @@ export function ArtBoardWhySection() {
             );
           })}
         </div>
-      </div>
 
-      <div className="artboard-why__ribbon-marquee" aria-hidden="true">
-        <div className="artboard-why__ribbon-track">
-          {[0, 1].map((copy) => (
-            <div className="artboard-why__ribbon-group" key={copy}>
-              {ribbonTones.map((tone, index) => (
-                <div className={`artboard-why__ribbon artboard-why__ribbon--${tone}`} key={`${copy}-${index}`}>
-                  <span className="artboard-why__ribbon-wave artboard-why__ribbon-wave--one" />
-                  <span className="artboard-why__ribbon-wave artboard-why__ribbon-wave--two" />
-                  <span className="artboard-why__ribbon-wave artboard-why__ribbon-wave--three" />
-                  <span className="artboard-why__ribbon-wave artboard-why__ribbon-wave--four" />
-                  <span className="artboard-why__ribbon-wave artboard-why__ribbon-wave--five" />
-                </div>
-              ))}
-            </div>
-          ))}
+        <div className="artboard-why__cta-wrap">
+          <Link href={siteRoutes.artistApplication} className="artboard-why__cta">
+            Pridruži se besplatno
+          </Link>
         </div>
       </div>
+
+      {artworks.length > 0 ? (
+        <div className="artboard-why__ribbon-marquee">
+          <div className="artboard-why__ribbon-track">
+            {[0, 1].map((copy) => (
+              <div className="artboard-why__ribbon-group" aria-hidden={copy === 1} key={copy}>
+                {artworks.map((artwork) => (
+                  <Link
+                    className="artboard-why__ribbon"
+                    href={`${siteRoutes.artistProfileBase}/${artwork.artistSlug}`}
+                    key={`${copy}-${artwork.id}`}
+                    tabIndex={copy === 1 ? -1 : undefined}
+                    aria-label={copy === 0 ? `Pogledaj profil umjetnika ${artwork.artistName}` : undefined}
+                  >
+                    <img
+                      src={artwork.imageUrl}
+                      alt={copy === 0 ? artwork.altText : ""}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </Link>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
