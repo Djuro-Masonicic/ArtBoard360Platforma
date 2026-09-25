@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import type { CSSProperties } from "react";
 
 import {
   ARTBOARD_TRANSITION_DURATION_MS,
@@ -9,7 +10,7 @@ import {
 } from "@/components/artboard-transition-link";
 import { siteRoutes } from "@/lib/site-routes";
 
-const backgroundCards = [
+const cardPaths = [
   { className: "artboard-redesign-hero__card--education", label: "Oglasna tabla" },
   { className: "artboard-redesign-hero__card--portfolio", label: "Portfolio Builder" },
   { className: "artboard-redesign-hero__card--profile", label: "Promotivni generator" },
@@ -18,7 +19,12 @@ const backgroundCards = [
   { className: "artboard-redesign-hero__card--artists", label: "Pretraživač umjetnika" },
 ] as const;
 
-export function ArtBoardPlatformHero() {
+export type HeroArtworkPreview = {
+  id: string;
+  imageUrl: string;
+};
+
+export function ArtBoardPlatformHero({ artworks }: { artworks: HeroArtworkPreview[] }) {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
@@ -41,15 +47,20 @@ export function ArtBoardPlatformHero() {
       <div className="artboard-redesign-hero__ambient" aria-hidden="true" />
 
       <div className="artboard-redesign-hero__cards" aria-hidden="true">
-        {backgroundCards.map((card) => (
+        {artworks.map((artwork, index) => {
+          const card = cardPaths[index % cardPaths.length]!;
+          const style = { "--card-delay": `${index * -0.9}s` } as CSSProperties;
+
+          return (
           <article
             className={`artboard-redesign-hero__card ${card.className}`}
-            key={card.label}
+            key={artwork.id}
+            style={style}
           >
-            <strong>{card.label}</strong>
-            <i />
+            <img alt="" decoding="async" loading={index < 4 ? "eager" : "lazy"} src={artwork.imageUrl} />
           </article>
-        ))}
+          );
+        })}
       </div>
 
       <div className="artboard-redesign-hero__content">
@@ -80,6 +91,10 @@ export function ArtBoardPlatformHero() {
             Istraži umjetnike
           </Link>
         </div>
+
+        <p className="artboard-redesign-hero__tagline">
+          Predstavi svoj rad. Kreiraj portfolio. Pronađi nove prilike.
+        </p>
       </div>
     </section>
   );

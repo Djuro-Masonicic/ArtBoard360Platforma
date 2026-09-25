@@ -22,7 +22,7 @@ export function HomeImpactStatsSection({ stats }: { stats: ArtBoardStats }) {
           {metrics.map((metric) => (
             <article className="home-impact-stats__metric" key={metric.label}>
               <strong className={`home-impact-stats__value home-impact-stats__value--${metric.tone}`}>
-                {metric.value}+
+                25+
               </strong>
               <p>{metric.label}</p>
             </article>

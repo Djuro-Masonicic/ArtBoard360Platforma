@@ -9,6 +9,7 @@ import { useLenis } from "lenis/react";
 import { logoutAdminAction } from "@/actions/admin-auth";
 import { logoutArtistAction } from "@/app/artist/login/actions";
 import { ArtBoardHeaderLogo } from "@/components/artboard-header-logo";
+import { ArtBoardSiteHeader } from "@/components/artboard-site-header";
 import { ArtBoardTransitionLink } from "@/components/artboard-transition-link";
 import { SiteCtaButton } from "@/components/site-cta-button";
 import {
@@ -259,6 +260,10 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
   const logoSrc = isTransparentHeader
     ? "https://cdn.prod.website-files.com/681b5dac4415aa941af374fe/68c978c51b6638fa49b92f6b_360%20Logo%20White.svg"
     : "https://cdn.prod.website-files.com/681b5dac4415aa941af374fe/682344cfd8a98907bbb50f8e_7e491909af25e7cd587505a1141c670a_360%20Logo%20Black.svg";
+
+  if (isArtBoardUnit) {
+    return <ArtBoardSiteHeader session={session} />;
+  }
 
   return (
     <div

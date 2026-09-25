@@ -1,0 +1,345 @@
+.frame {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 50;
+  border-top: 5px solid #17191f;
+  background: rgba(248, 248, 250, 0.72);
+  backdrop-filter: blur(12px) saturate(120%);
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
+}
+
+.frame::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 3;
+  height: 2px;
+  background: linear-gradient(90deg, #287cff 0%, #7f61e8 30%, #ef3b82 56%, #ff4a5e 73%, #ff9f32 100%);
+  content: "";
+  pointer-events: none;
+}
+
+.shell {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  width: min(76vw, 1360px);
+  height: 72px;
+  grid-template-columns: 135px minmax(0, 1fr) 240px;
+  align-items: center;
+  gap: 24px;
+  margin: 0 auto;
+}
+
+.brand {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 34px;
+  align-items: center;
+  padding-right: 0;
+  background: transparent;
+}
+
+.logo {
+  font-size: 14px;
+}
+
+.navigation {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: clamp(18px, 1.7vw, 32px);
+  white-space: nowrap;
+}
+
+.navigationLink,
+.mobileLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #343946;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1;
+  transition: color 160ms ease;
+}
+
+.navigationLink:hover,
+.navigationLink:focus-visible {
+  color: var(--link-color);
+  outline: none;
+}
+
+.navigationLink.active {
+  color: #11141a;
+}
+
+.navigationDot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: var(--link-color);
+  transition: box-shadow 180ms ease, transform 180ms ease;
+}
+
+.navigationLink:hover .navigationDot,
+.navigationLink:focus-visible .navigationDot {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--link-color) 18%, transparent);
+  transform: scale(1.12);
+}
+
+.logo :global(.artboard-logo__curve) {
+  transform-origin: center;
+}
+
+.logo :global(.artboard-logo__dot) {
+  transition: filter 180ms ease, transform 180ms ease;
+}
+
+.shell:has(.navigationLink:hover) .logo :global(.artboard-logo__curve),
+.shell:has(.navigationLink:focus-visible) .logo :global(.artboard-logo__curve) {
+  animation: logoLineDraw 620ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.shell:has(.navigationLink[data-tone="blue"]:is(:hover, :focus-visible)) .logo :global(.artboard-logo__dot--blue) {
+  filter: drop-shadow(0 0 7px rgba(38, 128, 255, 0.78));
+  animation: logoDotPulse 680ms ease-out;
+}
+
+.shell:has(.navigationLink[data-tone="red"]:is(:hover, :focus-visible)) .logo :global(.artboard-logo__dot--red) {
+  filter: drop-shadow(0 0 7px rgba(255, 56, 96, 0.78));
+  animation: logoDotPulse 680ms ease-out;
+}
+
+.shell:has(.navigationLink[data-tone="yellow"]:is(:hover, :focus-visible)) .logo :global(.artboard-logo__dot--yellow) {
+  filter: drop-shadow(0 0 7px rgba(255, 197, 38, 0.86));
+  animation: logoDotPulse 680ms ease-out;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+}
+
+.loginLink,
+.accountLink {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  color: #3f4450;
+  font-size: 13px;
+  font-weight: 680;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.signupLink {
+  display: inline-flex;
+  width: 132px;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #15181f;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 760;
+  line-height: 1;
+  text-transform: uppercase;
+  transition: background-color 160ms ease, transform 160ms ease;
+}
+
+.signupLink:hover,
+.signupLink:focus-visible {
+  background: #2b2f38;
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.menuButton,
+.mobileMenu {
+  display: none;
+}
+
+@keyframes logoLineDraw {
+  from {
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+  }
+
+  to {
+    stroke-dasharray: 100;
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes logoDotPulse {
+  0% {
+    transform: scale(1);
+  }
+
+  48% {
+    transform: scale(1.32);
+  }
+
+  100% {
+    transform: scale(1.18);
+  }
+}
+
+@media (max-width: 1240px) {
+  .shell {
+    width: min(calc(100% - 48px), 1160px);
+    grid-template-columns: 134px minmax(0, 1fr) 244px;
+    gap: 20px;
+  }
+
+  .navigation {
+    gap: 20px;
+  }
+
+  .navigationLink {
+    gap: 7px;
+    font-size: 14px;
+  }
+
+  .actions {
+    gap: 14px;
+  }
+
+  .loginLink,
+  .accountLink,
+  .signupLink {
+    font-size: 13px;
+  }
+
+  .signupLink {
+    width: 134px;
+  }
+}
+
+@media (max-width: 1279px) {
+  .frame {
+    border-top-width: 3px;
+  }
+
+  .shell {
+    display: flex;
+    width: calc(100% - 32px);
+    height: 70px;
+    justify-content: space-between;
+  }
+
+  .logo {
+    font-size: 13px;
+  }
+
+  .navigation,
+  .actions {
+    display: none;
+  }
+
+  .menuButton {
+    display: inline-flex;
+    width: 42px;
+    height: 42px;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    background: transparent;
+    color: #1c2028;
+  }
+
+  .menuButton svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .mobileMenu {
+    position: fixed;
+    top: 73px;
+    right: 0;
+    left: 0;
+    z-index: 1;
+    display: block;
+    padding: 26px 24px 30px;
+    border-bottom: 1px solid #e2e5ea;
+    background: #ffffff;
+    box-shadow: 0 20px 36px rgba(25, 29, 38, 0.12);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-14px);
+    transition: opacity 180ms ease, transform 180ms ease;
+  }
+
+  .mobileMenuOpen {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+
+  .mobileNavigation {
+    display: grid;
+    gap: 2px;
+  }
+
+  .mobileLink {
+    min-height: 48px;
+    border-bottom: 1px solid #edf0f4;
+    font-size: 16px;
+  }
+
+  .mobileActions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 24px;
+  }
+
+  .mobileLoginLink,
+  .mobileSignupLink,
+  .mobileAccountLink {
+    display: inline-flex;
+    min-height: 48px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #dce1e8;
+    border-radius: 999px;
+    color: #252a34;
+    font-size: 13px;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .mobileSignupLink,
+  .mobileAccountLink {
+    border-color: #15181f;
+    background: #15181f;
+    color: #ffffff;
+  }
+}
+
+@media (max-width: 460px) {
+  .mobileActions {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .signupLink,
+  .mobileMenu {
+    transition: none;
+  }
+
+  .shell:has(.navigationLink:hover) .logo :global(.artboard-logo__curve),
+  .shell:has(.navigationLink:focus-visible) .logo :global(.artboard-logo__curve),
+  .shell:has(.navigationLink:is(:hover, :focus-visible)) .logo :global(.artboard-logo__dot) {
+    animation: none;
+  }
+}

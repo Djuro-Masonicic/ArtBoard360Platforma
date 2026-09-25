@@ -1,12 +1,13 @@
 import Link from "next/link";
 
+import { ArtBoardAnimatedStat } from "@/components/artboard-animated-stat";
 import { ArtBoardFaqSection } from "@/components/artboard-faq-section";
 import { ArtBoardCommunitySection } from "@/components/artboard-community-section";
 import { ArtBoardDisciplinesSection } from "@/components/artboard-disciplines-section";
 import { ArtBoardJourneySection } from "@/components/artboard-journey-section";
 import { ArtBoardOpportunitiesSection } from "@/components/artboard-opportunities-section";
 import { ArtBoardPricingSection } from "@/components/artboard-pricing-section";
-import { ArtBoardPlatformHero } from "@/components/artboard-platform-hero";
+import { ArtBoardPlatformHero, type HeroArtworkPreview } from "@/components/artboard-platform-hero";
 import { ArtBoardPortfolioShowcase } from "@/components/artboard-portfolio-showcase";
 import { ArtBoardToolsSection } from "@/components/artboard-tools-section";
 import { ArtBoardTestimonialsSection } from "@/components/artboard-testimonials-section";
@@ -81,20 +82,15 @@ const artBoardFaqs = [
 ];
 
 async function getArtBoardData() {
-  try {
-    const [artistData, stats] = await Promise.all([
-      getArtists({ page: 1, pageSize: 100 }),
-      getArtBoardStats(),
-    ]);
+  const [artistResult, statsResult] = await Promise.allSettled([
+    getArtists({ page: 1, pageSize: 100 }),
+    getArtBoardStats(),
+  ]);
 
-    return {
-      artistData,
-      stats,
-    };
-  } catch {
-    // Marketing pages should still render locally while the API is stopped.
-    return null;
-  }
+  return {
+    artistData: artistResult.status === "fulfilled" ? artistResult.value : null,
+    stats: statsResult.status === "fulfilled" ? statsResult.value : null,
+  };
 }
 
 function getDisciplines(artists: Artist[]) {
@@ -105,6 +101,31 @@ function getRandomArtists(artists: Artist[], count: number) {
   // Marketing preview should feel alive, so we shuffle server-side on each render.
   // This does not change the real catalog order on /umjetnici.
   return [...artists].sort(() => Math.random() - 0.5).slice(0, count);
+}
+
+function getRandomHeroArtworks(artists: Artist[], count: number): HeroArtworkPreview[] {
+  const seenUrls = new Set<string>();
+  const artworks = artists.flatMap((artist) =>
+    artist.artworks.flatMap((artwork) => {
+      if (!artwork.imageUrl || seenUrls.has(artwork.imageUrl)) return [];
+
+      seenUrls.add(artwork.imageUrl);
+
+      return [{
+        id: artwork.id,
+        imageUrl: artwork.imageUrl,
+      }];
+    }),
+  );
+
+  for (let index = artworks.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1));
+    const currentArtwork = artworks[index]!;
+    artworks[index] = artworks[randomIndex]!;
+    artworks[randomIndex] = currentArtwork;
+  }
+
+  return artworks.slice(0, count);
 }
 
 function TemplateLandscape({ className = "" }: { className?: string }) {
@@ -493,16 +514,19 @@ export default async function ArtBoardPage() {
 
   // Artist count is intentionally taken from the same endpoint as the public
   // catalog first, so the homepage number stays aligned with /umjetnici.
-  const artistCount = artistData?.meta.total ?? stats?.artists;
+  const artistCount = stats?.artists ?? artistData?.meta.total;
+  const resolvedArtworkCount = stats?.artworks ?? (artworkCount > 0 ? artworkCount : null);
+  // const resolvedDisciplineCount = stats?.disciplines ?? (disciplines.size > 0 ? disciplines.size : null);
+  const resolvedDisciplineCount = 25;
   const proofItems = [
-    { label: "Objavljenih umjetnika", value: `${artistCount ?? 70}+` },
+    { label: "Objavljenih umjetnika", value: artistCount ?? null },
     {
       label: "Radova kroz ArtBoard pilot",
-      value: `${stats?.artworks ?? (artworkCount || 1013)}+`,
+      value: resolvedArtworkCount,
     },
     {
       label: "Umjetničkih disciplina",
-      value: `${stats?.disciplines ?? (disciplines.size || 15)}+`,
+      value: resolvedDisciplineCount,
     },
   ];
   const communityArtists = getRandomArtists(artists, artists.length).flatMap((artist) => {
@@ -530,30 +554,33 @@ export default async function ArtBoardPage() {
       disciplines: artist.disciplines.map((discipline) => discipline.name),
     }];
   }).sort((left, right) => Number(right.artworks.length > 1) - Number(left.artworks.length > 1));
+  const heroArtworks = getRandomHeroArtworks(artists, 8);
 
   return (
-    <main className="artboard-platform-page relative isolate -mx-5 -mt-8 overflow-x-clip pb-0 pt-[88px] text-[#252933] sm:-mx-8 sm:-mt-10 lg:-mx-10 lg:-mt-12">
+    <main className="artboard-platform-page relative isolate -mx-5 -mt-8 overflow-x-clip pb-0 pt-[73px] text-[#252933] sm:-mx-8 sm:-mt-10 lg:-mx-10 lg:-mt-12 xl:pt-[77px]">
       <div
         className="artboard-platform-gradient-bg pointer-events-none absolute inset-0 -z-10 opacity-95"
       />
       <div className="pointer-events-none absolute left-[-18vw] top-[420px] -z-10 h-[56vw] w-[56vw] rounded-full border border-[#dce5f1]" />
       <div className="pointer-events-none absolute right-[-16vw] top-[860px] -z-10 h-[42vw] w-[42vw] rounded-full border border-[#dce5f1]" />
-      <ArtBoardPlatformHero />
+      <div className="artboard-hero-proof-stage">
+        <ArtBoardPlatformHero artworks={heroArtworks} />
 
-      <section className="artboard-proof-strip" id="artboard-statistika" aria-label="ArtBoard u brojevima">
-        <div className="artboard-proof-strip__inner">
-          {proofItems.map((item) => (
-            <div className="artboard-proof-strip__metric" key={item.label}>
-              <strong>{item.value}</strong>
-              <span>{item.label}</span>
+        <section className="artboard-proof-strip" id="artboard-statistika" aria-label="ArtBoard u brojevima">
+          <div className="artboard-proof-strip__inner">
+            {proofItems.map((item) => (
+              <div className="artboard-proof-strip__metric" key={item.label}>
+                <ArtBoardAnimatedStat value={item.value} />
+                <span>{item.label}</span>
+              </div>
+            ))}
+            <div className="artboard-proof-strip__support">
+              <span>Uz podršku</span>
+              <p>Ministarstva kulture i medija Crne Gore i Sekretarijata za kulturu Glavnog grada</p>
             </div>
-          ))}
-          <div className="artboard-proof-strip__support">
-            <span>Uz podršku</span>
-            <p>Ministarstva kulture i medija Crne Gore i Sekretarijata za kulturu Glavnog grada</p>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
 
       <ArtBoardWhySection />
 
