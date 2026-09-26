@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { FileText, Share2, UserRound } from "lucide-react";
 
 const steps = [
@@ -7,7 +8,8 @@ const steps = [
     description: "Prijavi se besplatno i dodaj biografiju, discipline, radove, kontakt podatke i relevantne linkove.",
     icon: UserRound,
     tone: "blue",
-    artwork: "blue",
+    artwork: "/artboard-how/01.jpg",
+    artworkAlt: "Kreiranje i uređivanje umjetničkog profila na računaru",
   },
   {
     number: "02",
@@ -15,7 +17,8 @@ const steps = [
     description: "Pretvori podatke sa profila u portfolio, digitalnu vizit kartu i sadržaj za društvene mreže.",
     icon: FileText,
     tone: "red",
-    artwork: "gold",
+    artwork: "/artboard-how/02.jpg",
+    artworkAlt: "Priprema profesionalne prezentacije umjetničkog rada",
   },
   {
     number: "03",
@@ -23,7 +26,8 @@ const steps = [
     description: "Povećaj vidljivost kroz ArtBoard pretraživač i koristi materijale za konkurse i saradnje.",
     icon: Share2,
     tone: "yellow",
-    artwork: "orchid",
+    artwork: "/artboard-how/03.jpg",
+    artworkAlt: "Dijeljenje umjetničkog rada i povezivanje sa publikom",
   },
 ] as const;
 
@@ -40,19 +44,20 @@ export function ArtBoardJourneySection() {
         </h2>
 
         <ol className="artboard-journey__steps">
-          {steps.map(({ number, title, description, icon: Icon, tone, artwork }) => (
+          {steps.map(({ number, title, description, icon: Icon, tone, artwork, artworkAlt }) => (
             <li className={`artboard-journey__step artboard-journey__step--${tone}`} key={number}>
               <span className="artboard-journey__icon" aria-hidden="true"><Icon size={19} strokeWidth={1.9} /></span>
               <div className="artboard-journey__copy">
                 <h3><span>{number}</span>{title}</h3>
                 <p>{description}</p>
               </div>
-              <div className={`artboard-why__ribbon artboard-why__ribbon--${artwork} artboard-journey__artwork`} aria-hidden="true">
-                <span className="artboard-why__ribbon-wave artboard-why__ribbon-wave--one" />
-                <span className="artboard-why__ribbon-wave artboard-why__ribbon-wave--two" />
-                <span className="artboard-why__ribbon-wave artboard-why__ribbon-wave--three" />
-                <span className="artboard-why__ribbon-wave artboard-why__ribbon-wave--four" />
-                <span className="artboard-why__ribbon-wave artboard-why__ribbon-wave--five" />
+              <div className="artboard-journey__artwork">
+                <Image
+                  alt={artworkAlt}
+                  fill
+                  sizes="(max-width: 700px) 100vw, (max-width: 1050px) 33vw, 400px"
+                  src={artwork}
+                />
               </div>
             </li>
           ))}

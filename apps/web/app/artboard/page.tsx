@@ -584,6 +584,7 @@ export default async function ArtBoardPage() {
   }).sort((left, right) => Number(right.artworks.length > 1) - Number(left.artworks.length > 1));
   const heroArtworks = getRandomHeroArtworks(artists, 8);
   const whyArtworks = getRandomWhyArtworks(artists, 9);
+  const verificationArtworks = getRandomHeroArtworks(artists, 18);
 
   return (
     <main className="artboard-platform-page relative isolate -mx-5 -mt-8 overflow-x-clip pb-0 pt-[73px] text-[#252933] sm:-mx-8 sm:-mt-10 lg:-mx-10 lg:-mt-12 xl:pt-[77px]">
@@ -621,7 +622,7 @@ export default async function ArtBoardPage() {
 
       <ArtBoardJourneySection />
 
-      <ArtBoardVerificationSection />
+      <ArtBoardVerificationSection artworks={verificationArtworks} />
 
       <ArtBoardTestimonialsSection />
 
