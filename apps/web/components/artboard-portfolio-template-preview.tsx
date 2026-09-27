@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const templates = [
   {
@@ -23,22 +23,38 @@ const templates = [
 const AUTO_ROTATE_MS = 3200;
 
 export function ArtBoardPortfolioTemplatePreview() {
+  const previewRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
   const activeTemplate = templates[activeIndex] ?? templates[0];
 
   useEffect(() => {
-    if (isPaused || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const preview = previewRef.current;
+    if (!preview || typeof IntersectionObserver === "undefined") return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsVisible(Boolean(entry?.isIntersecting)),
+      { rootMargin: "240px 0px" },
+    );
+
+    observer.observe(preview);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (isPaused || !isVisible || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const interval = window.setInterval(() => {
       setActiveIndex((current) => (current + 1) % templates.length);
     }, AUTO_ROTATE_MS);
 
     return () => window.clearInterval(interval);
-  }, [isPaused]);
+  }, [isPaused, isVisible]);
 
   return (
     <div
+      ref={previewRef}
       className="artboard-portfolio__preview"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}

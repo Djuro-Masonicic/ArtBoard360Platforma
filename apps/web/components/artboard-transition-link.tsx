@@ -13,6 +13,7 @@ import { createPortal } from "react-dom";
 
 export const ARTBOARD_TRANSITION_DURATION_MS = 8100;
 export const ARTBOARD_TRANSITION_SESSION_KEY = "artboard-transition-started-at";
+export const ARTBOARD_INTRO_SEEN_SESSION_KEY = "artboard-intro-seen-v1";
 
 const RECENT_ARTBOARD_TRANSITION_WINDOW_MS = 8000;
 
@@ -154,6 +155,7 @@ function useArtBoardTransition(href: string) {
         return;
       }
 
+      markArtBoardIntroAsSeen();
       setSourceDots(getArtStudioLogoSourceDots());
       setIsAnimating(true);
     },
@@ -262,6 +264,12 @@ export function ArtBoardDirectEntry() {
       return () => window.clearTimeout(revealTimeoutId);
     }
 
+    if (hasSeenArtBoardIntro()) {
+      setEntryState("hidden");
+      return;
+    }
+
+    markArtBoardIntroAsSeen();
     setEntryState("animating");
 
     const timeoutId = window.setTimeout(() => {
@@ -1028,7 +1036,23 @@ function shouldAnimateArtBoardTransition(currentPathname: string, href: string) 
     return false;
   }
 
-  return !isArtBoardPath(currentPathname);
+  return !isArtBoardPath(currentPathname) && !hasSeenArtBoardIntro();
+}
+
+export function hasSeenArtBoardIntro() {
+  try {
+    return window.sessionStorage.getItem(ARTBOARD_INTRO_SEEN_SESSION_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markArtBoardIntroAsSeen() {
+  try {
+    window.sessionStorage.setItem(ARTBOARD_INTRO_SEEN_SESSION_KEY, "1");
+  } catch {
+    // Storage can be unavailable in strict privacy modes; the intro still works normally.
+  }
 }
 
 function getTransitionOverlayStyle(target: ArtBoardHeaderLogoTarget) {

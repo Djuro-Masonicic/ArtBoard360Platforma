@@ -9,13 +9,15 @@ export function ArtBoardOpportunitiesSection() {
     <section className="artboard-opportunities" id="artboard-oglasi" aria-labelledby="artboard-opportunities-title">
       <div className="artboard-opportunities__inner">
         <p className="artboard-opportunities__eyebrow"><span aria-hidden="true" /> Oglasna tabla</p>
-        <h2 className="artboard-opportunities__title" id="artboard-opportunities-title">
-          Lakši put od oglasa<br />do <span>nove saradnje</span>.
-        </h2>
-        <p className="artboard-opportunities__intro">
-          ArtBoard oglasna tabla povezuje umjetnike sa kompanijama, kulturnim organizacijama,
-          institucijama i drugim akterima koji traže njihov rad, znanje i iskustvo.
-        </p>
+        <div className="artboard-opportunities__header">
+          <h2 className="artboard-opportunities__title" id="artboard-opportunities-title">
+            Lakši put od oglasa<br />do <span>nove saradnje</span>.
+          </h2>
+          <p className="artboard-opportunities__intro">
+            ArtBoard oglasna tabla povezuje umjetnike sa kompanijama, kulturnim organizacijama,
+            institucijama i drugim akterima koji traže njihov rad, znanje i iskustvo.
+          </p>
+        </div>
 
         <div className="artboard-opportunities__grid">
           <div className="artboard-opportunities__choices">
@@ -27,7 +29,7 @@ export function ArtBoardOpportunitiesSection() {
                   <h3>Pronađi priliku. Prijavi se lakše.</h3>
                 </div>
               </div>
-              <p>Pregledaj javne oglase i pronađi pozive, poslove i saradnje koji odgovaraju tvom radu. Kada oglas podržava prijavu kroz ArtBoard, prijavi se svojim nalogom.</p>
+              <p>Pretraži relevantne oglase, filtriraj prilike i izaberi podatke i materijale koje želiš da uključiš u prijavu. Uz ArtBoard profil, Premium korisnici mogu se prijaviti jednim klikom.</p>
               <Link href={siteRoutes.opportunities}>Pogledaj oglase <ArrowRight size={15} aria-hidden="true" /></Link>
             </article>
 
@@ -40,14 +42,14 @@ export function ArtBoardOpportunitiesSection() {
                 </div>
               </div>
               <p>Objavi poziv, posao, konkurs ili projekat i predstavi priliku umjetnicima čije iskustvo odgovara tvojim potrebama.</p>
-              <Link href="mailto:medenica.ivona@yahoo.com?subject=Objava%20oglasa%20na%20ArtBoardu">Pošalji oglas <ArrowRight size={15} aria-hidden="true" /></Link>
+              <Link href="mailto:medenica.ivona@yahoo.com?subject=Objava%20oglasa%20na%20ArtBoardu">Objavi oglas besplatno <ArrowRight size={15} aria-hidden="true" /></Link>
             </article>
           </div>
 
           <div className="artboard-opportunities__image">
             <Image
-              src="/artboard-opportunities-studio.png"
-              alt="Umjetnica radi u svijetlom kreativnom studiju"
+              src="/artboard-ad/pexels-bertellifotografia-33714927.jpg"
+              alt="Snimanje umjetnice u profesionalnom fotografskom studiju"
               fill
               sizes="(max-width: 760px) 100vw, 50vw"
             />

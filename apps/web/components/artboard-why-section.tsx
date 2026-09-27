@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, BriefcaseBusiness, PenLine, UserRound } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { ArtBoardLogo } from "@/components/artboard-logo";
 import { siteRoutes } from "@/lib/site-routes";
@@ -59,12 +59,32 @@ export type WhyArtworkPreview = {
 };
 
 export function ArtBoardWhySection({ artworks }: { artworks: WhyArtworkPreview[] }) {
+  const sectionRef = useRef<HTMLElement>(null);
+  const [isVisible, setIsVisible] = useState(true);
   const [wordState, setWordState] = useState<{ activeIndex: number; previousIndex: number | null }>({
     activeIndex: 0,
     previousIndex: null,
   });
 
   useEffect(() => {
+    const section = sectionRef.current;
+    if (!section || typeof IntersectionObserver === "undefined") return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const visible = Boolean(entry?.isIntersecting);
+        setIsVisible(visible);
+        section.classList.toggle("artboard-why--paused", !visible);
+      },
+      { rootMargin: "240px 0px" },
+    );
+
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!isVisible) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const interval = window.setInterval(() => {
@@ -75,12 +95,12 @@ export function ArtBoardWhySection({ artworks }: { artworks: WhyArtworkPreview[]
     }, 2400);
 
     return () => window.clearInterval(interval);
-  }, []);
+  }, [isVisible]);
 
   const activeWord = words[wordState.activeIndex] ?? words[0];
 
   return (
-    <section className="artboard-why" id="zasto-artboard">
+    <section ref={sectionRef} className="artboard-why" id="zasto-artboard">
       <div className="artboard-why__inner">
         <p className="artboard-why__eyebrow">
           <span aria-hidden="true" />

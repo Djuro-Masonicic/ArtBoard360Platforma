@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 
 import {
   ARTBOARD_TRANSITION_DURATION_MS,
   ARTBOARD_TRANSITION_SESSION_KEY,
+  hasSeenArtBoardIntro,
 } from "@/components/artboard-transition-link";
 import { siteRoutes } from "@/lib/site-routes";
 
@@ -26,6 +27,7 @@ export type HeroArtworkPreview = {
 
 export function ArtBoardPlatformHero({ artworks }: { artworks: HeroArtworkPreview[] }) {
   const [isReady, setIsReady] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const transitionStartedAt = Number(
@@ -34,14 +36,34 @@ export function ArtBoardPlatformHero({ artworks }: { artworks: HeroArtworkPrevie
     const followedStudioTransition =
       Number.isFinite(transitionStartedAt) &&
       Date.now() - transitionStartedAt < ARTBOARD_TRANSITION_DURATION_MS;
-    const revealDelay = followedStudioTransition ? 420 : ARTBOARD_TRANSITION_DURATION_MS - 320;
+    const revealDelay = followedStudioTransition
+      ? 420
+      : hasSeenArtBoardIntro()
+        ? 0
+        : ARTBOARD_TRANSITION_DURATION_MS - 320;
     const timeoutId = window.setTimeout(() => setIsReady(true), revealDelay);
 
     return () => window.clearTimeout(timeoutId);
   }, []);
 
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section || typeof IntersectionObserver === "undefined") return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        section.classList.toggle("artboard-redesign-hero--paused", !entry?.isIntersecting);
+      },
+      { rootMargin: "240px 0px" },
+    );
+
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <section
+      ref={sectionRef}
       className={`artboard-redesign-hero ${isReady ? "artboard-redesign-hero--ready" : ""}`}
     >
       <div className="artboard-redesign-hero__ambient" aria-hidden="true" />

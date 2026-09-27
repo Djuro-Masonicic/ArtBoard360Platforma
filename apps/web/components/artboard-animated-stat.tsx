@@ -4,7 +4,15 @@ import { useEffect, useRef, useState } from "react";
 
 const ANIMATION_DURATION_MS = 1500;
 
-export function ArtBoardAnimatedStat({ value }: { value: number | null }) {
+export function ArtBoardAnimatedStat({
+  value,
+  suffix = "+",
+  formatValue = false,
+}: {
+  value: number | null;
+  suffix?: string;
+  formatValue?: boolean;
+}) {
   const elementRef = useRef<HTMLElement>(null);
   const animationFrameRef = useRef<number | null>(null);
   const [displayValue, setDisplayValue] = useState(0);
@@ -53,5 +61,9 @@ export function ArtBoardAnimatedStat({ value }: { value: number | null }) {
     };
   }, [value]);
 
-  return <strong ref={elementRef}>{value === null ? "—" : `${displayValue}+`}</strong>;
+  const renderedValue = formatValue
+    ? new Intl.NumberFormat("sr-Latn-ME").format(displayValue)
+    : String(displayValue);
+
+  return <strong ref={elementRef}>{value === null ? "—" : `${renderedValue}${suffix}`}</strong>;
 }

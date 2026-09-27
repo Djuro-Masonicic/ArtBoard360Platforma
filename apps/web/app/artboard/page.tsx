@@ -1,6 +1,5 @@
 import Link from "next/link";
 
-import { ArtBoardAnimatedStat } from "@/components/artboard-animated-stat";
 import { ArtBoardFaqSection } from "@/components/artboard-faq-section";
 import { ArtBoardCommunitySection } from "@/components/artboard-community-section";
 import { ArtBoardDisciplinesSection } from "@/components/artboard-disciplines-section";
@@ -8,6 +7,7 @@ import { ArtBoardJourneySection } from "@/components/artboard-journey-section";
 import { ArtBoardOpportunitiesSection } from "@/components/artboard-opportunities-section";
 import { ArtBoardPricingSection } from "@/components/artboard-pricing-section";
 import { ArtBoardPlatformHero, type HeroArtworkPreview } from "@/components/artboard-platform-hero";
+import { ArtBoardProofStrip } from "@/components/artboard-proof-strip";
 import { ArtBoardPortfolioShowcase } from "@/components/artboard-portfolio-showcase";
 import { ArtBoardToolsSection } from "@/components/artboard-tools-section";
 import { ArtBoardTestimonialsSection } from "@/components/artboard-testimonials-section";
@@ -547,14 +547,18 @@ export default async function ArtBoardPage() {
   // const resolvedDisciplineCount = stats?.disciplines ?? (disciplines.size > 0 ? disciplines.size : null);
   const resolvedDisciplineCount = 25;
   const proofItems = [
-    { label: "Objavljenih umjetnika", value: artistCount ?? null },
+    { label: "Objavljenih umjetnika", value: artistCount ?? null, suffix: "+", tone: "blue" as const },
     {
-      label: "Radova kroz ArtBoard pilot",
+      label: "Objavljenih radova",
       value: resolvedArtworkCount,
+      suffix: "+",
+      tone: "pink" as const,
     },
     {
       label: "Umjetničkih disciplina",
       value: resolvedDisciplineCount,
+      suffix: "",
+      tone: "red" as const,
     },
   ];
   const communityArtists = getRandomArtists(artists, artists.length).flatMap((artist) => {
@@ -583,6 +587,8 @@ export default async function ArtBoardPage() {
     }];
   }).sort((left, right) => Number(right.artworks.length > 1) - Number(left.artworks.length > 1));
   const heroArtworks = getRandomHeroArtworks(artists, 8);
+  // Keep the stats rail independent so its loop always has enough artwork variety.
+  const proofArtworks = getRandomHeroArtworks(artists, 12);
   const whyArtworks = getRandomWhyArtworks(artists, 9);
   const verificationArtworks = getRandomHeroArtworks(artists, 18);
 
@@ -595,21 +601,7 @@ export default async function ArtBoardPage() {
       <div className="pointer-events-none absolute right-[-16vw] top-[860px] -z-10 h-[42vw] w-[42vw] rounded-full border border-[#dce5f1]" />
       <div className="artboard-hero-proof-stage">
         <ArtBoardPlatformHero artworks={heroArtworks} />
-
-        <section className="artboard-proof-strip" id="artboard-statistika" aria-label="ArtBoard u brojevima">
-          <div className="artboard-proof-strip__inner">
-            {proofItems.map((item) => (
-              <div className="artboard-proof-strip__metric" key={item.label}>
-                <ArtBoardAnimatedStat value={item.value} />
-                <span>{item.label}</span>
-              </div>
-            ))}
-            <div className="artboard-proof-strip__support">
-              <span>Uz podršku</span>
-              <p>Ministarstva kulture i medija Crne Gore i Sekretarijata za kulturu Glavnog grada</p>
-            </div>
-          </div>
-        </section>
+        <ArtBoardProofStrip artworks={proofArtworks} metrics={proofItems} />
       </div>
 
       <ArtBoardWhySection artworks={whyArtworks} />

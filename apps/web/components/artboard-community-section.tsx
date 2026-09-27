@@ -123,9 +123,11 @@ function CommunityArtistCard({ artist }: { artist: CommunityArtist }) {
 }
 
 export function ArtBoardCommunitySection({ artists }: { artists: CommunityArtist[] }) {
+  const sectionRef = useRef<HTMLElement>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeDot, setActiveDot] = useState(0);
   const [isSearchInviting, setIsSearchInviting] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
   const normalizedSearch = searchTerm.trim().toLocaleLowerCase();
   const filteredArtists = useMemo(
     () => artists.filter((artist) =>
@@ -155,6 +157,20 @@ export function ArtBoardCommunitySection({ artists }: { artists: CommunityArtist
   const shiftTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
+    const section = sectionRef.current;
+    if (!section || typeof IntersectionObserver === "undefined") return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsVisible(Boolean(entry?.isIntersecting)),
+      { rootMargin: "240px 0px" },
+    );
+
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!isVisible) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const interval = window.setInterval(() => {
@@ -162,7 +178,7 @@ export function ArtBoardCommunitySection({ artists }: { artists: CommunityArtist
     }, 3200);
 
     return () => window.clearInterval(interval);
-  }, []);
+  }, [isVisible]);
 
   useEffect(() => {
     const searchBox = searchBoxRef.current;
@@ -244,7 +260,7 @@ export function ArtBoardCommunitySection({ artists }: { artists: CommunityArtist
   }
 
   return (
-    <section className="artboard-community" id="artboard-zajednica" aria-labelledby="artboard-community-title">
+    <section ref={sectionRef} className="artboard-community" id="artboard-zajednica" aria-labelledby="artboard-community-title">
       <div className="artboard-community__inner">
         <div className="artboard-community__header">
           <div>
