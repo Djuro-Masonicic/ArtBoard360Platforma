@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import type { CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
 import { UserRound } from "lucide-react";
 
 import styles from "@/app/usluge/services-page.module.css";
@@ -13,6 +14,11 @@ type Testimonial = {
   content: string;
   color: "Red" | "Blue" | "Yellow";
   image?: string;
+};
+
+type ArtistAvatar = {
+  name: string;
+  avatarUrl: string;
 };
 
 const testimonials: Testimonial[] = [
@@ -157,7 +163,36 @@ function getInitials(name: string) {
     .join("");
 }
 
-export function ServicesTestimonialRail({ variant }: { variant?: "artboard" }) {
+function normalizeAuthorName(name: string) {
+  return name.trim().toLocaleLowerCase();
+}
+
+function ArtBoardTestimonialAvatar({ imageSrc, index }: { imageSrc?: string; index: number }) {
+  const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => setImageFailed(false), [imageSrc]);
+
+  if (imageSrc && !imageFailed) {
+    return <img alt="" aria-hidden="true" onError={() => setImageFailed(true)} src={imageSrc} />;
+  }
+
+  return (
+    <span
+      aria-hidden="true"
+      className={`${styles.testimonialAvatarFallback} ${[styles.artboardAvatarBlue, styles.artboardAvatarPurple, styles.artboardAvatarOrange][index % 3]}`}
+    >
+      <UserRound size={17} strokeWidth={1.8} />
+    </span>
+  );
+}
+
+export function ServicesTestimonialRail({
+  artistAvatars = [],
+  variant,
+}: {
+  artistAvatars?: ArtistAvatar[];
+  variant?: "artboard";
+}) {
   const railRef = useRef<HTMLDivElement>(null);
   const interactionPausedRef = useRef(false);
   const pauseUntilRef = useRef(0);
@@ -220,19 +255,29 @@ export function ServicesTestimonialRail({ variant }: { variant?: "artboard" }) {
   }
 
   if (variant === "artboard") {
+    const avatarByAuthor = new Map(
+      artistAvatars.map((artist) => [normalizeAuthorName(artist.name), artist.avatarUrl]),
+    );
+
     return (
       <div className={`${styles.testimonialRailShell} ${styles.artboardVariant}`}>
         <div className={styles.artboardGrid}>
           {testimonials.slice(0, 6).map((testimonial, index) => (
-            <article className={styles.testimonialCard} key={testimonial.author}>
-              <span aria-hidden="true" className={`${styles.testimonialQuote} ${index % 3 === 2 ? styles.artboardQuoteWarm : styles.artboardQuoteCool}`}>
+            <article
+              className={styles.testimonialCard}
+              data-testimonial-card-reveal
+              key={testimonial.author}
+              style={{ "--testimonial-card-delay": `${460 + index * 140}ms` } as CSSProperties}
+            >
+              <span aria-hidden="true" className={`${styles.testimonialQuote} ${[styles.artboardQuoteBlue, styles.artboardQuotePink, styles.artboardQuoteYellow][index % 3]}`}>
                 &ldquo;
               </span>
               <p className={styles.testimonialText}>{testimonial.content}</p>
               <div className={styles.testimonialAuthor}>
-                <span aria-hidden="true" className={`${styles.testimonialAvatarFallback} ${[styles.artboardAvatarBlue, styles.artboardAvatarPurple, styles.artboardAvatarOrange][index % 3]}`}>
-                  <UserRound size={17} strokeWidth={1.8} />
-                </span>
+                <ArtBoardTestimonialAvatar
+                  imageSrc={avatarByAuthor.get(normalizeAuthorName(testimonial.author)) || testimonial.image}
+                  index={index}
+                />
                 <div>
                   <strong>{testimonial.author}</strong>
                   <span>{testimonial.company}</span>

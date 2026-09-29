@@ -111,7 +111,6 @@ export function ArtBoardHeaderLogo({
       scrollReactive={reactive}
       style={style}
       tone={tone}
-      wordmark="rtBoard"
     />
   );
 }

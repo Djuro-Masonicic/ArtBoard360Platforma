@@ -1,4 +1,8 @@
+"use client";
+
 import Link from "next/link";
+import type { CSSProperties } from "react";
+import { useEffect, useRef } from "react";
 
 import { siteRoutes } from "@/lib/site-routes";
 
@@ -23,19 +27,67 @@ const premiumFeatures = [
 ];
 
 export function ArtBoardPricingSection() {
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section) return;
+    if (typeof IntersectionObserver === "undefined") {
+      section.classList.add("artboard-pricing--visible");
+      return;
+    }
+
+    const pauseObserver = new IntersectionObserver(
+      ([entry]) => section.classList.toggle("artboard-pricing--paused", !entry?.isIntersecting),
+      { rootMargin: "240px 0px" },
+    );
+    const revealObserver = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return;
+        section.classList.add("artboard-pricing--visible");
+        revealObserver.disconnect();
+      },
+      { threshold: 0.22 },
+    );
+
+    pauseObserver.observe(section);
+    revealObserver.observe(section);
+    return () => {
+      pauseObserver.disconnect();
+      revealObserver.disconnect();
+    };
+  }, []);
+
   return (
-    <section className="artboard-pricing" id="paketi" aria-labelledby="artboard-pricing-title">
+    <section ref={sectionRef} className="artboard-pricing" id="paketi" aria-labelledby="artboard-pricing-title">
       <div className="artboard-pricing__inner">
-        <p className="artboard-pricing__eyebrow"><span aria-hidden="true" /> Paketi i cijene</p>
-        <h2 className="artboard-pricing__title" id="artboard-pricing-title">
-          Počni <span>besplatno</span>. Izaberi<br className="artboard-pricing__desktop-break" /> više kada ti bude potrebno.
+        <p
+          className="artboard-pricing__eyebrow"
+          data-pricing-reveal
+          style={{ "--pricing-delay": "180ms" } as CSSProperties}
+        ><span aria-hidden="true" /> Paketi i cijene</p>
+        <h2
+          className="artboard-pricing__title"
+          id="artboard-pricing-title"
+          data-pricing-reveal
+          style={{ "--pricing-delay": "340ms" } as CSSProperties}
+        >
+          Počni <span data-text="besplatno">besplatno</span>. Izaberi<br className="artboard-pricing__desktop-break" /> više kada ti bude potrebno.
         </h2>
-        <p className="artboard-pricing__intro">
+        <p
+          className="artboard-pricing__intro"
+          data-pricing-reveal
+          style={{ "--pricing-delay": "500ms" } as CSSProperties}
+        >
           Kreiraj profil i koristi osnovne ArtBoard servise besplatno ili otključaj puni pristup alatima kroz Premium članstvo.
         </p>
 
         <div className="artboard-pricing__plans">
-          <article className="artboard-pricing__plan artboard-pricing__plan--free">
+          <article
+            className="artboard-pricing__plan artboard-pricing__plan--free"
+            data-pricing-reveal
+            style={{ "--pricing-delay": "680ms" } as CSSProperties}
+          >
             <div className="artboard-pricing__plan-head">
               <h3>Besplatno</h3>
               <strong>0€</strong>
@@ -48,7 +100,11 @@ export function ArtBoardPricingSection() {
             <Link className="artboard-pricing__action" href={siteRoutes.artistApplication}>Prijavi se besplatno</Link>
           </article>
 
-          <article className="artboard-pricing__plan artboard-pricing__plan--premium">
+          <article
+            className="artboard-pricing__plan artboard-pricing__plan--premium"
+            data-pricing-reveal
+            style={{ "--pricing-delay": "860ms" } as CSSProperties}
+          >
             <div className="artboard-pricing__plan-head">
               <h3>Premium</h3>
               <strong>od 5€</strong>

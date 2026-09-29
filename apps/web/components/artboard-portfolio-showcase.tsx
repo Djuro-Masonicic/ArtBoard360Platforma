@@ -136,7 +136,7 @@ export function ArtBoardPortfolioShowcase() {
                       <PortfolioStepIcon name={icon} />
                     </span>
                     <div className="artboard-portfolio__step-card">
-                      <h3><span>{number}</span> {title}</h3>
+                      <h3><span data-number={number}>{number}</span> {title}</h3>
                       <p>{description}</p>
                     </div>
                   </li>

@@ -38,7 +38,7 @@ export function ArtBoardSiteHeader({ session = null }: ArtBoardSiteHeaderProps) 
     <div className={styles.frame}>
       <header className={styles.shell}>
         <Link className={styles.brand} href={siteRoutes.artboard} aria-label="ArtBoard početna stranica">
-          <ArtBoardLogo className={styles.logo} tone="dark" wordmark="ArtBoard" />
+          <ArtBoardLogo className={styles.logo} tone="dark" />
         </Link>
 
         <nav className={styles.navigation} aria-label="ArtBoard navigacija">

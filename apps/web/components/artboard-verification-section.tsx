@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import { Check } from "lucide-react";
+import { useEffect, useRef } from "react";
 
 import {
   ArtBoardVerificationSideOrbits,
@@ -48,11 +51,34 @@ const checks = [
 ] as const;
 
 export function ArtBoardVerificationSection({ artworks }: { artworks: VerificationArtworkPreview[] }) {
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section) return;
+    if (typeof IntersectionObserver === "undefined") {
+      section.classList.add("artboard-verification--visible");
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return;
+        section.classList.add("artboard-verification--visible");
+        observer.disconnect();
+      },
+      { threshold: 0.14 },
+    );
+
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <section className="artboard-verification" id="verifikacija-profila" aria-labelledby="artboard-verification-title">
+    <section ref={sectionRef} className="artboard-verification" id="verifikacija-profila" aria-labelledby="artboard-verification-title">
       <ArtBoardVerificationSideOrbits artworks={artworks} />
 
-      <div className="artboard-verification__frame">
+      <div className="artboard-verification__frame" data-verification-reveal>
         <div className="artboard-verification__panel">
           <span className="artboard-verification__badge" aria-hidden="true">
             <Check size={30} strokeWidth={4} />

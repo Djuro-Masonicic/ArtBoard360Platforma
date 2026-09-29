@@ -52,7 +52,7 @@ const artBoardFaqs = [
   {
     question: "Kako funkcioniše fleksibilna Premium cijena?",
     answer:
-      "Sam biraš iznos između 5€ i 50€. Bez obzira na izabrani iznos, dobijaš pristup istim Premium funkcionalnostima.",
+      "Sam biraš iznos između 5€ i 30€. Bez obzira na izabrani iznos, dobijaš pristup istim Premium funkcionalnostima.",
   },
   {
     question: "Mogu li da promijenim ili otkažem Premium članstvo?",
@@ -77,7 +77,7 @@ const artBoardFaqs = [
   {
     question: "Kako mogu da dobijem podršku?",
     answer:
-      "Za pitanja u vezi sa prijavom, profilom, alatima ili članstvom možeš nam pisati putem kontakt forme ili na artboardproject2025@gmail.com.",
+      "Za pitanja u vezi sa prijavom, profilom, alatima ili članstvom možeš nam pisati putem kontakt forme ili na info@artstudio360.me.",
   },
 ];
 
@@ -591,6 +591,11 @@ export default async function ArtBoardPage() {
   const proofArtworks = getRandomHeroArtworks(artists, 12);
   const whyArtworks = getRandomWhyArtworks(artists, 9);
   const verificationArtworks = getRandomHeroArtworks(artists, 18);
+  const disciplineArtworks = getRandomHeroArtworks(artists, 8);
+  const testimonialArtistAvatars = artists.flatMap((artist) => {
+    const avatarUrl = artist.profileThumbnailUrl || artist.profileImageUrl;
+    return avatarUrl ? [{ name: artist.name, avatarUrl }] : [];
+  });
 
   return (
     <main className="artboard-platform-page relative isolate -mx-5 -mt-8 overflow-x-clip pb-0 pt-[73px] text-[#252933] sm:-mx-8 sm:-mt-10 lg:-mx-10 lg:-mt-12 xl:pt-[77px]">
@@ -616,19 +621,19 @@ export default async function ArtBoardPage() {
 
       <ArtBoardVerificationSection artworks={verificationArtworks} />
 
-      <ArtBoardTestimonialsSection />
+      <ArtBoardTestimonialsSection artistAvatars={testimonialArtistAvatars} />
 
       <ArtBoardOpportunitiesSection />
 
       <ArtBoardPricingSection />
 
-      <ArtBoardDisciplinesSection />
+      <ArtBoardDisciplinesSection artworks={disciplineArtworks} />
 
       <div className="artboard-disciplines-to-faq" aria-hidden="true" />
 
       <ArtBoardFaqSection items={artBoardFaqs} />
 
-      <div className="relative z-[1] h-20 bg-white" aria-hidden="true" />
+      {/* <div className="relative z-[1] h-20 bg-white" aria-hidden="true" /> */}
 
     </main>
   );

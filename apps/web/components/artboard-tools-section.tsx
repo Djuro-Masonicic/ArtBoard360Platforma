@@ -87,9 +87,11 @@ type ToolIconName = (typeof groups)[number]["items"][number]["icon"];
 function ArtBoardToolIcon({
   gradientId,
   name,
+  variant,
 }: {
   gradientId: string;
   name: ToolIconName;
+  variant: "base" | "shifted";
 }) {
   let paths;
 
@@ -171,6 +173,7 @@ function ArtBoardToolIcon({
 
   return (
     <svg
+      className={`artboard-tools__icon artboard-tools__icon--${variant}`}
       width="36"
       height="36"
       viewBox="0 0 24 24"
@@ -257,7 +260,7 @@ export function ArtBoardToolsSection() {
           <span>
             Sve što je umjetnicima <br /> potrebno,
           </span>
-          <span>na jednom mjestu.</span>
+          <span data-text="na jednom mjestu.">na jednom mjestu.</span>
         </h2>
         <p className="artboard-tools__intro" data-tool-reveal>
           ArtBoard alati ti pomažu u različitim fazama razvoja umjetničke
@@ -283,7 +286,16 @@ export function ArtBoardToolsSection() {
                         className="artboard-tools__item-icon"
                         aria-hidden="true"
                       >
-                        <ArtBoardToolIcon gradientId={iconGradientId} name={item.icon} />
+                        <ArtBoardToolIcon
+                          gradientId={`${iconGradientId}-base`}
+                          name={item.icon}
+                          variant="base"
+                        />
+                        <ArtBoardToolIcon
+                          gradientId={`${iconGradientId}-shifted`}
+                          name={item.icon}
+                          variant="shifted"
+                        />
                       </span>
                       <span className="artboard-tools__item-copy">
                         <strong>
@@ -346,7 +358,7 @@ export function ArtBoardToolsSection() {
             className="artboard-tools__cta"
             href={siteRoutes.artistApplication}
           >
-            Besplatno isprobaj alate
+            <span>Besplatno isprobaj alate</span>
           </Link>
         </div>
       </div>

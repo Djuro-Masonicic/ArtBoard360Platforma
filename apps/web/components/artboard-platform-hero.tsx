@@ -92,7 +92,7 @@ export function ArtBoardPlatformHero({ artworks }: { artworks: HeroArtworkPrevie
         </p>
 
         <h1>
-          <span className="artboard-redesign-hero__wordmark">ArtBoard.</span>
+          <span className="artboard-redesign-hero__wordmark" data-text="ArtBoard.">ArtBoard.</span>
           <strong>
             Digitalna platforma za
             <br />

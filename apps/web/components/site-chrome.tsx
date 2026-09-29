@@ -31,7 +31,7 @@ export function SiteChrome({ children, session = null }: SiteChromeProps) {
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       {isArtBoardHome ? <ArtBoardDirectEntry /> : null}
       <SiteHeader session={session} />
-      <main className="mx-auto w-full max-w-[100vw] px-5 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
+      <main className="mx-auto w-full max-w-[100vw] px-5 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12 background-[#f7f7f9]">
         {children}
       </main>
       <SiteFooter />

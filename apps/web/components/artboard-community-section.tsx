@@ -4,7 +4,6 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight, ImageOff, Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { ArtBoardLogo } from "@/components/artboard-logo";
 import { siteRoutes } from "@/lib/site-routes";
 
 export type CommunityArtist = {
@@ -16,8 +15,8 @@ export type CommunityArtist = {
   disciplines: string[];
 };
 
-const dotColors = ["blue", "red", "yellow"] as const;
 const MAX_SHOWCASE_ARTISTS = 25;
+const GALLERY_EDGE_CLONES = 5;
 
 type CommunityColumn = {
   key: string;
@@ -30,20 +29,34 @@ function buildCommunityColumns(artists: CommunityArtist[]) {
   if (showcaseArtists.length === 0) return [];
 
   const columns: CommunityColumn[] = [];
-  const cycleCount = Math.max(1, Math.ceil(showcaseArtists.length / 5));
   let artistIndex = 0;
-  const takeArtist = () => showcaseArtists[artistIndex++ % showcaseArtists.length]!;
 
-  for (let cycle = 0; cycle < cycleCount; cycle += 1) {
-    const largeArtist = takeArtist();
-    const firstSmallPair = [takeArtist(), takeArtist()];
-    const secondSmallPair = [takeArtist(), takeArtist()];
+  while (artistIndex < showcaseArtists.length) {
+    const cycle = Math.floor(artistIndex / 5);
+    const largeArtist = showcaseArtists[artistIndex++];
+    if (!largeArtist) break;
 
-    columns.push(
-      { key: `${cycle}-large-${largeArtist.id}`, kind: "large", artists: [largeArtist] },
-      { key: `${cycle}-small-a-${firstSmallPair[0]!.id}`, kind: "small", artists: firstSmallPair },
-      { key: `${cycle}-small-b-${secondSmallPair[0]!.id}`, kind: "small", artists: secondSmallPair },
-    );
+    columns.push({ key: `${cycle}-large-${largeArtist.id}`, kind: "large", artists: [largeArtist] });
+
+    const firstSmallPair = showcaseArtists.slice(artistIndex, artistIndex + 2);
+    artistIndex += firstSmallPair.length;
+    if (firstSmallPair.length > 0) {
+      columns.push({
+        key: `${cycle}-small-a-${firstSmallPair[0]!.id}`,
+        kind: "small",
+        artists: firstSmallPair,
+      });
+    }
+
+    const secondSmallPair = showcaseArtists.slice(artistIndex, artistIndex + 2);
+    artistIndex += secondSmallPair.length;
+    if (secondSmallPair.length > 0) {
+      columns.push({
+        key: `${cycle}-small-b-${secondSmallPair[0]!.id}`,
+        kind: "small",
+        artists: secondSmallPair,
+      });
+    }
   }
 
   return columns;
@@ -125,9 +138,9 @@ function CommunityArtistCard({ artist }: { artist: CommunityArtist }) {
 export function ArtBoardCommunitySection({ artists }: { artists: CommunityArtist[] }) {
   const sectionRef = useRef<HTMLElement>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeDot, setActiveDot] = useState(0);
   const [isSearchInviting, setIsSearchInviting] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
+  const [isGalleryOverflowing, setIsGalleryOverflowing] = useState(false);
   const normalizedSearch = searchTerm.trim().toLocaleLowerCase();
   const filteredArtists = useMemo(
     () => artists.filter((artist) =>
@@ -138,17 +151,21 @@ export function ArtBoardCommunitySection({ artists }: { artists: CommunityArtist
     [artists, normalizedSearch],
   );
   const communityColumns = useMemo(() => buildCommunityColumns(filteredArtists), [filteredArtists]);
-  const hasScrollableGallery = filteredArtists.length > 1;
+  const shouldLoopGallery = normalizedSearch.length === 0 && filteredArtists.length > 1;
+  const edgeCloneCount = shouldLoopGallery
+    ? Math.min(GALLERY_EDGE_CLONES, communityColumns.length)
+    : 0;
   const loopedColumns = useMemo(
-    () => hasScrollableGallery
+    () => shouldLoopGallery
       ? [
+          ...communityColumns.slice(-edgeCloneCount).map((column) => ({ ...column, copy: -1 })),
           ...communityColumns.map((column) => ({ ...column, copy: 0 })),
-          ...communityColumns.map((column) => ({ ...column, copy: 1 })),
-          ...communityColumns.map((column) => ({ ...column, copy: 2 })),
+          ...communityColumns.slice(0, edgeCloneCount).map((column) => ({ ...column, copy: 1 })),
         ]
       : communityColumns.map((column) => ({ ...column, copy: 0 })),
-    [communityColumns, hasScrollableGallery],
+    [communityColumns, edgeCloneCount, shouldLoopGallery],
   );
+  const hasScrollableGallery = shouldLoopGallery || isGalleryOverflowing;
   const galleryViewportRef = useRef<HTMLDivElement>(null);
   const galleryTrackRef = useRef<HTMLDivElement>(null);
   const searchBoxRef = useRef<HTMLLabelElement>(null);
@@ -170,17 +187,6 @@ export function ArtBoardCommunitySection({ artists }: { artists: CommunityArtist
   }, []);
 
   useEffect(() => {
-    if (!isVisible) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-    const interval = window.setInterval(() => {
-      setActiveDot((index) => (index + 1) % dotColors.length);
-    }, 3200);
-
-    return () => window.clearInterval(interval);
-  }, [isVisible]);
-
-  useEffect(() => {
     const searchBox = searchBoxRef.current;
     if (!searchBox || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
@@ -199,7 +205,7 @@ export function ArtBoardCommunitySection({ artists }: { artists: CommunityArtist
     const track = galleryTrackRef.current;
     if (!viewport || !track || communityColumns.length === 0) return;
 
-    activeColumnRef.current = hasScrollableGallery ? communityColumns.length : 0;
+    activeColumnRef.current = shouldLoopGallery ? edgeCloneCount : 0;
     isShiftingRef.current = false;
 
     const placeAtActiveColumn = () => {
@@ -208,6 +214,7 @@ export function ArtBoardCommunitySection({ artists }: { artists: CommunityArtist
 
       track.classList.remove("is-animated");
       track.style.transform = `translate3d(-${activeColumn.offsetLeft}px, 0, 0)`;
+      setIsGalleryOverflowing(track.scrollWidth > viewport.clientWidth + 1);
     };
     const frame = window.requestAnimationFrame(placeAtActiveColumn);
     const resizeObserver = new ResizeObserver(() => {
@@ -220,7 +227,7 @@ export function ArtBoardCommunitySection({ artists }: { artists: CommunityArtist
       resizeObserver.disconnect();
       if (shiftTimeoutRef.current !== null) window.clearTimeout(shiftTimeoutRef.current);
     };
-  }, [communityColumns, hasScrollableGallery]);
+  }, [communityColumns, edgeCloneCount, shouldLoopGallery]);
 
   function shiftArtists(direction: -1 | 1) {
     const viewport = galleryViewportRef.current;
@@ -242,8 +249,10 @@ export function ArtBoardCommunitySection({ artists }: { artists: CommunityArtist
       let normalizedIndex = activeColumnRef.current;
       const columnCount = communityColumns.length;
 
-      if (normalizedIndex < columnCount) normalizedIndex += columnCount;
-      if (normalizedIndex >= columnCount * 2) normalizedIndex -= columnCount;
+      if (shouldLoopGallery) {
+        if (normalizedIndex < edgeCloneCount) normalizedIndex += columnCount;
+        if (normalizedIndex >= edgeCloneCount + columnCount) normalizedIndex -= columnCount;
+      }
 
       if (normalizedIndex !== activeColumnRef.current) {
         const normalizedColumn = track.children.item(normalizedIndex);
@@ -260,21 +269,26 @@ export function ArtBoardCommunitySection({ artists }: { artists: CommunityArtist
   }
 
   return (
-    <section ref={sectionRef} className="artboard-community" id="artboard-zajednica" aria-labelledby="artboard-community-title">
+    <section
+      ref={sectionRef}
+      className={`artboard-community${isVisible ? "" : " artboard-community--paused"}`}
+      id="artboard-zajednica"
+      aria-labelledby="artboard-community-title"
+    >
       <div className="artboard-community__inner">
         <div className="artboard-community__header">
           <div>
             <p className="artboard-community__eyebrow"><span aria-hidden="true" />ArtBoard zajednica</p>
             <h2 className="artboard-community__title" id="artboard-community-title">
-              <span>Zajednica umjetnika</span>
+              <span data-text="Zajednica umjetnika">Zajednica umjetnika</span>
               koja svakodnevno raste.
             </h2>
             <p className="artboard-community__intro">
               Istraži autore i otkrij radove koji oblikuju umjetničku scenu Crne Gore i regiona.
             </p>
           </div>
-          <div className="artboard-why__logo artboard-community__logo" data-active={dotColors[activeDot]}>
-            <ArtBoardLogo showWordmark={false} />
+          <div className="artboard-community__logo" aria-hidden="true">
+            <img alt="" src="/artboard-logo/ArtBoard-Gradient.svg" />
           </div>
         </div>
 
@@ -339,10 +353,10 @@ export function ArtBoardCommunitySection({ artists }: { artists: CommunityArtist
 
         <div className="artboard-community__actions">
           <Link className="artboard-community__button artboard-community__button--primary" href={siteRoutes.artists}>
-            Istraži umjetnike
+            <span>Istraži umjetnike</span>
           </Link>
           <Link className="artboard-community__button artboard-community__button--secondary" href={siteRoutes.artistApplication}>
-            Postani dio ArtBoard zajednice
+            <span>Postani dio ArtBoard zajednice</span>
           </Link>
         </div>
       </div>

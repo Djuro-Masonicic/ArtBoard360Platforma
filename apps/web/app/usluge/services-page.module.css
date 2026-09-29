@@ -450,8 +450,9 @@
 }
 
 .artboardVariant .testimonialQuote { height: 22px; font-size: 38px; line-height: 0.8; }
-.artboardQuoteCool { color: #3874f7; }
-.artboardQuoteWarm { color: #ff7951; }
+.artboardQuoteBlue { color: #1a7cff; }
+.artboardQuotePink { color: #ff2d55; }
+.artboardQuoteYellow { color: #ffc328; }
 
 .artboardVariant .testimonialText {
   display: -webkit-box;
@@ -465,6 +466,7 @@
 }
 
 .artboardVariant .testimonialAuthor { gap: 10px; }
+.artboardVariant .testimonialAuthor img { width: 38px; height: 38px; }
 .artboardVariant .testimonialAvatarFallback { width: 38px; height: 38px; }
 .artboardAvatarBlue { background: linear-gradient(135deg, #2b7cff, #5958f0); }
 .artboardAvatarPurple { background: linear-gradient(135deg, #4969d9, #e33969); }

@@ -65,23 +65,23 @@ const transitionDots: {
     gatherX: "0px",
     gatherY: "0px",
     targetX: "0px",
-    targetY: "calc(var(--artboard-transition-mark-height) * -0.3305)",
+    targetY: "calc(var(--artboard-transition-mark-height) * -0.375)",
   },
   {
     key: "blue",
     className: "artboard-transition-dot--blue",
     gatherX: "calc(var(--artboard-transition-dot-size) * -0.72)",
     gatherY: "0px",
-    targetX: "calc(var(--artboard-transition-mark-size) * -0.3594)",
-    targetY: "calc(var(--artboard-transition-mark-height) * 0.3136)",
+    targetX: "calc(var(--artboard-transition-mark-size) * -0.3876)",
+    targetY: "calc(var(--artboard-transition-mark-height) * 0.3714)",
   },
   {
     key: "yellow",
     className: "artboard-transition-dot--yellow",
     gatherX: "calc(var(--artboard-transition-dot-size) * 0.72)",
     gatherY: "0px",
-    targetX: "calc(var(--artboard-transition-mark-size) * 0.3594)",
-    targetY: "calc(var(--artboard-transition-mark-height) * 0.3136)",
+    targetX: "calc(var(--artboard-transition-mark-size) * 0.3876)",
+    targetY: "calc(var(--artboard-transition-mark-height) * 0.3714)",
   },
 ];
 
@@ -317,45 +317,11 @@ function ArtBoardTransitionOverlay({
       <div className="artboard-transition-content">
         <div className="artboard-transition-assembly">
           <div className="artboard-transition-mark" aria-hidden="true">
-            <svg className="artboard-transition-lines" viewBox="0 0 128 118" fill="none">
-          <defs>
-            <linearGradient id="artboard-transition-left-gradient" x1="18" y1="96" x2="64" y2="20" gradientUnits="userSpaceOnUse">
-              <stop offset="0" stopColor="#0875ff" />
-              <stop offset="0.48" stopColor="#7d35ff" />
-              <stop offset="0.72" stopColor="#ee2d86" />
-              <stop offset="1" stopColor="#ff151d" />
-            </linearGradient>
-            <linearGradient id="artboard-transition-right-gradient" x1="64" y1="20" x2="110" y2="96" gradientUnits="userSpaceOnUse">
-              <stop offset="0" stopColor="#ff151d" />
-              <stop offset="0.52" stopColor="#ff5021" />
-              <stop offset="1" stopColor="#ffd31a" />
-            </linearGradient>
-            <linearGradient id="artboard-transition-base-gradient" x1="25" y1="88" x2="103" y2="88" gradientUnits="userSpaceOnUse">
-              <stop offset="0" stopColor="#0875ff" />
-              <stop offset="0.35" stopColor="#7d35ff" />
-              <stop offset="0.62" stopColor="#ff315d" />
-              <stop offset="1" stopColor="#ffd31a" />
-            </linearGradient>
-          </defs>
-          <path
-            className="artboard-transition-line artboard-transition-line--left"
-            d="M18 96C38 76 51 52 62 28"
-            pathLength="100"
-            stroke="url(#artboard-transition-left-gradient)"
-          />
-          <path
-            className="artboard-transition-line artboard-transition-line--right"
-            d="M70 28C77 53 90 77 110 96"
-            pathLength="100"
-            stroke="url(#artboard-transition-right-gradient)"
-          />
-          <path
-            className="artboard-transition-line artboard-transition-line--base"
-            d="M30 87C52 73 76 73 104 90"
-            pathLength="100"
-            stroke="url(#artboard-transition-base-gradient)"
-          />
-            </svg>
+            <img
+              className="artboard-transition-lines"
+              src="/artboard-logo/ArtBoard-Baza-Gradient.svg"
+              alt=""
+            />
           </div>
 
           {transitionDots.map((dot) => (
@@ -374,66 +340,15 @@ function ArtBoardTransitionOverlay({
         </div>
 
         <div className="artboard-transition-lockup" aria-hidden="true">
-          <div className="artboard-transition-lockup-mark">
-            <svg viewBox="0 0 128 118" fill="none">
-              <defs>
-                <linearGradient id="artboard-lockup-left-gradient" x1="18" y1="96" x2="64" y2="20" gradientUnits="userSpaceOnUse">
-                  <stop offset="0" stopColor="#0875ff" />
-                  <stop offset="0.48" stopColor="#7d35ff" />
-                  <stop offset="0.72" stopColor="#ee2d86" />
-                  <stop offset="1" stopColor="#ff151d" />
-                </linearGradient>
-                <linearGradient id="artboard-lockup-right-gradient" x1="64" y1="20" x2="110" y2="96" gradientUnits="userSpaceOnUse">
-                  <stop offset="0" stopColor="#ff151d" />
-                  <stop offset="0.52" stopColor="#ff5021" />
-                  <stop offset="1" stopColor="#ffd31a" />
-                </linearGradient>
-                <linearGradient id="artboard-lockup-base-gradient" x1="25" y1="88" x2="103" y2="88" gradientUnits="userSpaceOnUse">
-                  <stop offset="0" stopColor="#0875ff" />
-                  <stop offset="0.35" stopColor="#7d35ff" />
-                  <stop offset="0.62" stopColor="#ff315d" />
-                  <stop offset="1" stopColor="#ffd31a" />
-                </linearGradient>
-              </defs>
-              <path className="artboard-transition-lockup-line artboard-transition-lockup-line--left" d="M18 96C38 76 51 52 62 28" stroke="url(#artboard-lockup-left-gradient)" />
-              <path className="artboard-transition-lockup-line artboard-transition-lockup-line--right" d="M70 28C77 53 90 77 110 96" stroke="url(#artboard-lockup-right-gradient)" />
-              <path className="artboard-transition-lockup-line artboard-transition-lockup-line--base" d="M30 87C52 73 76 73 104 90" stroke="url(#artboard-lockup-base-gradient)" />
-              <circle className="artboard-transition-lockup-dot artboard-transition-lockup-dot--red" cx="64" cy="20" r="13" fill="#ff151d" />
-              <circle className="artboard-transition-lockup-dot artboard-transition-lockup-dot--blue" cx="18" cy="96" r="13" fill="#0875ff" />
-              <circle className="artboard-transition-lockup-dot artboard-transition-lockup-dot--yellow" cx="110" cy="96" r="13" fill="#ffd31a" />
-            </svg>
-          </div>
-          <div className="artboard-transition-lockup-word">rtBoard</div>
+          <img
+            className="artboard-transition-lockup-image"
+            src="/artboard-logo/ArtBoard-Horizontal-Gradient.svg"
+            alt=""
+          />
         </div>
 
         <div className="artboard-transition-flying-logo" aria-hidden="true">
-          <svg viewBox="0 0 128 118" fill="none">
-            <defs>
-              <linearGradient id="artboard-flying-left-gradient" x1="18" y1="96" x2="64" y2="20" gradientUnits="userSpaceOnUse">
-                <stop offset="0" stopColor="#0875ff" />
-                <stop offset="0.48" stopColor="#7d35ff" />
-                <stop offset="0.72" stopColor="#ee2d86" />
-                <stop offset="1" stopColor="#ff151d" />
-              </linearGradient>
-              <linearGradient id="artboard-flying-right-gradient" x1="64" y1="20" x2="110" y2="96" gradientUnits="userSpaceOnUse">
-                <stop offset="0" stopColor="#ff151d" />
-                <stop offset="0.52" stopColor="#ff5021" />
-                <stop offset="1" stopColor="#ffd31a" />
-              </linearGradient>
-              <linearGradient id="artboard-flying-base-gradient" x1="25" y1="88" x2="103" y2="88" gradientUnits="userSpaceOnUse">
-                <stop offset="0" stopColor="#0875ff" />
-                <stop offset="0.35" stopColor="#7d35ff" />
-                <stop offset="0.62" stopColor="#ff315d" />
-                <stop offset="1" stopColor="#ffd31a" />
-              </linearGradient>
-            </defs>
-            <path d="M18 96C38 76 51 52 62 28" stroke="url(#artboard-flying-left-gradient)" />
-            <path d="M70 28C77 53 90 77 110 96" stroke="url(#artboard-flying-right-gradient)" />
-            <path d="M30 87C52 73 76 73 104 90" stroke="url(#artboard-flying-base-gradient)" />
-            <circle cx="64" cy="20" r="13" fill="#ff151d" />
-            <circle cx="18" cy="96" r="13" fill="#0875ff" />
-            <circle cx="110" cy="96" r="13" fill="#ffd31a" />
-          </svg>
+          <img src="/artboard-logo/ArtBoard-Gradient.svg" alt="" />
         </div>
 
         <div className="artboard-transition-stage">
@@ -455,11 +370,8 @@ function ArtBoardTransitionOverlay({
       <style>{`
         .artboard-transition-overlay {
           --artboard-transition-mark-size: min(380px, 54vw);
-          --artboard-transition-mark-height: calc(var(--artboard-transition-mark-size) * 0.921875);
-          --artboard-transition-dot-size: calc(var(--artboard-transition-mark-size) * 0.203125);
-          --artboard-transition-lockup-mark-size: clamp(82px, 12vw, 112px);
-          --artboard-transition-lockup-shift: clamp(105px, 18vw, 195px);
-          --artboard-transition-lockup-word-offset: clamp(48px, 7vw, 65px);
+          --artboard-transition-mark-height: calc(var(--artboard-transition-mark-size) * 0.898876);
+          --artboard-transition-dot-size: calc(var(--artboard-transition-mark-size) * 0.224719);
           --artboard-transition-stage-offset: 88px;
           position: fixed;
           inset: 0;
@@ -488,7 +400,7 @@ function ArtBoardTransitionOverlay({
           top: 50%;
           z-index: 5;
           width: var(--artboard-transition-mark-size);
-          aspect-ratio: 128 / 118;
+          aspect-ratio: 178 / 160;
           opacity: 0;
           transform: translate(-50%, -50%) scale(1);
           transform-origin: center;
@@ -497,21 +409,15 @@ function ArtBoardTransitionOverlay({
           will-change: left, top, opacity, transform;
         }
 
-        .artboard-transition-flying-logo svg {
+        .artboard-transition-flying-logo img {
           display: block;
           width: 100%;
           height: 100%;
-          overflow: visible;
+          object-fit: contain;
           transform-box: fill-box;
           transform-origin: center;
           animation: artboardTransitionLogoFlightLift 900ms ease-in-out 6600ms both;
           will-change: transform;
-        }
-
-        .artboard-transition-flying-logo path {
-          fill: none;
-          stroke-linecap: round;
-          stroke-width: 9;
         }
 
         .artboard-transition-mark {
@@ -520,7 +426,7 @@ function ArtBoardTransitionOverlay({
           top: 50%;
           z-index: 2;
           width: var(--artboard-transition-mark-size);
-          aspect-ratio: 128 / 118;
+          aspect-ratio: 178 / 160;
           transform: translate(-50%, -50%);
           pointer-events: none;
         }
@@ -529,21 +435,9 @@ function ArtBoardTransitionOverlay({
           display: block;
           width: 100%;
           height: 100%;
-          overflow: visible;
-        }
-
-        .artboard-transition-line {
-          fill: none;
-          stroke-linecap: round;
-          stroke-width: 9;
-          stroke-dasharray: 100;
-          stroke-dashoffset: 100;
+          object-fit: contain;
           opacity: 0;
           animation: artboardTransitionLineDraw 520ms ease-out 1400ms both;
-        }
-
-        .artboard-transition-line--base {
-          animation-delay: 1530ms;
         }
 
         .artboard-transition-lockup {
@@ -555,91 +449,15 @@ function ArtBoardTransitionOverlay({
           pointer-events: none;
         }
 
-        .artboard-transition-lockup-mark {
+        .artboard-transition-lockup-image {
           position: fixed;
           left: 50%;
           top: 50%;
-          width: var(--artboard-transition-mark-size);
-          aspect-ratio: 128 / 118;
+          width: clamp(330px, 46vw, 560px);
+          height: auto;
           transform: translate(-50%, -50%);
-          animation: artboardTransitionLockupMark 4600ms cubic-bezier(0.22, 0.72, 0.2, 1) 2000ms both;
-          will-change: left, width, transform;
-        }
-
-        .artboard-transition-lockup-mark svg {
-          display: block;
-          width: 100%;
-          height: 100%;
-          overflow: visible;
-        }
-
-        .artboard-transition-lockup-line {
-          fill: none;
-          stroke-linecap: round;
-          stroke-width: 9;
-        }
-
-        .artboard-transition-lockup-line--left {
-          animation: artboardTransitionLockupLinePulse 760ms ease-in-out 2800ms both;
-        }
-
-        .artboard-transition-lockup-line--right {
-          animation: artboardTransitionLockupLinePulse 760ms ease-in-out 3450ms both;
-        }
-
-        .artboard-transition-lockup-line--base {
-          animation: artboardTransitionLockupLinePulse 760ms ease-in-out 4100ms both;
-        }
-
-        .artboard-transition-lockup-dot {
-          transform-box: fill-box;
-          transform-origin: center;
-        }
-
-        .artboard-transition-lockup-dot--blue {
-          color: #0875ff;
-          animation: artboardTransitionLockupDotPulse 760ms ease-out 2800ms both;
-        }
-
-        .artboard-transition-lockup-dot--red {
-          color: #ff151d;
-          animation: artboardTransitionLockupDotPulse 760ms ease-out 3450ms both;
-        }
-
-        .artboard-transition-lockup-dot--yellow {
-          color: #ffd31a;
-          animation: artboardTransitionLockupDotPulse 760ms ease-out 4100ms both;
-        }
-
-        .artboard-transition-lockup-word {
-          position: fixed;
-          left: calc(
-            50% - var(--artboard-transition-lockup-shift) +
-              var(--artboard-transition-lockup-word-offset)
-          );
-          top: 50%;
-          overflow: hidden;
-          background: linear-gradient(
-            90deg,
-            #7d35ff 0%,
-            #ee2d86 28%,
-            #ff151d 48%,
-            #ff7a1f 72%,
-            #ffd31a 100%
-          );
-          background-clip: text;
-          background-size: 160% 100%;
-          -webkit-background-clip: text;
-          color: transparent;
-          font-size: clamp(56px, 8vw, 88px);
-          font-weight: 850;
-          letter-spacing: 0;
-          line-height: 1;
-          white-space: nowrap;
-          clip-path: inset(0 100% 0 0);
-          transform: translateY(-50%);
-          animation: artboardTransitionLockupWord 4600ms ease-in-out 2000ms both;
-          will-change: clip-path, opacity, transform;
+          animation: artboardTransitionLockupImage 4600ms cubic-bezier(0.22, 0.72, 0.2, 1) 2000ms both;
+          will-change: opacity, transform;
         }
 
         .artboard-transition-dot {
@@ -769,7 +587,7 @@ function ArtBoardTransitionOverlay({
         @keyframes artboardTransitionLineDraw {
           0% {
             opacity: 0;
-            stroke-dashoffset: 100;
+            clip-path: inset(0 50% 100% 50%);
           }
 
           12% {
@@ -778,7 +596,7 @@ function ArtBoardTransitionOverlay({
 
           100% {
             opacity: 1;
-            stroke-dashoffset: 0;
+            clip-path: inset(0);
           }
         }
 
@@ -793,75 +611,20 @@ function ArtBoardTransitionOverlay({
           }
         }
 
-        @keyframes artboardTransitionLockupMark {
-          0% {
-            left: 50%;
-            width: var(--artboard-transition-mark-size);
-            transform: translate(-50%, -50%);
-          }
-
-          16%,
-          74% {
-            left: calc(50% - var(--artboard-transition-lockup-shift));
-            width: var(--artboard-transition-lockup-mark-size);
-            transform: translate(-50%, -50%);
-          }
-
-          100% {
-            left: 50%;
-            width: var(--artboard-transition-mark-size);
-            transform: translate(-50%, -50%);
-          }
-        }
-
-        @keyframes artboardTransitionLockupWord {
+        @keyframes artboardTransitionLockupImage {
           0% {
             opacity: 0;
-            background-position: 0% 50%;
-            clip-path: inset(0 100% 0 0);
-            transform: translate(-18px, -50%);
+            transform: translate(-50%, -50%) scale(0.84);
           }
 
-          16%,
-          72% {
+          16%, 74% {
             opacity: 1;
-            background-position: 100% 50%;
-            clip-path: inset(0 0 0 0);
-            transform: translate(0, -50%);
+            transform: translate(-50%, -50%) scale(1);
           }
 
-          86%,
           100% {
             opacity: 0;
-            background-position: 100% 50%;
-            clip-path: inset(0 100% 0 0);
-            transform: translate(-18px, -50%);
-          }
-        }
-
-        @keyframes artboardTransitionLockupLinePulse {
-          0%,
-          100% {
-            filter: drop-shadow(0 0 0 transparent);
-            stroke-width: 9;
-          }
-
-          50% {
-            filter: drop-shadow(0 0 8px rgba(125, 53, 255, 0.58));
-            stroke-width: 11;
-          }
-        }
-
-        @keyframes artboardTransitionLockupDotPulse {
-          0%,
-          100% {
-            filter: drop-shadow(0 0 0 transparent);
-            transform: scale(1);
-          }
-
-          42% {
-            filter: drop-shadow(0 0 8px currentColor);
-            transform: scale(1.18);
+            transform: translate(-50%, -50%) scale(0.84);
           }
         }
 
@@ -994,7 +757,7 @@ function ArtBoardTransitionOverlay({
             opacity: 0;
           }
 
-          .artboard-transition-flying-logo svg {
+          .artboard-transition-flying-logo img {
             animation: none;
           }
 
@@ -1010,10 +773,10 @@ function ArtBoardTransitionOverlay({
             transform: translate(-50%, -50%) scale(1);
           }
 
-          .artboard-transition-line {
+          .artboard-transition-lines {
             animation: none;
             opacity: 1;
-            stroke-dashoffset: 0;
+            clip-path: inset(0);
           }
 
           .artboard-transition-lockup,

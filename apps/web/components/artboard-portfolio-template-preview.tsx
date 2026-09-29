@@ -20,7 +20,7 @@ const templates = [
   },
 ] as const;
 
-const AUTO_ROTATE_MS = 3200;
+const AUTO_ROTATE_MS = 2700;
 
 export function ArtBoardPortfolioTemplatePreview() {
   const previewRef = useRef<HTMLDivElement>(null);
