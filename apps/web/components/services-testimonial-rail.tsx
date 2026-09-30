@@ -173,7 +173,7 @@ function ArtBoardTestimonialAvatar({ imageSrc, index }: { imageSrc?: string; ind
   useEffect(() => setImageFailed(false), [imageSrc]);
 
   if (imageSrc && !imageFailed) {
-    return <img alt="" aria-hidden="true" onError={() => setImageFailed(true)} src={imageSrc} />;
+    return <img alt="" aria-hidden="true" decoding="async" loading="lazy" onError={() => setImageFailed(true)} src={imageSrc} />;
   }
 
   return (
@@ -334,7 +334,7 @@ export function ServicesTestimonialRail({
 
               <div className={styles.testimonialAuthor}>
                 {testimonial.image ? (
-                  <img alt="" aria-hidden="true" src={testimonial.image} />
+                  <img alt="" aria-hidden="true" decoding="async" loading="lazy" src={testimonial.image} />
                 ) : (
                   <span
                     aria-hidden="true"

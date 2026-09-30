@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 const ANIMATION_DURATION_MS = 1500;
 
@@ -15,17 +15,24 @@ export function ArtBoardAnimatedStat({
 }) {
   const elementRef = useRef<HTMLElement>(null);
   const animationFrameRef = useRef<number | null>(null);
-  const [displayValue, setDisplayValue] = useState(0);
 
   useEffect(() => {
-    if (value === null) return;
-
     const element = elementRef.current;
     if (!element) return;
+    if (value === null) {
+      element.textContent = "\u2014";
+      return;
+    }
+
+    const formatter = formatValue ? new Intl.NumberFormat("sr-Latn-ME") : null;
+    const renderValue = (currentValue: number) => {
+      const displayedValue = formatter ? formatter.format(currentValue) : String(currentValue);
+      element.textContent = `${displayedValue}${suffix}`;
+    };
 
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduceMotion) {
-      setDisplayValue(value);
+      renderValue(value);
       return;
     }
 
@@ -39,7 +46,7 @@ export function ArtBoardAnimatedStat({
         const updateValue = (timestamp: number) => {
           const progress = Math.min((timestamp - startedAt) / ANIMATION_DURATION_MS, 1);
           const easedProgress = 1 - Math.pow(1 - progress, 3);
-          setDisplayValue(Math.round(value * easedProgress));
+          renderValue(Math.round(value * easedProgress));
 
           if (progress < 1) {
             animationFrameRef.current = window.requestAnimationFrame(updateValue);
@@ -59,11 +66,7 @@ export function ArtBoardAnimatedStat({
         window.cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [value]);
+  }, [formatValue, suffix, value]);
 
-  const renderedValue = formatValue
-    ? new Intl.NumberFormat("sr-Latn-ME").format(displayValue)
-    : String(displayValue);
-
-  return <strong ref={elementRef}>{value === null ? "—" : `${renderedValue}${suffix}`}</strong>;
+  return <strong ref={elementRef}>{value === null ? "\u2014" : `0${suffix}`}</strong>;
 }

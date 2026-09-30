@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, ImageOff, Search } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 
 import { siteRoutes } from "@/lib/site-routes";
 
@@ -62,7 +62,7 @@ function buildCommunityColumns(artists: CommunityArtist[]) {
   return columns;
 }
 
-function CommunityArtistCard({ artist }: { artist: CommunityArtist }) {
+const CommunityArtistCard = memo(function CommunityArtistCard({ artist }: { artist: CommunityArtist }) {
   const [isActive, setIsActive] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [failedImageUrls, setFailedImageUrls] = useState<string[]>([]);
@@ -111,6 +111,7 @@ function CommunityArtistCard({ artist }: { artist: CommunityArtist }) {
           <img
             alt={visibleArtwork.alt}
             className="artboard-community__image is-visible"
+            decoding="async"
             key={visibleArtwork.url}
             loading="lazy"
             onError={() => setFailedImageUrls((current) => current.includes(visibleArtwork.url) ? current : [...current, visibleArtwork.url])}
@@ -123,7 +124,7 @@ function CommunityArtistCard({ artist }: { artist: CommunityArtist }) {
           <strong>{artist.name}</strong>
           <span className="artboard-community__avatar" aria-hidden="true">
             {artist.avatarUrl && !avatarFailed ? (
-              <img alt="" loading="lazy" onError={() => setAvatarFailed(true)} src={artist.avatarUrl} />
+              <img alt="" decoding="async" loading="lazy" onError={() => setAvatarFailed(true)} src={artist.avatarUrl} />
             ) : null}
           </span>
         </span>
@@ -133,7 +134,7 @@ function CommunityArtistCard({ artist }: { artist: CommunityArtist }) {
       </span>
     </Link>
   );
-}
+});
 
 export function ArtBoardCommunitySection({ artists }: { artists: CommunityArtist[] }) {
   const sectionRef = useRef<HTMLElement>(null);

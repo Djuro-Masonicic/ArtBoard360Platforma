@@ -31,15 +31,13 @@ export function ArtBoardVerificationSideOrbits({ artworks }: { artworks: Verific
       host.style.visibility = "visible";
     };
 
-    const shouldPlay = () => {
-      const bounds = host.getBoundingClientRect();
-      return bounds.bottom > 0 && bounds.top < window.innerHeight && !document.hidden && !reducedMotion.matches;
-    };
+    const initialBounds = host.getBoundingClientRect();
+    let isIntersecting = initialBounds.bottom > 0 && initialBounds.top < window.innerHeight;
 
     const syncPlayback = () => {
       host.classList.toggle(
         "artboard-verification__side-orbits--paused",
-        !shouldPlay(),
+        !isIntersecting || document.hidden || reducedMotion.matches,
       );
     };
 
@@ -47,7 +45,10 @@ export function ArtBoardVerificationSideOrbits({ artworks }: { artworks: Verific
     syncPlayback();
     const resizeObserver = new ResizeObserver(updateRadius);
     resizeObserver.observe(host);
-    const visibilityObserver = new IntersectionObserver(syncPlayback);
+    const visibilityObserver = new IntersectionObserver(([entry]) => {
+      isIntersecting = Boolean(entry?.isIntersecting);
+      syncPlayback();
+    });
     visibilityObserver.observe(host);
     document.addEventListener("visibilitychange", syncPlayback);
     reducedMotion.addEventListener("change", syncPlayback);

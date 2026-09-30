@@ -185,7 +185,7 @@ export function ArtBoardDisciplinesSection({ artworks }: { artworks: DisciplineA
           data-disciplines-reveal
           href={siteRoutes.artistApplication}
           style={{ "--disciplines-delay": "4050ms" } as CSSProperties}
-        >Prijavi se besplatno</Link>
+        ><span>Prijavi se besplatno</span></Link>
       </div>
     </section>
   );

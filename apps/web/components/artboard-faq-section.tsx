@@ -17,24 +17,24 @@ export function ArtBoardFaqSection({ items }: ArtBoardFaqSectionProps) {
   const listRef = useRef<HTMLDivElement>(null);
   const rowAnimationsRef = useRef(new Map<HTMLElement, Animation>());
 
-  const animateFaqReflow = () => {
+  const animateFaqReflow = (changedRowIndex: number) => {
     const list = listRef.current;
     if (!list || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     rowAnimationsRef.current.forEach((animation) => animation.cancel());
     rowAnimationsRef.current.clear();
 
-    const rows = Array.from(list.querySelectorAll<HTMLElement>(".artboard-faq__item, .artboard-faq__end-line"));
-    const previousPositions = new Map(rows.map((row) => [row, row.getBoundingClientRect().top]));
+    const rows = Array.from(list.querySelectorAll<HTMLElement>(".artboard-faq__item, .artboard-faq__end-line"))
+      .slice(changedRowIndex + 1);
+    const firstMovingRow = rows[0];
+    if (!firstMovingRow) return;
+    const previousTop = firstMovingRow.getBoundingClientRect().top;
 
     window.requestAnimationFrame(() => {
+      const deltaY = previousTop - firstMovingRow.getBoundingClientRect().top;
+      if (Math.abs(deltaY) < 0.5) return;
+
       rows.forEach((row) => {
-        const previousTop = previousPositions.get(row);
-        if (previousTop === undefined) return;
-
-        const deltaY = previousTop - row.getBoundingClientRect().top;
-        if (Math.abs(deltaY) < 0.5) return;
-
         const animation = row.animate(
           [
             { transform: `translate3d(0, ${deltaY}px, 0)` },
@@ -116,7 +116,7 @@ export function ArtBoardFaqSection({ items }: ArtBoardFaqSectionProps) {
         >
           {items.map((item, index) => (
             <details className="artboard-faq__item" key={item.question} open={index === 0 || undefined}>
-              <summary className="artboard-faq__question" onClick={animateFaqReflow}>
+              <summary className="artboard-faq__question" onClick={() => animateFaqReflow(index)}>
                 <span>{item.question}</span>
                 <span aria-hidden="true" className="artboard-faq__plus">+</span>
               </summary>
