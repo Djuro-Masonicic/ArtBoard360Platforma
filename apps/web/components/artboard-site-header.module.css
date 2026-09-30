@@ -325,6 +325,14 @@
   }
 }
 
+@media (max-width: 767px) {
+  .frame {
+    background: #f8f8fa;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
 @media (max-width: 460px) {
   .mobileActions {
     grid-template-columns: 1fr;

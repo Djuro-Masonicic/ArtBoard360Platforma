@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, ImageOff, Search } from "lucide-react";
+import type { PointerEvent as ReactPointerEvent } from "react";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 
 import { siteRoutes } from "@/lib/site-routes";
@@ -173,6 +174,8 @@ export function ArtBoardCommunitySection({ artists }: { artists: CommunityArtist
   const activeColumnRef = useRef(0);
   const isShiftingRef = useRef(false);
   const shiftTimeoutRef = useRef<number | null>(null);
+  const swipeStartRef = useRef<{ pointerId: number; x: number; y: number } | null>(null);
+  const suppressSwipeClickRef = useRef(false);
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -269,6 +272,38 @@ export function ArtBoardCommunitySection({ artists }: { artists: CommunityArtist
     }, prefersReducedMotion ? 0 : 560);
   }
 
+  function startGallerySwipe(event: ReactPointerEvent<HTMLDivElement>) {
+    if (event.pointerType !== "touch" && event.pointerType !== "pen") return;
+
+    suppressSwipeClickRef.current = false;
+    swipeStartRef.current = {
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function finishGallerySwipe(event: ReactPointerEvent<HTMLDivElement>) {
+    const start = swipeStartRef.current;
+    swipeStartRef.current = null;
+    if (!start || start.pointerId !== event.pointerId) return;
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    const deltaX = event.clientX - start.x;
+    const deltaY = event.clientY - start.y;
+    if (Math.abs(deltaX) < 42 || Math.abs(deltaX) <= Math.abs(deltaY) * 1.15) return;
+
+    suppressSwipeClickRef.current = true;
+    shiftArtists(deltaX < 0 ? 1 : -1);
+    window.setTimeout(() => {
+      suppressSwipeClickRef.current = false;
+    }, 400);
+  }
+
   return (
     <section
       ref={sectionRef}
@@ -310,7 +345,19 @@ export function ArtBoardCommunitySection({ artists }: { artists: CommunityArtist
 
         {filteredArtists.length > 0 ? (
           <div className="artboard-community__gallery-shell">
-            <div className="artboard-community__gallery-viewport" ref={galleryViewportRef}>
+            <div
+              className="artboard-community__gallery-viewport"
+              ref={galleryViewportRef}
+              onClickCapture={(event) => {
+                if (!suppressSwipeClickRef.current) return;
+                suppressSwipeClickRef.current = false;
+                event.preventDefault();
+                event.stopPropagation();
+              }}
+              onPointerCancel={() => { swipeStartRef.current = null; }}
+              onPointerDown={startGallerySwipe}
+              onPointerUp={finishGallerySwipe}
+            >
               <div className="artboard-community__gallery-track" ref={galleryTrackRef}>
                 {loopedColumns.map((column) => (
                   <div
