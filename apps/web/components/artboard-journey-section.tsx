@@ -84,7 +84,7 @@ export function ArtBoardJourneySection() {
         >
           Tvoj put od prijave do
           <span className="artboard-journey__title-line">
-            <span className="artboard-journey__title-gradient" data-text="profesionalne prezentacije">profesionalne prezentacije</span>.
+            <span className="artboard-journey__title-gradient" data-text="profesionalne prezentacije.">profesionalne prezentacije.</span>
           </span>
         </h2>
 

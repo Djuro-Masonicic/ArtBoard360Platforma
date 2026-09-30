@@ -1815,6 +1815,10 @@ select {
   .artboard-proof-strip__support-lockup img { width: 96px; }
 }
 
+@media (max-width: 360px) {
+  .artboard-proof-strip__metric strong { font-size: 26px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .artboard-proof-strip__artworks { animation: none; transform: translateX(calc(-50% - var(--proof-artwork-half-gap))); }
 }
@@ -2188,7 +2192,7 @@ select {
 }
 
 @media (max-width: 560px) {
-  .artboard-why { padding: 40px 16px 0; }
+  .artboard-why { padding: 40px 16px 314px; }
   .artboard-why__headline-row { align-items: flex-start; gap: 12px; margin-top: 18px; }
   .artboard-why__logo { flex-basis: 58px; font-size: 22px; }
   .artboard-why__headline { flex-wrap: wrap; gap: 0 10px; font-size: 34px; }
@@ -9838,6 +9842,10 @@ select {
   color: #7b8492;
 }
 
+.artboard-community__search-mobile-placeholder {
+  display: none;
+}
+
 @keyframes artboard-search-invite {
   0% { opacity: 0; transform: translateY(12px) scale(0.985); }
   60% { opacity: 1; transform: translateY(-2px) scale(1.008); }
@@ -10080,6 +10088,8 @@ select {
   color: #737c8a;
   font-size: 8px;
   letter-spacing: 1px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-weight: 500;
   text-overflow: ellipsis;
   text-transform: uppercase;
@@ -10214,7 +10224,24 @@ select {
   .artboard-community__title { font-size: 30px; }
   .artboard-community__logo { width: 68px; }
   .artboard-community__intro { font-size: 12px; }
-  .artboard-community__search { width: 100%; }
+  .artboard-community__search { width: 100%; padding-right: 16px; padding-left: 16px; gap: 10px; }
+  .artboard-community__search input { position: relative; z-index: 2; }
+  .artboard-community__search input::placeholder { color: transparent; }
+  .artboard-community__search-mobile-placeholder {
+    position: absolute;
+    z-index: 1;
+    right: 16px;
+    left: 46px;
+    display: block;
+    overflow: hidden;
+    color: #7b8492;
+    font-size: 13px;
+    pointer-events: none;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: opacity 120ms ease;
+  }
+  .artboard-community__search:has(input:not(:placeholder-shown)) .artboard-community__search-mobile-placeholder { opacity: 0; }
   .artboard-community__gallery-track,
   .artboard-community__gallery-column { gap: 10px; }
   .artboard-community__gallery-column { grid-template-rows: repeat(2, 190px); }

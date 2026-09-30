@@ -299,6 +299,7 @@ export function ArtBoardCommunitySection({ artists }: { artists: CommunityArtist
         >
           <Search size={20} strokeWidth={1.8} aria-hidden="true" />
           <span className="sr-only">Pretraži umjetnike po imenu, disciplini ili lokaciji</span>
+          <span aria-hidden="true" className="artboard-community__search-mobile-placeholder">Pretraži umjetnike</span>
           <input
             onChange={(event) => setSearchTerm(event.target.value)}
             placeholder="Pretraži umjetnike po imenu, disciplini ili lokaciji"
