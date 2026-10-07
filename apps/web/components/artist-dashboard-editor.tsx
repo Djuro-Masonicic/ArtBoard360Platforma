@@ -1,5 +1,18 @@
 "use client";
 
+import {
+  Camera,
+  Check,
+  Circle,
+  CreditCard,
+  FileText,
+  ImageIcon,
+  LayoutGrid,
+  Link2,
+  LockKeyhole,
+  UserRound,
+  type LucideIcon,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
@@ -50,13 +63,14 @@ const dashboardSections: Array<{
   id: DashboardSection;
   label: string;
   helper: string;
+  icon: LucideIcon;
 }> = [
-  { id: "overview", label: "Pregled", helper: "Status profila i brzi linkovi" },
-  { id: "profile", label: "Profil", helper: "Bio, moto i cover slika" },
-  { id: "links", label: "Linkovi", helper: "Drustvene mreze i kontakt" },
-  { id: "artworks", label: "Radovi", helper: "Upload, featured i hero" },
-  { id: "portfolio", label: "Portfolio", helper: "Draftovi i PDF istorija" },
-  { id: "security", label: "Lozinka", helper: "Promjena lozinke" },
+  { id: "overview", label: "Pregled", helper: "Status profila i brzi linkovi", icon: LayoutGrid },
+  { id: "profile", label: "Profil", helper: "Bio, moto i cover slika", icon: UserRound },
+  { id: "links", label: "Linkovi", helper: "Društvene mreže i kontakt", icon: Link2 },
+  { id: "artworks", label: "Radovi", helper: "Upload, featured i hero", icon: ImageIcon },
+  { id: "portfolio", label: "Portfolio", helper: "Draftovi i PDF istorija", icon: FileText },
+  { id: "security", label: "Lozinka", helper: "Promjena lozinke", icon: LockKeyhole },
 ];
 
 export function ArtistDashboardEditor({
@@ -440,7 +454,7 @@ export function ArtistDashboardEditor({
   }
 
   return (
-    <main className="mx-auto w-full max-w-[1280px] px-5 pb-20 pt-[15vh] sm:px-8">
+    <main className="-mx-5 -my-8 min-h-screen bg-[#f7f7f9] px-5 pb-20 pt-[112px] sm:-mx-8 sm:px-8 lg:pt-[122px]">
       {mustChangePassword ? (
         <PasswordChangeModal
           confirmNewPassword={confirmNewPassword}
@@ -454,7 +468,7 @@ export function ArtistDashboardEditor({
         />
       ) : null}
 
-      <section className="rounded-[18px] border border-[#dbe4f1] bg-white shadow-[0_18px_46px_rgba(31,46,86,0.07)]">
+      <section className="hidden">
         <div className="grid gap-6 p-5 lg:grid-cols-[1fr_360px] lg:p-7">
           <div className="min-w-0">
             <p className="text-[12px] font-semibold uppercase text-[#7f8794]">Artist dashboard</p>
@@ -510,38 +524,75 @@ export function ArtistDashboardEditor({
         </div>
       </section>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[280px_minmax(0,1fr)]">
-        <aside className="space-y-5 lg:sticky lg:top-[14vh] lg:self-start">
-          <Panel>
-            <p className="text-[12px] font-semibold uppercase text-[#7f8794]">Sekcije</p>
-            <nav className="mt-4 space-y-2" aria-label="Artist dashboard sekcije">
+      <div className="mx-auto grid w-full max-w-[1320px] gap-7 lg:grid-cols-[280px_minmax(0,1fr)]">
+        <aside className="space-y-4 lg:sticky lg:top-[96px] lg:self-start">
+          <div className="px-1 pb-2">
+            <div className="flex items-center gap-2.5 text-[12px] font-extrabold uppercase tracking-[0.14em] text-[#3b4050]">
+              <span className="h-[9px] w-[9px] rounded-full bg-gradient-to-br from-[#1a7cff] via-[#ff2d55] to-[#ffd028]" />
+              Tvoj profil
+            </div>
+            <div className="mt-4 flex items-start gap-4 lg:block">
+              <ArtistAvatar artist={artist} size="dashboard" />
+              <div className="min-w-0 lg:mt-3">
+                <button
+                  className="inline-flex items-center gap-2 text-[11px] font-extrabold uppercase text-[#3b4050] transition hover:text-[#1a7cff]"
+                  disabled={isUploadingProfileImage}
+                  onClick={() => profileImageInputRef.current?.click()}
+                  type="button"
+                >
+                  <span className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-[#1a7cff] to-[#b642a0] text-white">
+                    <Camera aria-hidden="true" size={14} />
+                  </span>
+                  {isUploadingProfileImage ? "Upload..." : "Promijeni sliku"}
+                </button>
+                <h2 className="mt-3 truncate text-[23px] font-extrabold leading-tight text-[#111318]">{artist.name}</h2>
+                <p className="mt-1 truncate text-[13px] font-semibold text-[#6b7184]">@{artist.slug}</p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <nav className="space-y-1" aria-label="Artist dashboard sekcije">
               {dashboardSections.map((section) => {
                 const isActive = activeSection === section.id;
+                const Icon = section.icon;
 
                 return (
                   <button
-                    className={`group w-full rounded-[14px] border px-4 py-3 text-left transition ${
+                    className={`group flex w-full items-center gap-3.5 rounded-[16px] px-3 py-2.5 text-left transition ${
                       isActive
-                        ? "border-[#182fc7] bg-[#eef2ff] text-[#182fc7]"
-                        : "border-[#e2e8f0] bg-[#f8fbff] text-[#4f5967] hover:border-[#c7d2e4] hover:bg-white"
+                        ? "bg-white shadow-[0_10px_26px_rgba(17,19,24,0.07)]"
+                        : "hover:bg-white/70"
                     }`}
                     key={section.id}
                     onClick={() => setActiveSection(section.id)}
                     type="button"
                   >
-                    <span className="block text-[14px] font-bold">{section.label}</span>
-                    <span
-                      className={`mt-1 block text-[12px] leading-5 ${
-                        isActive ? "text-[#182fc7]/70" : "text-[#7d8793]"
-                      }`}
-                    >
-                      {section.helper}
+                    <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${isActive ? "bg-[#111318] text-white" : "bg-white text-[#3b4050] shadow-[0_4px_14px_rgba(17,19,24,0.07)]"}`}>
+                      <Icon aria-hidden="true" size={19} strokeWidth={2} />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-[14px] font-extrabold text-[#111318]">{section.label}</span>
+                      <span className="mt-0.5 block truncate text-[12px] font-medium text-[#6b7184]">{section.helper}</span>
                     </span>
                   </button>
                 );
               })}
+              <button
+                className="group flex w-full items-center gap-3.5 rounded-[16px] px-3 py-2.5 text-left transition hover:bg-white/70"
+                onClick={() => router.push("/artist/subscription")}
+                type="button"
+              >
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white text-[#3b4050] shadow-[0_4px_14px_rgba(17,19,24,0.07)]">
+                  <CreditCard aria-hidden="true" size={19} strokeWidth={2} />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[14px] font-extrabold text-[#111318]">Pretplata</span>
+                  <span className="mt-0.5 block text-[12px] font-medium text-[#6b7184]">Plan i plaćanja</span>
+                </span>
+              </button>
             </nav>
-          </Panel>
+          </div>
 
           {backgroundArtwork ? (
             <Panel>
@@ -558,15 +609,26 @@ export function ArtistDashboardEditor({
           ) : null}
         </aside>
 
-        <div className="min-w-0 space-y-8">
+        <div className="min-w-0 space-y-6">
           {activeSection === "overview" ? (
             <Panel>
-              <SectionHeader eyebrow="Pregled" title="Stanje profila" />
+              <SectionHeader eyebrow="Artist dashboard" title="Uredi svoj profil" />
+              <p className="mt-4 max-w-[680px] text-[15px] font-medium leading-[1.6] text-[#4a5061]">
+                Upravljaj javnim profilom, kontaktima i radovima. Ovdje biraš šta ide na hover kartice, a šta na hero pozadinu.
+              </p>
               <div className="mt-6 grid gap-4 md:grid-cols-3">
                 <StatusTile label="Radovi" value={String(artist.artworks.length)} tone="blue" />
                 <StatusTile label="Featured" value={String(featuredCount)} tone="red" />
-                <StatusTile label="Hero background" value={backgroundArtwork ? "1" : "0"} tone="yellow" />
+                <StatusTile label="Hero pozadina" value={backgroundArtwork ? "1" : "0"} tone="yellow" />
               </div>
+
+              <ProfileReadiness
+                hasBackground={Boolean(backgroundArtwork)}
+                hasBio={Boolean(artist.bio?.trim())}
+                hasFeatured={featuredCount > 0}
+                hasLinks={artist.socialLinks.some((link) => Boolean(link.url))}
+                hasProfileImage={Boolean(artist.profileImageUrl || artist.profileThumbnailUrl)}
+              />
 
               <div className="mt-7 grid gap-4 xl:grid-cols-2">
                 <div className="rounded-[16px] border border-[#e2e8f0] bg-[#f8fbff] p-5">
@@ -596,10 +658,10 @@ export function ArtistDashboardEditor({
                 <div className="rounded-[16px] border border-[#e2e8f0] bg-[#f8fbff] p-5">
                   <p className="text-[12px] font-semibold uppercase text-[#7f8794]">Portfolio radovi</p>
                   <h3 className="mt-2 text-[22px] font-semibold text-[#2f3138]">
-                    {featuredCount} featured / {backgroundArtwork ? "hero postavljen" : "bez hero rada"}
+                    {featuredCount} featured · {backgroundArtwork ? "hero postavljen" : "bez hero rada"}
                   </h3>
                   <p className="mt-3 text-[14px] leading-6 text-[#66707d]">
-                    Featured radovi se koriste na karticama, a hero background se prikazuje na javnoj stranici umjetnika.
+                    Izdvojeni radovi se koriste na hover karticama, a hero rad kao pozadina javne stranice.
                   </p>
                   <button
                     className="mt-5 inline-flex h-10 items-center justify-center rounded-full bg-[#dc1735] px-4 text-[13px] font-semibold text-white transition hover:bg-[#bd102a]"
@@ -607,6 +669,13 @@ export function ArtistDashboardEditor({
                     type="button"
                   >
                     Uredi radove
+                  </button>
+                  <button
+                    className="mt-5 ml-3 inline-flex h-10 items-center justify-center rounded-full px-4 text-[13px] font-extrabold uppercase text-[#434958]"
+                    onClick={() => router.push("/portfolio-builder")}
+                    type="button"
+                  >
+                    Portfolio Builder →
                   </button>
                 </div>
               </div>
@@ -747,11 +816,21 @@ export function ArtistDashboardEditor({
                 </div>
               ))}
             </div>
+            <div className="mt-5 flex justify-end">
+              <button
+                className="inline-flex h-11 items-center justify-center rounded-full bg-[#111318] px-6 text-[13px] font-extrabold uppercase text-white transition hover:bg-[#2c313f] disabled:opacity-60"
+                disabled={isSaving}
+                onClick={handleSaveProfile}
+                type="button"
+              >
+                {isSaving ? "Čuvanje..." : "Sačuvaj linkove"}
+              </button>
+            </div>
           </Panel>
           ) : null}
 
           {activeSection === "artworks" ? (
-          <Panel>
+          <section>
             <SectionHeader
               action={
                 <>
@@ -764,12 +843,12 @@ export function ArtistDashboardEditor({
                     type="file"
                   />
                   <button
-                    className="inline-flex h-11 items-center justify-center rounded-full border border-[#dc1735] px-5 text-[14px] font-semibold text-[#dc1735] transition hover:bg-[#dc1735] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex h-11 items-center justify-center rounded-full border-2 border-[#111318] px-5 text-[13px] font-extrabold uppercase text-[#111318] transition hover:bg-[#111318] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
                     disabled={isUploadingArtworks}
                     onClick={() => artworkInputRef.current?.click()}
                     type="button"
                   >
-                    {isUploadingArtworks ? "Upload..." : "Dodaj radove"}
+                    {isUploadingArtworks ? "Upload..." : "+ Dodaj radove"}
                   </button>
                 </>
               }
@@ -777,7 +856,13 @@ export function ArtistDashboardEditor({
               title="Radovi"
             />
 
-            <div className="mt-5 flex flex-wrap gap-2">
+            <p className="mt-2 max-w-[760px] text-[16px] leading-7 text-[#596274]">
+              Dodaj naziv, alt tekst i opis. Uključi hover karticu za izdvojene radove i izaberi jedan rad za hero pozadinu.
+            </p>
+
+            <div className="mt-6 flex min-h-14 flex-wrap items-center gap-3 rounded-[18px] border border-[#dde3ed] bg-white px-5 py-3">
+              <span className="text-[14px] font-extrabold text-[#111318]">{artist.artworks.length} radova</span>
+              <span className="hidden h-6 w-px bg-[#dce2eb] sm:block" />
               <SmallStatus tone="blue">Featured: {featuredCount}</SmallStatus>
               <SmallStatus tone="red">Hero: {backgroundArtwork ? "postavljen" : "nije postavljen"}</SmallStatus>
             </div>
@@ -821,15 +906,15 @@ export function ArtistDashboardEditor({
                 Jos nema radova u portfoliju.
               </div>
             )}
-          </Panel>
+          </section>
           ) : null}
 
           {activeSection === "portfolio" ? (
-            <Panel>
+            <section>
               <SectionHeader
                 action={
                   <button
-                    className="inline-flex h-11 items-center justify-center rounded-full bg-[#dc1735] px-5 text-[14px] font-semibold text-white transition hover:bg-[#bd102a]"
+                    className="inline-flex h-12 items-center justify-center rounded-full bg-gradient-to-r from-[#5264d8] to-[#dc2863] px-7 text-[13px] font-extrabold uppercase text-white transition hover:brightness-105"
                     onClick={() => router.push("/portfolio-builder")}
                     type="button"
                   >
@@ -840,29 +925,33 @@ export function ArtistDashboardEditor({
                 title="Draftovi i istorija"
               />
 
+              <p className="mt-2 text-[16px] leading-7 text-[#596274]">
+                Nastavi započete portfolije ili otvori ranije generisane PDF-ove.
+              </p>
+
               <div className="mt-6 grid gap-4 md:grid-cols-3">
-                <StatusTile label="Ukupno" value={String(portfolioProjects.length)} tone="blue" />
-                <StatusTile label="Draftovi" value={String(draftPortfolioProjects.length)} tone="yellow" />
-                <StatusTile label="Generisani" value={String(finishedPortfolioProjects.length)} tone="red" />
+                <PortfolioStat label="Ukupno" value={String(portfolioProjects.length)} tone="blue" />
+                <PortfolioStat label="Draftovi" value={String(draftPortfolioProjects.length)} tone="red" />
+                <PortfolioStat label="Generisani" value={String(finishedPortfolioProjects.length)} tone="yellow" />
               </div>
 
               <div className="mt-7 grid gap-6 xl:grid-cols-2">
                 <PortfolioProjectList
                   deletingPortfolioId={deletingPortfolioId}
-                  emptyMessage="Jos nemas sacuvanih draftova. Kreiraj novi portfolio i sacuvaj draft da bi se pojavio ovdje."
+                  emptyMessage="Još nemaš sačuvanih draftova. Kreiraj novi portfolio i sačuvaj draft da bi se pojavio ovdje."
                   onDeleteDraft={handleDeletePortfolioDraft}
                   projects={draftPortfolioProjects}
-                  title="Sacuvani draftovi"
+                  title="Sačuvani draftovi"
                 />
                 <PortfolioProjectList
                   deletingPortfolioId={deletingPortfolioId}
-                  emptyMessage="Generisani i placeni portfoliji ce se pojaviti ovdje kada zavrsis prvi PDF."
+                  emptyMessage="Generisani i plaćeni portfoliji će se pojaviti ovdje kada završiš prvi PDF."
                   onDeleteDraft={handleDeletePortfolioDraft}
                   projects={finishedPortfolioProjects}
                   title="Istorija portfolija"
                 />
               </div>
-            </Panel>
+            </section>
           ) : null}
 
           {activeSection === "security" ? (
@@ -1014,12 +1103,12 @@ function ArtworkRow({
   updatingArtworkId: string | null;
 }) {
   return (
-    <article className="overflow-hidden rounded-[16px] border border-[#dfe7f2] bg-white shadow-[0_10px_28px_rgba(31,46,86,0.05)]">
-      <div className="grid gap-0 xl:grid-cols-[220px_minmax(0,1fr)]">
+    <article className="overflow-hidden rounded-[20px] bg-white shadow-[0_14px_34px_rgba(31,46,86,0.07)]">
+      <div className="grid gap-0 xl:grid-cols-[250px_minmax(0,1fr)]">
         <div className="relative bg-[#edf2f8]">
           <img
             alt={artwork.altText || artwork.title || `${artistName} artwork`}
-            className="aspect-[1.35/1] h-full w-full object-cover xl:aspect-auto"
+            className="aspect-[1.35/1] h-full min-h-[260px] w-full object-cover xl:aspect-auto xl:min-h-[330px]"
             src={artwork.imageUrl}
           />
           <div className="absolute left-3 top-3 flex flex-wrap gap-2">
@@ -1028,39 +1117,36 @@ function ArtworkRow({
           </div>
         </div>
 
-        <div className="min-w-0 p-4">
-          <div className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_300px]">
-            <div className="min-w-0 space-y-3">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="Naziv rada">
-                  <input
-                    className="dashboard-input"
-                    onChange={(event) => onDraftChange({ ...draft, title: event.target.value })}
-                    placeholder="Naziv rada"
-                    value={draft.title}
-                  />
-                </Field>
-                <Field label="Alt tekst">
-                  <input
-                    className="dashboard-input"
-                    onChange={(event) => onDraftChange({ ...draft, altText: event.target.value })}
-                    placeholder="Kratak opis slike"
-                    value={draft.altText}
-                  />
-                </Field>
-              </div>
-
-              <Field label="Opis rada">
-                <textarea
-                  className="dashboard-textarea min-h-[92px]"
-                  onChange={(event) => onDraftChange({ ...draft, description: event.target.value })}
-                  placeholder="Dodaj kratak opis ili kontekst rada."
-                  value={draft.description}
+        <div className="min-w-0 p-5 sm:p-6">
+          <div className="min-w-0 space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Naziv rada">
+                <input
+                  className="dashboard-input"
+                  onChange={(event) => onDraftChange({ ...draft, title: event.target.value })}
+                  placeholder="Naziv rada"
+                  value={draft.title}
+                />
+              </Field>
+              <Field label="Alt tekst">
+                <input
+                  className="dashboard-input"
+                  onChange={(event) => onDraftChange({ ...draft, altText: event.target.value })}
+                  placeholder="Kratak opis slike"
+                  value={draft.altText}
                 />
               </Field>
             </div>
 
-            <div className="min-w-0 space-y-3">
+            <Field label="Opis rada">
+              <textarea
+                className="dashboard-textarea min-h-[92px]"
+                onChange={(event) => onDraftChange({ ...draft, description: event.target.value })}
+                placeholder="Dodaj kratak opis ili kontekst rada."
+                value={draft.description}
+              />
+            </Field>
+            <div className="grid gap-3 sm:grid-cols-2">
               <ModeToggle
                 active={artwork.isFeatured}
                 disabled={updatingArtworkId === artwork.id}
@@ -1071,29 +1157,29 @@ function ArtworkRow({
               <ModeToggle
                 active={artwork.isBackground}
                 disabled={updatingArtworkId === artwork.id}
-                label="Hero background"
+                label="Hero pozadina"
                 tone="red"
                 onClick={() => onFlagChange(artwork.id, "isBackground", !artwork.isBackground)}
               />
+            </div>
 
-              <div className="grid gap-2 sm:grid-cols-2 2xl:grid-cols-1">
-                <button
-                  className="inline-flex h-10 items-center justify-center rounded-full bg-[#dc1735] px-4 text-[13px] font-semibold text-white transition hover:bg-[#bd102a] disabled:cursor-not-allowed disabled:opacity-60"
-                  disabled={savingArtworkId === artwork.id}
-                  onClick={() => onSaveArtworkDetails(artwork.id)}
-                  type="button"
-                >
-                  {savingArtworkId === artwork.id ? "Cuvanje..." : "Sacuvaj"}
-                </button>
-                <button
-                  className="inline-flex h-10 items-center justify-center rounded-full border border-[#f0cbd3] px-4 text-[13px] font-semibold text-[#b4132c] transition hover:bg-[#fff3f6] disabled:cursor-not-allowed disabled:opacity-60"
-                  disabled={deletingArtworkId === artwork.id || updatingArtworkId === artwork.id}
-                  onClick={() => onDeleteArtwork(artwork.id)}
-                  type="button"
-                >
-                  {deletingArtworkId === artwork.id ? "Brisanje..." : "Ukloni"}
-                </button>
-              </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                className="inline-flex h-10 min-w-[118px] items-center justify-center rounded-full border-2 border-[#111318] bg-white px-5 text-[12px] font-extrabold uppercase text-[#111318] transition hover:bg-[#111318] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={savingArtworkId === artwork.id}
+                onClick={() => onSaveArtworkDetails(artwork.id)}
+                type="button"
+              >
+                {savingArtworkId === artwork.id ? "Čuvanje..." : "Sačuvaj"}
+              </button>
+              <button
+                className="inline-flex h-10 min-w-[100px] items-center justify-center rounded-full border border-[#f2bdc7] px-5 text-[12px] font-extrabold uppercase text-[#cf1734] transition hover:bg-[#fff3f6] disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={deletingArtworkId === artwork.id || updatingArtworkId === artwork.id}
+                onClick={() => onDeleteArtwork(artwork.id)}
+                type="button"
+              >
+                {deletingArtworkId === artwork.id ? "Brisanje..." : "Ukloni"}
+              </button>
             </div>
           </div>
         </div>
@@ -1160,10 +1246,10 @@ function PortfolioProjectList({
   title: string;
 }) {
   return (
-    <section className="min-w-0 rounded-[16px] border border-[#e2e8f0] bg-[#f8fbff] p-4">
+    <section className="min-w-0 rounded-[22px] bg-white p-5 shadow-[0_14px_34px_rgba(31,46,86,0.07)] sm:p-6">
       <div className="flex items-center justify-between gap-3">
-        <h3 className="text-[18px] font-semibold text-[#2f3138]">{title}</h3>
-        <span className="rounded-full bg-white px-3 py-1 text-[12px] font-semibold text-[#7b8593]">
+        <h3 className="text-[18px] font-extrabold text-[#111318]">{title}</h3>
+        <span className="flex h-8 min-w-8 items-center justify-center rounded-full border border-[#dce3ed] bg-white px-2 text-[12px] font-bold text-[#596274]">
           {projects.length}
         </span>
       </div>
@@ -1200,81 +1286,76 @@ function PortfolioProjectCard({
   const router = useRouter();
   const selectedArtworkCount = project.artworks.filter((artwork) => artwork.isSelected).length;
   const canDeleteDraft = project.status === "DRAFT";
+  const previewImageUrl =
+    project.collectionCoverUrl ??
+    project.coverImageUrl ??
+    project.artworks.find((artwork) => artwork.isSelected)?.imageUrl ??
+    project.artworks[0]?.imageUrl ??
+    project.profileImageUrl;
 
   return (
-    <article className="rounded-[16px] border border-[#dde7f3] bg-white p-4 shadow-[0_10px_26px_rgba(31,46,86,0.04)]">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-[#eef2ff] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-[#182fc7]">
-              {portfolioStatusLabel(project.status)}
-            </span>
-            <span className="rounded-full bg-[#fff8e4] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-[#9b6b00]">
-              {portfolioPaymentLabel(project.paymentStatus)}
-            </span>
-          </div>
-
-          <h4 className="mt-3 line-clamp-2 text-[18px] font-semibold leading-tight text-[#2f3138]">
-            {project.title || `${project.artistName} portfolio`}
-          </h4>
-          <p className="mt-2 text-[13px] leading-5 text-[#6b7584]">
-            {selectedArtworkCount} radova · {project.template.replaceAll("_", " ").toLowerCase()} ·{" "}
-            {formatPortfolioDate(project.updatedAt)}
-          </p>
-        </div>
-
-        {project.profileImageUrl ? (
-          <img
-            alt={project.artistName}
-            className="h-16 w-16 shrink-0 rounded-[14px] object-cover"
-            src={project.profileImageUrl}
-          />
+    <article className="flex gap-4 rounded-[16px] border border-[#dce3ed] bg-white p-4">
+      <div className="relative h-[86px] w-[62px] shrink-0 rounded-[6px] bg-white p-[6px] shadow-[0_4px_12px_rgba(31,46,86,0.12)]">
+        {previewImageUrl ? (
+          <img alt="" className="h-full w-full rounded-[2px] object-cover" src={previewImageUrl} />
         ) : (
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[14px] bg-[#edf2f8] text-[18px] font-bold text-[#7b8593]">
+          <div className="flex h-full w-full items-center justify-center rounded-[2px] bg-[#edf2f8] text-[18px] font-bold text-[#7b8593]">
             {project.artistName.slice(0, 1)}
           </div>
         )}
+        <span className="absolute bottom-[7px] left-1/2 h-[3px] w-8 -translate-x-1/2 rounded-full bg-[#111318]" />
       </div>
 
-      <div className="mt-4 grid gap-2 sm:grid-cols-2">
-        <button
-          className="inline-flex h-10 items-center justify-center rounded-full border border-[#cfd8e6] bg-white px-4 text-[13px] font-semibold text-[#2f3138] transition hover:border-[#182fc7] hover:text-[#182fc7]"
-          onClick={() => router.push(`/portfolio-builder/${project.id}`)}
-          type="button"
-        >
-          {project.status === "DRAFT" ? "Nastavi draft" : "Otvori portfolio"}
-        </button>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full border border-[#dce3ed] bg-white px-2.5 py-1 text-[10px] font-extrabold uppercase text-[#596274]">
+            {portfolioStatusLabel(project.status)}
+          </span>
+          <span className="rounded-full border border-[#dc2863] bg-white px-2.5 py-1 text-[10px] font-extrabold uppercase text-[#111318]">
+            {project.status === "DRAFT" ? portfolioPaymentLabel(project.paymentStatus) : "Generisan PDF"}
+          </span>
+        </div>
 
-        <button
-          className="inline-flex h-10 items-center justify-center rounded-full border border-[#cfd8e6] bg-white px-4 text-[13px] font-semibold text-[#2f3138] transition hover:border-[#182fc7] hover:text-[#182fc7]"
-          onClick={() => router.push(`/portfolio-builder/${project.id}/preview`)}
-          type="button"
-        >
-          Preview
-        </button>
-      </div>
+        <h4 className="mt-2 line-clamp-2 text-[15px] font-extrabold leading-tight text-[#111318]">
+          {project.title || `${project.artistName} portfolio`}
+        </h4>
+        <p className="mt-1 text-[12px] leading-5 text-[#727c90]">
+          {selectedArtworkCount} radova · {project.template.replaceAll("_", " ").toLowerCase()} ·{" "}
+          {formatPortfolioDate(project.updatedAt)}
+        </p>
 
-      <div className="mt-3 flex flex-wrap gap-2">
-        {project.latestPdfUrl ? (
+        <div className="mt-2 flex flex-wrap gap-2">
           <button
-            className="inline-flex h-9 items-center justify-center rounded-full bg-[#182fc7] px-4 text-[12px] font-semibold text-white transition hover:bg-[#0f249f]"
-            onClick={() => window.open(project.latestPdfUrl ?? undefined, "_blank", "noopener,noreferrer")}
+            className="inline-flex h-8 items-center justify-center rounded-full border-2 border-[#111318] bg-white px-3 text-[11px] font-extrabold uppercase text-[#111318] transition hover:bg-[#111318] hover:text-white"
+            onClick={() => router.push(`/portfolio-builder/${project.id}`)}
             type="button"
           >
-            Otvori PDF
+            {project.status === "DRAFT" ? "Nastavi" : "Otvori"}
           </button>
-        ) : null}
+
+        <button
+          className="inline-flex h-8 items-center justify-center rounded-full border border-[#dce3ed] bg-white px-3 text-[11px] font-extrabold uppercase text-[#596274] transition hover:border-[#182fc7] hover:text-[#182fc7]"
+          onClick={() =>
+            project.latestPdfUrl
+              ? window.open(project.latestPdfUrl, "_blank", "noopener,noreferrer")
+              : router.push(`/portfolio-builder/${project.id}/preview`)
+          }
+          type="button"
+        >
+          {project.latestPdfUrl ? "Preuzmi PDF" : "Pregled"}
+        </button>
 
         {canDeleteDraft ? (
           <button
-            className="inline-flex h-9 items-center justify-center rounded-full border border-[#f0cbd3] bg-white px-4 text-[12px] font-semibold text-[#b4132c] transition hover:bg-[#fff3f6] disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-8 items-center justify-center px-2 text-[11px] font-extrabold uppercase text-[#cf1734] transition hover:text-[#a60f28] disabled:cursor-not-allowed disabled:opacity-60"
             disabled={deletingPortfolioId === project.id}
             onClick={() => onDeleteDraft(project.id)}
             type="button"
           >
-            {deletingPortfolioId === project.id ? "Brisanje..." : "Obrisi draft"}
+            {deletingPortfolioId === project.id ? "Brisanje..." : "Obriši"}
           </button>
         ) : null}
+        </div>
       </div>
     </article>
   );
@@ -1325,7 +1406,7 @@ function buildArtworkDraftMap(artworks: Artwork[]) {
 
 function Panel({ children }: { children: React.ReactNode }) {
   return (
-    <section className="rounded-[18px] border border-[#dbe4f1] bg-white p-5 shadow-[0_14px_34px_rgba(31,46,86,0.06)] sm:p-6">
+    <section className="rounded-[20px] bg-white p-5 shadow-[0_14px_34px_rgba(17,19,24,0.06)] sm:p-7">
       {children}
     </section>
   );
@@ -1360,8 +1441,13 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function ArtistAvatar({ artist, size }: { artist: Artist; size: "lg" | "xl" }) {
-  const sizeClassName = size === "xl" ? "h-[152px] w-[152px]" : "h-[72px] w-[72px]";
+function ArtistAvatar({ artist, size }: { artist: Artist; size: "dashboard" | "lg" | "xl" }) {
+  const sizeClassName =
+    size === "xl"
+      ? "h-[152px] w-[152px]"
+      : size === "dashboard"
+        ? "h-[84px] w-[84px]"
+        : "h-[72px] w-[72px]";
 
   return (
     <div className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#e9eef6] ${sizeClassName}`}>
@@ -1370,6 +1456,65 @@ function ArtistAvatar({ artist, size }: { artist: Artist; size: "lg" | "xl" }) {
       ) : (
         <span className="text-[28px] font-semibold text-[#7d8793]">{artist.name.slice(0, 1)}</span>
       )}
+    </div>
+  );
+}
+
+function ProfileReadiness({
+  hasBackground,
+  hasBio,
+  hasFeatured,
+  hasLinks,
+  hasProfileImage,
+}: {
+  hasBackground: boolean;
+  hasBio: boolean;
+  hasFeatured: boolean;
+  hasLinks: boolean;
+  hasProfileImage: boolean;
+}) {
+  const checks = [
+    { complete: hasProfileImage, label: "Profilna" },
+    { complete: hasBio, label: "Biografija" },
+    { complete: hasLinks, label: "Linkovi" },
+    { complete: hasFeatured, label: "Featured rad" },
+    { complete: hasBackground, label: "Hero rad" },
+  ];
+  const completed = checks.filter((item) => item.complete).length;
+
+  return (
+    <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-3 rounded-[18px] border border-[#e3e5eb] px-5 py-4">
+      <strong className="text-[13px] text-[#111318]">Spremnost profila</strong>
+      <span className="border-r border-[#dde0e7] pr-4 text-[13px] font-extrabold text-[#6b7184]">{completed}/5</span>
+      {checks.map((item) => (
+        <span className={`inline-flex items-center gap-1.5 text-[12px] font-bold ${item.complete ? "text-[#343948]" : "text-[#9ba1b0]"}`} key={item.label}>
+          {item.complete ? <Check aria-hidden="true" className="text-[#16944b]" size={15} /> : <Circle aria-hidden="true" size={14} />}
+          {item.label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function PortfolioStat({
+  label,
+  tone,
+  value,
+}: {
+  label: string;
+  tone: "blue" | "red" | "yellow";
+  value: string;
+}) {
+  const dotClassName =
+    tone === "blue" ? "bg-[#1a7cff]" : tone === "red" ? "bg-[#ff2d55]" : "bg-[#ffb51b]";
+
+  return (
+    <div className="rounded-[20px] bg-white px-6 py-5 shadow-[0_14px_34px_rgba(31,46,86,0.07)]">
+      <div className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#6b7184]">
+        <span className={`h-2 w-2 rounded-full ${dotClassName}`} />
+        {label}
+      </div>
+      <div className="mt-4 text-[38px] font-extrabold leading-none text-[#111318]">{value}</div>
     </div>
   );
 }
@@ -1383,17 +1528,16 @@ function StatusTile({
   tone: "blue" | "red" | "yellow";
   value: string;
 }) {
-  const toneClassName =
-    tone === "blue"
-      ? "border-[#d9e2ff] bg-[#f4f7ff] text-[#182fc7]"
-      : tone === "red"
-        ? "border-[#ffe1e6] bg-[#fff5f7] text-[#dc1735]"
-        : "border-[#ffe8ad] bg-[#fff9e7] text-[#a06f00]";
+  const dotClassName =
+    tone === "blue" ? "bg-[#1a7cff]" : tone === "red" ? "bg-[#ff2d55]" : "bg-[#ffc526]";
 
   return (
-    <div className={`rounded-[14px] border p-4 ${toneClassName}`}>
-      <div className="text-[12px] font-semibold uppercase text-[#7d8793]">{label}</div>
-      <div className="mt-2 text-[30px] font-bold leading-none">{value}</div>
+    <div className="rounded-[20px] bg-[#f8f8fa] p-5">
+      <div className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#6b7184]">
+        <span className={`h-2 w-2 rounded-full ${dotClassName}`} />
+        {label}
+      </div>
+      <div className="mt-4 text-[38px] font-extrabold leading-none text-[#111318]">{value}</div>
     </div>
   );
 }

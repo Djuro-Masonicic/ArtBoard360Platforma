@@ -9,7 +9,7 @@ import { siteRoutes } from "@/lib/site-routes";
 const freeFeatures = [
   "Besplatna prijava i profil",
   "Uređivanje profila jednom mjesečno",
-  "Prvi Portfolio Builder export",
+  "Jedan Portfolio Builder export besplatan",
   "Ograničen broj promotivnih materijala",
   "Prisustvo u pretraživaču umjetnika",
   "Pregled oglasne table",
@@ -26,8 +26,9 @@ const premiumFeatures = [
   "Mogućnost kreiranja i prodaje Edu sadržaja",
 ];
 
-export function ArtBoardPricingSection() {
+export function ArtBoardPricingSection({ standalone = false }: { standalone?: boolean }) {
   const sectionRef = useRef<HTMLElement>(null);
+  const Heading = standalone ? "h1" : "h2";
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -59,21 +60,26 @@ export function ArtBoardPricingSection() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="artboard-pricing" id="paketi" aria-labelledby="artboard-pricing-title">
+    <section
+      ref={sectionRef}
+      className={`artboard-pricing ${standalone ? "artboard-pricing--page artboard-pricing--visible" : ""}`}
+      id="paketi"
+      aria-labelledby="artboard-pricing-title"
+    >
       <div className="artboard-pricing__inner">
         <p
           className="artboard-pricing__eyebrow"
           data-pricing-reveal
           style={{ "--pricing-delay": "180ms" } as CSSProperties}
-        ><span aria-hidden="true" /> Paketi i cijene</p>
-        <h2
+        ><span aria-hidden="true" /> {standalone ? "ArtBoard paketi" : "Paketi i cijene"}</p>
+        <Heading
           className="artboard-pricing__title"
           id="artboard-pricing-title"
           data-pricing-reveal
           style={{ "--pricing-delay": "340ms" } as CSSProperties}
         >
           Počni <span data-text="besplatno">besplatno</span>. Izaberi<br className="artboard-pricing__desktop-break" /> više kada ti bude potrebno.
-        </h2>
+        </Heading>
         <p
           className="artboard-pricing__intro"
           data-pricing-reveal
@@ -114,7 +120,12 @@ export function ArtBoardPricingSection() {
             <ul>
               {premiumFeatures.map((feature) => <li key={feature}>{feature}</li>)}
             </ul>
-            <Link className="artboard-pricing__action" href={siteRoutes.subscription}>Izaberi svoj iznos</Link>
+            <Link
+              className="artboard-pricing__action"
+              href={standalone ? "/artist/subscribe" : siteRoutes.subscription}
+            >
+              Izaberi svoj iznos
+            </Link>
           </article>
         </div>
       </div>

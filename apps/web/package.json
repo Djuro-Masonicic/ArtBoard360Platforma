@@ -4,7 +4,8 @@
   "private": true,
   "description": "Next.js frontend for the ArtBoard platform.",
   "scripts": {
-    "dev": "dotenv -e ../../.env -- next dev --port 3000 --webpack",
+    "dev": "dotenv -e ../../.env -- next dev --port 3000",
+    "dev:webpack": "dotenv -e ../../.env -- next dev --port 3000 --webpack",
     "build": "next build",
     "start": "npm run start:prod",
     "start:prod": "dotenv -e ../../.env -- next start --port 3000"

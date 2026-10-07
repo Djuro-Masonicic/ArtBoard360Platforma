@@ -1,8 +1,9 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import { ArtBoardTransitionButton, ArtBoardTransitionLink } from "@/components/artboard-transition-link";
+import { shouldOpenArtBoardInNewTab } from "@/lib/site-surface";
 
 type SiteCtaButtonProps = {
   href: string;
@@ -25,6 +26,8 @@ export function SiteCtaButton({
   withArtBoardTransition = false,
 }: SiteCtaButtonProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const opensArtBoardInNewTab = shouldOpenArtBoardInNewTab(pathname, href);
   const classNames = `site-cta-button inline-flex items-center justify-center whitespace-nowrap ${className}`.trim();
   const content = (
     <>
@@ -63,7 +66,12 @@ export function SiteCtaButton({
     }
 
     return (
-      <a className={classNames} href={href}>
+      <a
+        className={classNames}
+        href={href}
+        rel={opensArtBoardInNewTab ? "noopener noreferrer" : undefined}
+        target={opensArtBoardInNewTab ? "_blank" : undefined}
+      >
         {content}
       </a>
     );
@@ -81,6 +89,11 @@ export function SiteCtaButton({
     <button
       className={classNames}
       onClick={() => {
+        if (opensArtBoardInNewTab) {
+          window.open(href, "_blank", "noopener,noreferrer");
+          return;
+        }
+
         if (href.startsWith("#")) {
           document.querySelector(href)?.scrollIntoView({ behavior: "smooth" });
           return;

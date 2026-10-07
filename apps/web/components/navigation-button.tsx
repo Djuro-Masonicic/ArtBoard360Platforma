@@ -1,8 +1,9 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import { ArtBoardTransitionButton } from "@/components/artboard-transition-link";
+import { shouldOpenArtBoardInNewTab } from "@/lib/site-surface";
 
 type NavigationButtonProps = {
   children: React.ReactNode;
@@ -27,6 +28,7 @@ export function NavigationButton({
   withArtBoardTransition = false,
 }: NavigationButtonProps) {
   const router = useRouter();
+  const pathname = usePathname();
 
   if (withArtBoardTransition) {
     return (
@@ -37,6 +39,11 @@ export function NavigationButton({
   }
 
   function handleClick() {
+    if (shouldOpenArtBoardInNewTab(pathname, href)) {
+      window.open(href, "_blank", "noopener,noreferrer");
+      return;
+    }
+
     if (/^(https?:|mailto:|tel:)/.test(href)) {
       if (href.startsWith("mailto:") || href.startsWith("tel:")) {
         window.location.href = href;

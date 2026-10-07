@@ -9,12 +9,13 @@ export function HomeTestimonialsSection() {
           Utisci
         </p>
         <h2>
-          Klijenti, umjetnici i saradnici<span>.</span>
-          <strong>Njihova iskustva sa nama.</strong>
+          Cijenjeni od strane ljudi
+          <br />
+          kojima je <strong>stalo do kvaliteta.</strong>
         </h2>
       </header>
 
-      <ServicesTestimonialRail />
+      <ServicesTestimonialRail variant="home" />
     </section>
   );
 }

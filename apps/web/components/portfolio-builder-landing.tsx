@@ -1,16 +1,54 @@
 "use client";
 
+import {
+  ArrowLeft,
+  ArrowRight,
+  Bookmark,
+  Clock,
+  Download,
+  LayoutGrid,
+  Link2,
+  Plus,
+  SlidersHorizontal,
+  Star,
+} from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
+import styles from "@/components/portfolio-builder-landing.module.css";
 import { createPortfolioProjectFromProfile } from "@/services/portfolio-projects";
-import type { PortfolioProject } from "@/types/api";
+import type { PortfolioProject, PortfolioTemplate } from "@/types/api";
 
 type PortfolioBuilderLandingProps = {
   isArtistLoggedIn: boolean;
   artistName?: string;
   recentProjects?: PortfolioProject[];
+};
+
+const builderFeatures = [
+  { label: "3 šablona", icon: LayoutGrid, tone: "blue" },
+  { label: "Ručno podešavanje", icon: SlidersHorizontal, tone: "pink" },
+  { label: "PDF eksport", icon: Download, tone: "yellow" },
+  { label: "Probaj besplatno", icon: Star, tone: "blue" },
+  { label: "Sačuvaj i nastavi kasnije", icon: Bookmark, tone: "pink" },
+  { label: "~ 5 minuta", icon: Clock, tone: "yellow" },
+] as const;
+
+type DraftFilter = "ALL" | PortfolioTemplate;
+
+const draftFilters: Array<{ label: string; value: DraftFilter }> = [
+  { label: "Svi", value: "ALL" },
+  { label: "Institutional Minimal", value: "INSTITUTIONAL_MINIMAL" },
+  { label: "ArtBoard Editorial", value: "ARTBOARD_EDITORIAL" },
+  { label: "Sales Pro", value: "SALES_PRO" },
+];
+
+const templateLabels: Record<PortfolioTemplate, string> = {
+  INSTITUTIONAL_MINIMAL: "Institutional Minimal",
+  ARTBOARD_EDITORIAL: "ArtBoard Editorial",
+  SALES_PRO: "Sales Pro",
 };
 
 export function PortfolioBuilderLanding({
@@ -21,6 +59,14 @@ export function PortfolioBuilderLanding({
   const router = useRouter();
   const [isCreating, setIsCreating] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [activeDraftFilter, setActiveDraftFilter] = useState<DraftFilter>("ALL");
+  const filteredProjects = useMemo(
+    () =>
+      activeDraftFilter === "ALL"
+        ? recentProjects
+        : recentProjects.filter((project) => project.template === activeDraftFilter),
+    [activeDraftFilter, recentProjects],
+  );
 
   async function handleCreateFromProfile() {
     if (!isArtistLoggedIn) {
@@ -41,148 +87,222 @@ export function PortfolioBuilderLanding({
   }
 
   return (
-    <main className="h-screen overflow-hidden bg-[#eef2f7] text-[#20242d]">
-      <PortfolioBuilderTopbar />
+    <div className={styles.page}>
+      <PortfolioBuilderTopbar artistName={artistName} isArtistLoggedIn={isArtistLoggedIn} />
 
-      <section className="grid h-[calc(100vh-56px)] grid-cols-1 gap-0 overflow-hidden lg:grid-cols-[0.92fr_1.08fr]">
-        <div className="flex h-full flex-col justify-between border-r border-[#d7deea] bg-white px-8 py-8 lg:px-12">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-[#808999]">
-              ArtBoard Portfolio Builder
-            </p>
-            <h1 className="mt-5 max-w-[620px] text-[44px] font-bold leading-[0.95] tracking-[-0.05em] text-[#20242d] lg:text-[68px]">
-              Profesionalni portfolio studio.
+      <main className={styles.main}>
+        <section className={styles.introPanel}>
+          <div className={styles.introCopy}>
+            <div className={`${styles.eyebrow} ${styles.riseOne}`}>
+              <span className={styles.gradientDot} aria-hidden="true" />
+              <span>ArtBoard Portfolio Builder</span>
+            </div>
+
+            <h1 className={`${styles.title} ${styles.riseTwo}`}>
+              Profesionalni <span>portfolio</span> za par minuta.
             </h1>
-            <p className="mt-5 max-w-[540px] text-[15px] leading-7 text-[#667085]">
-              Poseban workspace za kreiranje PDF portfolija, draft linkova i
-              pripremu materijala za galerije, konkurse, prodaju i saradnike.
+
+            <p className={`${styles.description} ${styles.riseThree}`}>
+              Kreiraj profesionalni PDF portfolio ili link za dijeljenje i pripremi se za konkurse,
+              saradnje, galerije, prodaju i nove poslovne prilike. Izaberi kako želiš da počneš.
             </p>
           </div>
 
-          <div className="mt-10 grid gap-3 text-[13px] text-[#667085] sm:grid-cols-3">
-            <InfoMetric label="Templatei" value="3" />
-            <InfoMetric label="Radovi" value="30 max" />
-            <InfoMetric label="Export" value="PDF/link" />
+          <div className={`${styles.features} ${styles.riseFour}`} aria-label="Mogućnosti Portfolio Buildera">
+            {builderFeatures.map(({ label, icon: Icon, tone }) => (
+              <div className={styles.feature} data-tone={tone} key={label}>
+                <Icon aria-hidden="true" size={17} strokeWidth={2} />
+                <span>{label}</span>
+              </div>
+            ))}
           </div>
-        </div>
+        </section>
 
-        <div className="min-h-0 overflow-y-auto bg-[#f7f9fc] px-6 py-8 lg:px-10">
-          <div className="mx-auto w-full max-w-[760px]">
+        <section className={styles.actionPanel} aria-label="Izaberi način kreiranja portfolija">
+          <div className={styles.starField} aria-hidden="true" />
+
+          <div className={styles.actionContent}>
             {errorMessage ? (
-              <div className="mb-4 rounded-2xl border border-[#f3bdc7] bg-[#fff6f7] px-4 py-3 text-[13px] font-semibold text-[#b4132c]">
+              <div className={styles.errorMessage} role="alert">
                 {errorMessage}
               </div>
             ) : null}
 
-            <div className="grid gap-4">
-              <button
-                className="group rounded-[28px] border border-[#cfd8e6] bg-white p-6 text-left shadow-[0_18px_50px_rgba(31,46,86,0.06)] transition hover:-translate-y-0.5 hover:border-[#182fc7]"
-                disabled={isCreating}
-                onClick={handleCreateFromProfile}
-                type="button"
-              >
-                <div className="flex items-start justify-between gap-5">
-                  <div>
-                    <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#182fc7]">
-                      Postojeci ArtBoard profil
-                    </p>
-                    <h2 className="mt-3 text-[26px] font-bold tracking-[-0.03em] text-[#20242d]">
-                      {isCreating
-                        ? "Kreiram draft..."
-                        : isArtistLoggedIn
-                          ? `Generisi iz profila${artistName ? `: ${artistName}` : ""}`
-                          : "Uloguj se i generisi iz profila"}
-                    </h2>
-                    <p className="mt-3 max-w-[520px] text-[14px] leading-6 text-[#667085]">
-                      Povlaci bio, kontakt, discipline, profilnu sliku i postojece
-                      radove. Najbrzi put do profesionalnog portfolija.
-                    </p>
-                  </div>
-                  <span className="rounded-full border border-[#182fc7] px-4 py-2 text-[13px] font-bold text-[#182fc7]">
-                    Start
-                  </span>
-                </div>
-              </button>
+            <button
+              className={`${styles.optionCard} ${styles.profileCard} ${styles.riseTwo}`}
+              disabled={isCreating}
+              onClick={handleCreateFromProfile}
+              type="button"
+            >
+              <div className={styles.optionHeader}>
+                <span className={`${styles.optionIcon} ${styles.profileIcon}`} aria-hidden="true">
+                  <Link2 size={40} strokeWidth={1.8} />
+                </span>
+                <span className={styles.optionHeading}>
+                  <span className={styles.profileEyebrow}>Imam ArtBoard profil</span>
+                  <strong>Generiši iz profila</strong>
+                </span>
+                <span className={`${styles.badge} ${styles.profileBadge}`}>Automatski</span>
+              </div>
 
-              <button
-                className="group rounded-[28px] border border-[#cfd8e6] bg-white p-6 text-left shadow-[0_18px_50px_rgba(31,46,86,0.06)] transition hover:-translate-y-0.5 hover:border-[#ffc41d]"
-                onClick={() => router.push("/portfolio-builder/new")}
-                type="button"
-              >
-                <div className="flex items-start justify-between gap-5">
-                  <div>
-                    <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#b18400]">
-                      Guest / bez profila
-                    </p>
-                    <h2 className="mt-3 text-[26px] font-bold tracking-[-0.03em] text-[#20242d]">
-                      Kreiraj novi portfolio od nule
-                    </h2>
-                    <p className="mt-3 max-w-[520px] text-[14px] leading-6 text-[#667085]">
-                      Unesi osnovne podatke, zatim dodaj radove, CV, dizajn opcije
-                      i export kroz vodjeni builder.
-                    </p>
-                  </div>
-                  <span className="rounded-full border border-[#ffc41d] px-4 py-2 text-[13px] font-bold text-[#8b6500]">
-                    New
-                  </span>
-                </div>
-              </button>
+              <span className={styles.optionDescription}>
+                Poveži svoj profil jednim klikom i builder automatski povlači informacije sa profila,
+                uključujući galeriju radova. Ništa ne unosiš ponovo, samo provjeriš i izvezeš.
+              </span>
+
+              <span className={styles.cardActionRow}>
+                <span className={`${styles.cardAction} ${styles.profileAction}`}>
+                  {isCreating ? "Kreiram draft..." : "Generiši portfolio jednim klikom"}
+                  <ArrowRight aria-hidden="true" size={14} strokeWidth={2.8} />
+                </span>
+              </span>
+            </button>
+
+            <div className={`${styles.divider} ${styles.riseThree}`} aria-hidden="true">
+              <span />
+              <strong>Ili</strong>
+              <span />
             </div>
 
-            {isArtistLoggedIn ? (
-              <section className="mt-5 rounded-[28px] border border-[#cfd8e6] bg-white p-5 shadow-[0_18px_50px_rgba(31,46,86,0.06)]">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#808999]">
-                      Sacuvani draftovi
-                    </p>
-                    <h2 className="mt-2 text-[22px] font-bold tracking-[-0.03em] text-[#20242d]">
-                      Nastavi gdje si stao
-                    </h2>
-                  </div>
-                  <span className="rounded-full bg-[#eef3ff] px-3 py-1 text-[12px] font-bold text-[#182fc7]">
-                    {recentProjects.length}
-                  </span>
-                </div>
+            <button
+              className={`${styles.optionCard} ${styles.manualCard} ${styles.riseThree}`}
+              onClick={() => router.push("/portfolio-builder/new")}
+              type="button"
+            >
+              <div className={styles.optionHeader}>
+                <span className={`${styles.optionIcon} ${styles.manualIcon}`} aria-hidden="true">
+                  <Plus size={42} strokeWidth={1.8} />
+                </span>
+                <span className={styles.optionHeading}>
+                  <span className={styles.manualEyebrow}>Bez ArtBoard profila</span>
+                  <strong>Kreiraj od nule</strong>
+                </span>
+                <span className={`${styles.badge} ${styles.manualBadge}`}>Bez registracije</span>
+              </div>
 
-                {recentProjects.length > 0 ? (
-                  <div className="mt-4 grid gap-2">
-                    {recentProjects.map((project) => (
-                      <button
-                        className="group flex items-center justify-between gap-4 rounded-2xl border border-[#dbe3ef] bg-[#f8fbff] px-4 py-3 text-left transition hover:border-[#182fc7] hover:bg-white"
-                        key={project.id}
-                        onClick={() => router.push(`/portfolio-builder/${project.id}`)}
-                        type="button"
-                      >
-                        <div className="min-w-0">
-                          <div className="truncate text-[14px] font-bold text-[#20242d]">
-                            {project.title || `${project.artistName} Portfolio`}
-                          </div>
-                          <div className="mt-1 flex flex-wrap gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8b94a7]">
-                            <span>{project.template.replaceAll("_", " ")}</span>
-                            <span>{project.counts.selectedArtworks} radova</span>
-                            <span>{formatPortfolioDate(project.updatedAt)}</span>
-                          </div>
-                        </div>
-                        <span className="shrink-0 rounded-full border border-[#182fc7] px-3 py-1 text-[12px] font-bold text-[#182fc7] transition group-hover:bg-[#182fc7] group-hover:text-white">
-                          Otvori
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="mt-4 rounded-2xl border border-dashed border-[#d4ddeb] bg-[#f8fbff] px-4 py-4 text-[13px] leading-6 text-[#667085]">
-                    Jos nemas sacuvan portfolio draft. Kada prvi put sacuvas
-                    builder, taj draft ce se pojaviti ovdje.
-                  </p>
-                )}
-              </section>
-            ) : null}
+              <span className={styles.optionDescription}>
+                Kreiraj i pregledaj portfolio prije nego što odlučiš da ga izvezeš. Unesi podatke,
+                dodaj radove i izaberi šablon korak po korak.
+              </span>
+
+              <span className={styles.cardActionRow}>
+                <span className={`${styles.cardAction} ${styles.manualAction}`}>
+                  Besplatno kreiraj portfolio
+                  <ArrowRight aria-hidden="true" size={14} strokeWidth={2.8} />
+                </span>
+              </span>
+            </button>
+
+            <div className={`${styles.note} ${styles.riseFour}`}>
+              <div className={styles.noteLabel}>
+                <span className={styles.gradientDot} aria-hidden="true" />
+                <span>Napomena</span>
+              </div>
+              <p>
+                <strong>Prvi eksport je besplatan.</strong> Nakon toga možeš odabrati jednokratno
+                plaćanje za pojedinačni portfolio ili neograničeno generisanje u okviru{" "}
+                <strong className={styles.premium}>Premium članstva</strong>.
+              </p>
+            </div>
+
           </div>
-        </div>
-      </section>
-    </main>
+        </section>
+      </main>
+
+      {isArtistLoggedIn ? (
+        <section className={styles.savedProjects} aria-labelledby="saved-projects-title">
+          <div className={styles.savedProjectsInner}>
+            <div className={styles.savedProjectsHeader}>
+              <div>
+                <div className={styles.savedProjectsEyebrow}>
+                  <span className={styles.gradientDot} aria-hidden="true" />
+                  <span>Sačuvani draftovi · {recentProjects.length}</span>
+                </div>
+                <h2 id="saved-projects-title">Nastavi gdje si stao</h2>
+              </div>
+
+              {recentProjects.length > 0 ? (
+                <div className={styles.draftFilters} aria-label="Filtriraj portfolio draftove">
+                  {draftFilters.map((filter) => (
+                    <button
+                      className={activeDraftFilter === filter.value ? styles.activeDraftFilter : undefined}
+                      key={filter.value}
+                      onClick={() => setActiveDraftFilter(filter.value)}
+                      type="button"
+                    >
+                      {filter.label}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+
+            {recentProjects.length === 0 ? (
+              <div className={styles.savedProjectsEmpty}>
+                <strong>Još nemaš sačuvan portfolio draft.</strong>
+                <span>Kada kreiraš prvi portfolio, moći ćeš da nastaviš rad odavde.</span>
+              </div>
+            ) : filteredProjects.length > 0 ? (
+              <div className={styles.savedProjectList}>
+                {filteredProjects.map((project) => {
+                  const progress = getPortfolioProgress(project);
+                  const isReady = project.status !== "DRAFT";
+
+                  return (
+                    <article className={styles.savedProjectRow} data-template={project.template} key={project.id}>
+                      <div className={styles.draftDocument} aria-hidden="true">
+                        <span />
+                      </div>
+
+                      <div className={styles.savedProjectCopy}>
+                        <h3>{project.title || `${project.artistName} Portfolio`}</h3>
+                        <p>
+                          <span>{templateLabels[project.template]}</span>
+                          <span>{project.counts.selectedArtworks} radova</span>
+                          <span>{formatPortfolioDate(project.updatedAt)}</span>
+                        </p>
+                      </div>
+
+                      <div className={styles.savedProjectProgress}>
+                        <strong data-ready={isReady}>{isReady ? "Spremno" : `${progress}%`}</strong>
+                        <span aria-label={`Završenost ${progress}%`}>
+                          <i style={{ width: `${progress}%` }} />
+                        </span>
+                      </div>
+
+                      <Link className={styles.openDraftButton} href={`/portfolio-builder/${project.id}`}>
+                        Otvori
+                      </Link>
+                    </article>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className={styles.savedProjectsEmpty}>
+                <strong>Nema portfolija u ovom filteru.</strong>
+                <span>Izaberi drugi šablon ili prikaži sve sačuvane draftove.</span>
+              </div>
+            )}
+          </div>
+        </section>
+      ) : null}
+    </div>
   );
+}
+
+function getPortfolioProgress(project: PortfolioProject) {
+  if (project.status !== "DRAFT") {
+    return 100;
+  }
+
+  const completedSteps = [
+    Boolean(project.artistName && project.email && project.biography && project.biography.length >= 80),
+    project.counts.selectedArtworks > 0,
+    Boolean(project.designConfig),
+    project.counts.versions > 0,
+  ].filter(Boolean).length;
+
+  return 20 + completedSteps * 20;
 }
 
 function formatPortfolioDate(value: string) {
@@ -193,34 +313,49 @@ function formatPortfolioDate(value: string) {
   }).format(new Date(value));
 }
 
-function PortfolioBuilderTopbar() {
+function PortfolioBuilderTopbar({
+  artistName,
+  isArtistLoggedIn,
+}: {
+  artistName?: string;
+  isArtistLoggedIn: boolean;
+}) {
   return (
-    <header className="flex h-14 items-center justify-between border-b border-[#d7deea] bg-[#101521] px-5 text-white">
-      <Link className="inline-flex items-center gap-3" href="/">
-        <img
-          alt="Art Studio 360"
-          className="h-5 w-auto"
-          src="https://cdn.prod.website-files.com/681b5dac4415aa941af374fe/68c978c51b6638fa49b92f6b_360%20Logo%20White.svg"
+    <header className={styles.topbar}>
+      <Link className={styles.brand} href="/artboard" aria-label="ArtBoard početna stranica">
+        <Image
+          alt="ArtBoard"
+          height={40}
+          priority
+          src="/artboard-logo/ArtBoard-Horizontal-Gradient-Mark-Black-Text.svg"
+          width={184}
         />
-        <span className="text-[12px] font-bold uppercase tracking-[0.22em] text-white/65">
-          Portfolio Builder
-        </span>
+        <span aria-hidden="true" />
+        <strong>Portfolio Builder</strong>
       </Link>
 
-      <Link className="text-[12px] font-semibold text-white/70 hover:text-white" href="/">
-        Nazad na sajt
-      </Link>
+      <div className={styles.topbarActions}>
+        <Link className={styles.backLink} href="/artboard">
+          <ArrowLeft aria-hidden="true" size={17} strokeWidth={2.2} />
+          <span>Nazad na sajt</span>
+        </Link>
+
+        {isArtistLoggedIn && artistName ? (
+          <Link className={styles.artistPill} href="/artist/dashboard">
+            <span aria-hidden="true">{getArtistInitials(artistName)}</span>
+            <strong>{artistName}</strong>
+          </Link>
+        ) : null}
+      </div>
     </header>
   );
 }
 
-function InfoMetric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-[#dbe3ef] bg-[#f8fbff] p-4">
-      <div className="text-[22px] font-bold text-[#20242d]">{value}</div>
-      <div className="mt-1 text-[11px] font-bold uppercase tracking-[0.2em] text-[#8b94a7]">
-        {label}
-      </div>
-    </div>
-  );
+function getArtistInitials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
 }

@@ -191,7 +191,7 @@ export function ServicesTestimonialRail({
   variant,
 }: {
   artistAvatars?: ArtistAvatar[];
-  variant?: "artboard";
+  variant?: "artboard" | "home";
 }) {
   const railRef = useRef<HTMLDivElement>(null);
   const interactionPausedRef = useRef(false);
@@ -234,7 +234,7 @@ export function ServicesTestimonialRail({
     animationFrame = window.requestAnimationFrame(animate);
 
     return () => window.cancelAnimationFrame(animationFrame);
-  }, []);
+  }, [variant]);
 
   function pauseTemporarily(duration = 2200) {
     pauseUntilRef.current = performance.now() + duration;
@@ -290,6 +290,58 @@ export function ServicesTestimonialRail({
     );
   }
 
+  if (variant === "home") {
+    const rows = [testimonials.slice(0, 9), testimonials.slice(9)];
+
+    return (
+      <div className={`${styles.testimonialRailShell} ${styles.homeVariant}`}>
+        {rows.map((row, rowIndex) => (
+          <div
+            aria-label={`Utisci klijenata, red ${rowIndex + 1}`}
+            className={styles.homeRow}
+            key={rowIndex}
+            role="region"
+          >
+            <div className={`${styles.homeTrack} ${rowIndex === 1 ? styles.homeTrackReverse : ""}`}>
+              {[0, 1].map((groupIndex) => (
+                <div aria-hidden={groupIndex === 1} className={styles.homeGroup} key={groupIndex}>
+                  {row.map((testimonial) => (
+                      <article className={styles.testimonialCard} key={`${groupIndex}-${testimonial.author}`}>
+                        <span
+                          aria-hidden="true"
+                          className={`${styles.testimonialQuote} ${styles[`testimonialQuote${testimonial.color}`]}`}
+                        >
+                          “
+                        </span>
+                        <p className={styles.testimonialText}>{testimonial.content}</p>
+
+                        <div className={styles.testimonialAuthor}>
+                          {testimonial.image ? (
+                            <img alt="" aria-hidden="true" decoding="async" loading="lazy" src={testimonial.image} />
+                          ) : (
+                            <span
+                              aria-hidden="true"
+                              className={`${styles.testimonialAvatarFallback} ${styles[`testimonialAvatar${testimonial.color}`]}`}
+                            >
+                              <UserRound size={21} strokeWidth={1.8} />
+                            </span>
+                          )}
+                          <div>
+                            <strong>{testimonial.author}</strong>
+                            <span>{testimonial.company}</span>
+                          </div>
+                        </div>
+                      </article>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className={styles.testimonialRailShell}>
       <div
@@ -340,7 +392,7 @@ export function ServicesTestimonialRail({
                     aria-hidden="true"
                     className={`${styles.testimonialAvatarFallback} ${styles[`testimonialAvatar${testimonial.color}`]}`}
                   >
-                    {getInitials(testimonial.author)}
+                    {variant === "home" ? <UserRound size={21} strokeWidth={1.8} /> : getInitials(testimonial.author)}
                   </span>
                 )}
                 <div>

@@ -11,7 +11,7 @@ export default async function PortfolioBuilderPage() {
     try {
       const projects = await getArtistPortfolioProjects(session.token, {
         page: 1,
-        pageSize: 6,
+        pageSize: 100,
       });
 
       recentProjects = projects.items;

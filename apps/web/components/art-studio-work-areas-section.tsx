@@ -21,7 +21,7 @@ type WorkArea = {
 
 const workAreas: WorkArea[] = [
   {
-    color: "#2947e8",
+    color: "#2242e0",
     description:
       "Kreiramo dizajnerska rješenja, pružamo usluge digitalnog marketinga i stvaramo multimedijalni sadržaj za kompanije i pojedince.",
     href: siteRoutes.services,
@@ -33,21 +33,21 @@ const workAreas: WorkArea[] = [
     title: "Usluge",
   },
   {
-    color: "#f3311b",
+    color: "#ec3013",
     description:
-      "Razvijamo ArtBoard platformu i druge umjetničke projekte koji podržavaju vidljivost, povezivanje i razvoj umjetnika.",
+      "Razvijamo ArtBoard platformu i umjetničke projekte koji povezuju umjetnike sa publikom, znanjem i novim profesionalnim prilikama.",
     href: siteRoutes.artboard,
     icon: Layers3,
-    imageAlt: "Digitalna ilustracija u nastajanju",
-    imageUrl: `${assetRoot}/687cc9e8daebd9a75c7256a0_img--services-hero-01.webp`,
+    imageAlt: "Umjetnički projekat i okupljanje publike",
+    imageUrl: `${assetRoot}/68ac86c07fd60116019b3eba_c4fcf2e315ab2b40a93bcf8434f21ed6_snimanje.webp`,
     ink: "#ffffff",
     label: "Istraži ArtBoard",
     title: "Projekti",
   },
   {
-    color: "#ffbf2c",
+    color: "#ffc531",
     description:
-      "Gradimo praktične digitalne alate koji umjetnicima i kreativcima olakšavaju predstavljanje, promociju i profesionalni razvoj.",
+      "Gradimo praktične alate koji olakšavaju promociju rada, kako bi umjetnici manje vremena trošili na prezentaciju, a više na stvaranje.",
     href: siteRoutes.portfolioBuilder,
     icon: PenTool,
     imageAlt: "Korišćenje digitalnih alata na telefonu",
@@ -68,13 +68,11 @@ export function ArtStudioWorkAreasSection() {
             <span />
             <span />
           </span>
-          <h2>
-            Tri oblasti, jedan studio<span>.</span>
-          </h2>
+          <h2>Tri oblasti, jedan studio.</h2>
         </header>
 
         <div className="art-studio-areas__grid">
-          {workAreas.map((area, index) => {
+          {workAreas.map((area) => {
             const Icon = area.icon;
             const areaStyle = {
               "--area-color": area.color,
@@ -90,9 +88,6 @@ export function ArtStudioWorkAreasSection() {
                       <Icon strokeWidth={1.9} />
                     </span>
                     <h3>{area.title}</h3>
-                    <span className="art-studio-area-card__number">
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
                   </div>
                   <p>{area.description}</p>
                 </div>

@@ -22,6 +22,11 @@
   pointer-events: none;
 }
 
+.frameMenuOpen {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
 .shell {
   position: relative;
   z-index: 2;
@@ -64,7 +69,7 @@
   font-size: 14px;
   font-weight: 650;
   line-height: 1;
-  transition: color 160ms ease;
+  transition: color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
 }
 
 .navigationLink:hover,
@@ -74,7 +79,8 @@
 }
 
 .navigationLink.active {
-  color: #11141a;
+  color: var(--link-color);
+  font-weight: 800;
 }
 
 .navigationDot {
@@ -87,7 +93,9 @@
 }
 
 .navigationLink:hover .navigationDot,
-.navigationLink:focus-visible .navigationDot {
+.navigationLink:focus-visible .navigationDot,
+.navigationLink.active .navigationDot,
+.mobileActive .navigationDot {
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--link-color) 18%, transparent);
   transform: scale(1.12);
 }
@@ -263,19 +271,21 @@
 
   .mobileMenu {
     position: fixed;
-    top: 73px;
-    right: 0;
-    left: 0;
+    inset: 0;
     z-index: 1;
     display: block;
-    padding: 26px 24px 30px;
-    border-bottom: 1px solid #e2e5ea;
+    width: 100vw;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 99px max(24px, env(safe-area-inset-right)) max(30px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
     background: #ffffff;
-    box-shadow: 0 20px 36px rgba(25, 29, 38, 0.12);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     opacity: 0;
     pointer-events: none;
-    transform: translateY(-14px);
-    transition: opacity 180ms ease, transform 180ms ease;
+    transform: translateY(-10px);
+    transition: opacity 180ms ease, transform 220ms ease;
   }
 
   .mobileMenuOpen {
@@ -287,19 +297,34 @@
   .mobileNavigation {
     display: grid;
     gap: 2px;
+    width: min(100%, 560px);
+    margin: 0 auto;
   }
 
   .mobileLink {
     min-height: 48px;
+    padding: 0 14px;
     border-bottom: 1px solid #edf0f4;
+    border-radius: 8px;
     font-size: 16px;
+  }
+
+  .mobileActive {
+    border-bottom-color: transparent;
+    background: color-mix(in srgb, var(--link-color) 9%, #ffffff);
+    box-shadow: inset 3px 0 0 var(--link-color);
+    color: var(--link-color);
+    font-weight: 800;
   }
 
   .mobileActions {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
+    width: min(100%, 560px);
     margin-top: 24px;
+    margin-right: auto;
+    margin-left: auto;
   }
 
   .mobileLoginLink,

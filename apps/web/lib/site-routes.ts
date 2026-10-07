@@ -120,4 +120,9 @@ export const artBoardNavigationItems = [
     label: "FAQ",
     activePrefixes: [`${siteRoutes.artboard}#faq`],
   },
+  {
+    href: siteRoutes.artboardContact,
+    label: "Kontakt",
+    activePrefixes: [siteRoutes.artboardContact],
+  },
 ] as const;

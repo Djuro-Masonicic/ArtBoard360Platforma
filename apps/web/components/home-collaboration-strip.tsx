@@ -8,7 +8,7 @@ const collaboratorTypes = [
 
 export function HomeCollaborationStrip() {
   return (
-    <section className="home-collaboration-strip" aria-labelledby="collaboration-heading">
+    <section className="home-collaboration-strip" id="saradnja" aria-labelledby="collaboration-heading">
       <div className="home-collaboration-strip__intro">
         <p>
           <span aria-hidden="true" />

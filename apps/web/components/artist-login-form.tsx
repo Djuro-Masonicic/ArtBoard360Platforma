@@ -34,32 +34,35 @@ export function ArtistLoginForm({ returnTo }: { returnTo?: string | null }) {
   }, [showAlert, state.error]);
 
   return (
-    <form action={formAction} className="space-y-5">
+    <form action={formAction} className="space-y-[22px]">
       {returnTo ? <input name="returnTo" type="hidden" value={returnTo} /> : null}
 
-      <label className="block space-y-2">
-        <span className="text-[15px] font-semibold text-[#2f3138]">E-mail</span>
+      <label className="block space-y-2.5">
+        <span className="text-[14px] font-extrabold text-[#111318]">E-mail</span>
         <input
-          className="h-12 w-full rounded-full border border-[#d8dfeb] bg-white px-5 text-[16px] text-[#2f3138] outline-none transition focus:border-[#182fc7]"
+          autoComplete="email"
+          className="h-[54px] w-full rounded-full border-[1.5px] border-[#e6e8ee] bg-[#f3f4f8] px-5 text-[15px] font-medium text-[#111318] outline-none transition placeholder:text-[#9298a8] focus:border-[#1a7cff] focus:bg-white focus:ring-4 focus:ring-[#1a7cff]/10"
           name="email"
-          placeholder="ime@domen.com"
+          placeholder="ime@primjer.com"
+          required
           type="email"
         />
       </label>
 
-      <label className="block space-y-2">
-        <span className="text-[15px] font-semibold text-[#2f3138]">Lozinka</span>
+      <label className="block space-y-2.5">
+        <span className="text-[14px] font-extrabold text-[#111318]">Lozinka</span>
         <PasswordInput
           autoComplete="current-password"
-          className="h-12 w-full rounded-full border border-[#d8dfeb] bg-white px-5 text-[16px] text-[#2f3138] outline-none transition focus:border-[#182fc7]"
+          className="h-[54px] w-full rounded-full border-[1.5px] border-[#e6e8ee] bg-[#f3f4f8] px-5 text-[15px] font-medium text-[#111318] outline-none transition placeholder:text-[#9298a8] focus:border-[#1a7cff] focus:bg-white focus:ring-4 focus:ring-[#1a7cff]/10"
           name="password"
-          placeholder="Unesi lozinku"
+          placeholder="••••••••"
+          required
         />
       </label>
 
-      <div className="flex justify-end">
+      <div className="-mt-1.5 flex justify-end">
         <Link
-          className="text-[14px] font-semibold text-[#4f5967] underline underline-offset-4 transition hover:text-[#182fc7]"
+          className="text-[14px] font-extrabold text-[#111318] transition hover:text-[#1a7cff]"
           href="/artist/forgot-password"
         >
           Zaboravili ste lozinku?
@@ -67,7 +70,7 @@ export function ArtistLoginForm({ returnTo }: { returnTo?: string | null }) {
       </div>
 
       <button
-        className="inline-flex h-12 w-full items-center justify-center rounded-full bg-[#182fc7] px-6 text-[16px] font-medium text-white transition hover:bg-[#1326a8] disabled:cursor-not-allowed disabled:bg-[#9aa6dd]"
+        className="inline-flex h-[54px] w-full items-center justify-center rounded-full bg-[#111318] px-6 text-[13px] font-extrabold uppercase tracking-[0.06em] text-white transition hover:bg-[#2c313f] hover:shadow-[0_10px_24px_rgba(17,19,24,0.18)] disabled:cursor-not-allowed disabled:opacity-60"
         disabled={isPending}
         type="submit"
       >
@@ -75,12 +78,12 @@ export function ArtistLoginForm({ returnTo }: { returnTo?: string | null }) {
       </button>
 
       <p className="text-center text-[14px] text-[#66707d]">
-        Nemas ArtBoard profil?{" "}
+        Nemaš ArtBoard profil?{" "}
         <Link
-          className="font-semibold text-[#dc1735] underline decoration-transparent underline-offset-4 transition hover:decoration-current"
-          href="/prijava"
+          className="border-b-2 border-[#ffd028] pb-px font-extrabold text-[#111318] transition hover:border-[#ff2d55]"
+          href="/prijava-umjetnika"
         >
-          Posalji prijavu.
+          Pošalji prijavu.
         </Link>
       </p>
     </form>

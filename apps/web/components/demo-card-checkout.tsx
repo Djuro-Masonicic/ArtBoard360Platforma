@@ -1,5 +1,6 @@
 "use client";
 
+import { Coffee } from "lucide-react";
 import { FormEvent, useState, useTransition } from "react";
 
 import { useUiFeedback, useUiLoadingState } from "@/components/ui-feedback-provider";
@@ -10,25 +11,24 @@ interface DemoCardCheckoutProps {
   onComplete: (subscription: ArtistSubscription) => void;
 }
 
+const amountStops = [5, 10, 15, 20, 25, 30];
+
 export function DemoCardCheckout({ onComplete }: DemoCardCheckoutProps) {
   const { showAlert } = useUiFeedback();
+  const [amount, setAmount] = useState(6);
   const [cardholder, setCardholder] = useState("");
   const [cardNumber, setCardNumber] = useState("");
   const [expiry, setExpiry] = useState("");
   const [cvc, setCvc] = useState("");
   const [isPending, startTransition] = useTransition();
+  const progress = ((amount - 5) / 25) * 100;
 
   useUiLoadingState(isPending);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const errorMessage = validateCardForm({
-      cardholder,
-      cardNumber,
-      expiry,
-      cvc,
-    });
+    const errorMessage = validateCardForm({ cardholder, cardNumber, expiry, cvc });
 
     if (errorMessage) {
       showAlert({
@@ -45,193 +45,196 @@ export function DemoCardCheckout({ onComplete }: DemoCardCheckoutProps) {
         onComplete(subscription);
         showAlert({
           kind: "success",
-          title: "Platinum je aktiviran",
-          message: "Testna uplata je uspjesna. Nije izvrsena stvarna naplata.",
+          title: "Premium je aktiviran",
+          message: `Testna uplata od ${amount} € je uspješna. Stvarna naplata nije izvršena.`,
           durationMs: 6000,
         });
       } catch (error) {
         showAlert({
           kind: "error",
           title: "Uplata nije uspjela",
-          message: error instanceof Error ? error.message : "Pokusaj ponovo.",
+          message: error instanceof Error ? error.message : "Pokušaj ponovo.",
         });
       }
     });
   }
 
   return (
-    <section className="overflow-hidden rounded-[28px] border border-[#d9e0ec] bg-white shadow-[0_24px_70px_rgba(31,46,86,0.09)]">
-      <div className="grid lg:grid-cols-[0.88fr_1.12fr]">
-        <div className="relative overflow-hidden bg-[#182fc7] p-6 text-white sm:p-8">
-          <div className="absolute -right-12 -top-16 h-48 w-48 rounded-full border border-white/20" />
-          <div className="absolute -bottom-24 -left-14 h-56 w-56 rounded-full border border-white/15" />
+    <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,1fr)_minmax(420px,0.9fr)] lg:gap-10">
+      <section className="min-w-0 pt-1">
+        <div className="flex items-center gap-2.5">
+          <span className="h-[9px] w-[9px] rounded-full bg-gradient-to-br from-[#1a7cff] via-[#ff2d55] to-[#ffd028]" />
+          <p className="text-[12px] font-extrabold uppercase tracking-[0.16em] text-[#5b6070]">
+            Premium članstvo
+          </p>
+        </div>
 
-          <div className="relative">
-            <span className="inline-flex rounded-full bg-[#ffc41d] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[#252b38]">
-              Demo placanje
-            </span>
-            <h2 className="mt-6 text-[32px] font-bold leading-[1.05]">
-              ArtBoard Platinum
-            </h2>
-            <p className="mt-3 text-[15px] leading-[1.6] text-white/75">
-              Probni checkout za testiranje premium clanstva. Kartica se ne naplacuje i podaci se ne cuvaju.
-            </p>
+        <h1 className="mt-5 text-[42px] font-extrabold leading-[1.03] tracking-normal text-[#111318] sm:text-[56px]">
+          Izaberi svoj <span className="bg-gradient-to-r from-[#1a7cff] via-[#ff2d55] to-[#ffad2b] bg-clip-text text-transparent">iznos</span>.
+        </h1>
+        <p className="mt-5 max-w-[560px] text-[15px] leading-[1.65] text-[#4a4f60] sm:text-[17px]">
+          Svi iznosi otključavaju iste Premium mogućnosti. Izaberi koliko možeš i želiš da izdvojiš, a svoj iznos možeš kasnije promijeniti.
+        </p>
 
-            <div className="mt-10 rounded-[22px] border border-white/20 bg-white/10 p-5 backdrop-blur-sm">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-white/60">
-                    Mjesecno
-                  </p>
-                  <p className="mt-2 text-[34px] font-bold">9,99 EUR</p>
-                </div>
-                <CardChip />
-              </div>
-              <p className="mt-8 font-mono text-[17px] tracking-[0.12em]">
-                {cardNumber || "4242 4242 4242 4242"}
-              </p>
-              <div className="mt-5 flex items-end justify-between gap-4">
-                <div className="min-w-0">
-                  <p className="text-[9px] uppercase tracking-[0.18em] text-white/55">
-                    Vlasnik kartice
-                  </p>
-                  <p className="mt-1 truncate text-[13px] font-semibold uppercase">
-                    {cardholder || "IME I PREZIME"}
-                  </p>
-                </div>
-                <div className="shrink-0 text-right">
-                  <p className="text-[9px] uppercase tracking-[0.18em] text-white/55">
-                    Vazi do
-                  </p>
-                  <p className="mt-1 text-[13px] font-semibold">{expiry || "12/30"}</p>
-                </div>
-              </div>
+        <div className="mt-8 rounded-[24px] bg-white p-6 shadow-[0_16px_38px_rgba(17,19,24,0.08)] sm:p-9">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+            <div className="flex items-baseline gap-2.5">
+              <strong className="bg-gradient-to-r from-[#1a7cff] via-[#ff2d55] to-[#ffad2b] bg-clip-text text-[52px] font-extrabold leading-none tabular-nums text-transparent sm:text-[64px]">
+                {amount}€
+              </strong>
+              <span className="text-[14px] font-bold text-[#8a8f9f]">/ mjesečno</span>
             </div>
+
+            <div className="flex items-center gap-4 sm:max-w-[260px]">
+              <p className="flex-1 text-right text-[15px] font-bold leading-5 text-[#2c313f]">
+                {amountMessage(amount)}
+              </p>
+              <span className="grid h-[60px] w-[60px] shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#1a7cff] via-[#ff2d55] to-[#ffd028] p-[2px]">
+                <span className="grid h-full w-full place-items-center rounded-full bg-[#111318]">
+                  <Coffee aria-hidden="true" color="white" size={28} strokeWidth={1.7} />
+                </span>
+              </span>
+            </div>
+          </div>
+
+          <input
+            aria-label="Mjesečni iznos"
+            className="premium-amount-range mt-10 w-full"
+            max="30"
+            min="5"
+            onChange={(event) => setAmount(Number(event.target.value))}
+            style={{
+              background: `linear-gradient(90deg, #1a7cff 0%, #ff2d55 ${Math.max(progress, 1)}%, #eceef3 ${Math.max(progress, 1)}%, #eceef3 100%)`,
+            }}
+            type="range"
+            value={amount}
+          />
+          <div className="mt-3 flex justify-between">
+            {amountStops.map((value) => (
+              <span className="text-[11px] font-bold text-[#8a8f9f] sm:text-[12px]" key={value}>
+                {value}€
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <form
+        className="relative min-w-0 overflow-hidden rounded-[24px] bg-white p-6 shadow-[0_16px_38px_rgba(17,19,24,0.08)] sm:p-9"
+        onSubmit={handleSubmit}
+      >
+        <span className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#1a7cff] via-[#ff2d55] to-[#ffd028]" />
+        <h2 className="text-[26px] font-extrabold leading-tight tracking-normal text-[#111318]">
+          Detalji plaćanja
+        </h2>
+
+        <div className="mt-5 space-y-3 text-[14px]">
+          <div className="flex justify-between gap-4">
+            <span className="text-[#4a4f60]">ArtBoard Premium</span>
+            <strong>{amount}€ / mj.</strong>
+          </div>
+          <div className="flex justify-between gap-4">
+            <span className="text-[#4a4f60]">Naplata</span>
+            <strong>Mjesečno</strong>
           </div>
         </div>
 
-        <form className="p-6 sm:p-8 lg:p-10" onSubmit={handleSubmit}>
-          <div className="flex items-start justify-between gap-5">
-            <div>
-              <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#dc1735]">
-                Sigurna testna forma
-              </p>
-              <h3 className="mt-2 text-[28px] font-bold text-[#2f3138]">
-                Podaci kartice
-              </h3>
-            </div>
-            <span className="rounded-full bg-[#f2f5f9] px-3 py-1 text-[11px] font-semibold text-[#687180]">
-              TEST MODE
-            </span>
-          </div>
+        <div className="my-5 h-px bg-[#eceef3]" />
+        <div className="flex items-baseline justify-between gap-4">
+          <span className="text-[14px] text-[#4a4f60]">Ukupno danas</span>
+          <strong className="text-[30px] font-extrabold tabular-nums">{amount}€</strong>
+        </div>
 
-          <div className="mt-8 space-y-5">
-            <CheckoutField label="Ime vlasnika kartice">
+        <p className="mt-8 text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#8a8f9f]">
+          Podaci o kartici
+        </p>
+        <div className="mt-4 space-y-4">
+          <CheckoutField label="Ime na kartici">
+            <input
+              autoComplete="cc-name"
+              className={inputClassName}
+              maxLength={70}
+              onChange={(event) => setCardholder(event.target.value)}
+              placeholder="Ime i prezime"
+              required
+              value={cardholder}
+            />
+          </CheckoutField>
+
+          <CheckoutField label="Broj kartice">
+            <input
+              autoComplete="cc-number"
+              className={`${inputClassName} font-mono`}
+              inputMode="numeric"
+              maxLength={19}
+              onChange={(event) => setCardNumber(formatCardNumber(event.target.value))}
+              placeholder="1234 5678 9012 3456"
+              required
+              value={cardNumber}
+            />
+          </CheckoutField>
+
+          <div className="grid grid-cols-2 gap-3">
+            <CheckoutField label="Datum isteka">
               <input
-                autoComplete="cc-name"
+                autoComplete="cc-exp"
                 className={inputClassName}
-                maxLength={70}
-                onChange={(event) => setCardholder(event.target.value)}
-                placeholder="Ime i prezime"
+                inputMode="numeric"
+                maxLength={5}
+                onChange={(event) => setExpiry(formatExpiry(event.target.value))}
+                placeholder="MM / GG"
                 required
-                value={cardholder}
+                value={expiry}
               />
             </CheckoutField>
-
-            <CheckoutField label="Broj kartice">
-              <div className="relative">
-                <input
-                  autoComplete="cc-number"
-                  className={`${inputClassName} pr-14 font-mono tracking-[0.06em]`}
-                  inputMode="numeric"
-                  maxLength={19}
-                  onChange={(event) => setCardNumber(formatCardNumber(event.target.value))}
-                  placeholder="4242 4242 4242 4242"
-                  required
-                  value={cardNumber}
-                />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[12px] font-bold text-[#182fc7]">
-                  VISA
-                </span>
-              </div>
+            <CheckoutField label="CVC">
+              <input
+                autoComplete="cc-csc"
+                className={inputClassName}
+                inputMode="numeric"
+                maxLength={4}
+                onChange={(event) => setCvc(event.target.value.replace(/\D/g, ""))}
+                placeholder="123"
+                required
+                type="password"
+                value={cvc}
+              />
             </CheckoutField>
-
-            <div className="grid grid-cols-2 gap-4">
-              <CheckoutField label="Datum isteka">
-                <input
-                  autoComplete="cc-exp"
-                  className={inputClassName}
-                  inputMode="numeric"
-                  maxLength={5}
-                  onChange={(event) => setExpiry(formatExpiry(event.target.value))}
-                  placeholder="MM/GG"
-                  required
-                  value={expiry}
-                />
-              </CheckoutField>
-              <CheckoutField label="CVC">
-                <input
-                  autoComplete="cc-csc"
-                  className={inputClassName}
-                  inputMode="numeric"
-                  maxLength={4}
-                  onChange={(event) => setCvc(event.target.value.replace(/\D/g, ""))}
-                  placeholder="123"
-                  required
-                  type="password"
-                  value={cvc}
-                />
-              </CheckoutField>
-            </div>
           </div>
+        </div>
 
-          <div className="mt-7 rounded-[16px] bg-[#fff8dc] p-4 text-[13px] leading-[1.55] text-[#685516]">
-            Za test koristi <strong>4242 4242 4242 4242</strong>, bilo koji buduci datum i bilo koji trocifreni CVC.
-          </div>
-
-          <button
-            className="mt-6 inline-flex h-12 w-full items-center justify-center rounded-full bg-[#dc1735] px-6 text-[15px] font-bold text-white transition hover:bg-[#bd102a] disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={isPending}
-            type="submit"
-          >
-            {isPending ? "Obrada testne uplate..." : "Aktiviraj Platinum - 9,99 EUR"}
-          </button>
-          <p className="mt-3 text-center text-[12px] text-[#87909d]">
-            Ovo je simulacija. Stvarna finansijska transakcija se ne izvrsava.
-          </p>
-        </form>
-      </div>
-    </section>
+        <button
+          className="mt-6 inline-flex h-[50px] w-full items-center justify-center rounded-full bg-[#111318] px-6 text-[14px] font-extrabold text-white transition hover:bg-[#2c313f] disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={isPending}
+          type="submit"
+        >
+          {isPending ? "Obrada testne uplate..." : `Plati ${amount}€ i postani Premium član`}
+        </button>
+        <p className="mt-3 text-center text-[12px] leading-5 text-[#8a8f9f]">
+          Testni checkout: koristi 4242 4242 4242 4242, budući datum i bilo koji trocifreni CVC. Stvarna naplata se ne izvršava.
+        </p>
+      </form>
+    </div>
   );
 }
 
 const inputClassName =
-  "h-12 w-full rounded-[14px] border border-[#d5ddea] bg-[#fbfcfe] px-4 text-[15px] text-[#2f3138] outline-none transition placeholder:text-[#a2aab7] focus:border-[#182fc7] focus:bg-white focus:ring-4 focus:ring-[#182fc7]/10";
+  "h-[50px] w-full min-w-0 rounded-[12px] border border-[#e3e5eb] bg-[#f7f7f9] px-4 text-[15px] text-[#111318] outline-none transition placeholder:text-[#9ca2b1] focus:border-[#1a7cff] focus:bg-white focus:ring-4 focus:ring-[#1a7cff]/10";
 
-function CheckoutField({
-  children,
-  label,
-}: {
-  children: React.ReactNode;
-  label: string;
-}) {
+function CheckoutField({ children, label }: { children: React.ReactNode; label: string }) {
   return (
-    <label className="block">
-      <span className="mb-2 block text-[13px] font-semibold text-[#4d5664]">{label}</span>
+    <label className="block min-w-0">
+      <span className="mb-2 block text-[12px] font-bold text-[#4a4f60]">{label}</span>
       {children}
     </label>
   );
 }
 
-function CardChip() {
-  return (
-    <span className="grid h-9 w-11 grid-cols-2 overflow-hidden rounded-[9px] border border-[#9b7910] bg-[#ffc41d]">
-      <span className="border-b border-r border-[#9b7910]" />
-      <span className="border-b border-[#9b7910]" />
-      <span className="border-r border-[#9b7910]" />
-      <span />
-    </span>
-  );
+function amountMessage(amount: number) {
+  if (amount <= 7) return "Plati kafu.";
+  if (amount <= 12) return "Podrži jedan kreativni dan.";
+  if (amount <= 20) return "Pokreni nove mogućnosti.";
+  return "Gradi ArtBoard sa nama.";
 }
 
 function formatCardNumber(value: string) {
@@ -252,9 +255,7 @@ function validateCardForm(input: {
   expiry: string;
   cvc: string;
 }) {
-  if (input.cardholder.trim().length < 3) {
-    return "Unesi ime vlasnika kartice.";
-  }
+  if (input.cardholder.trim().length < 3) return "Unesi ime vlasnika kartice.";
 
   if (input.cardNumber.replace(/\s/g, "") !== "4242424242424242") {
     return "Za ovu simulaciju koristi testnu karticu 4242 4242 4242 4242.";
@@ -274,12 +275,10 @@ function validateCardForm(input: {
     year < currentShortYear ||
     (year === currentShortYear && month < now.getMonth() + 1)
   ) {
-    return "Unesi vazeci buduci datum isteka u formatu MM/GG.";
+    return "Unesi važeći budući datum isteka u formatu MM/GG.";
   }
 
-  if (!/^\d{3,4}$/.test(input.cvc)) {
-    return "CVC mora imati 3 ili 4 cifre.";
-  }
+  if (!/^\d{3,4}$/.test(input.cvc)) return "CVC mora imati 3 ili 4 cifre.";
 
   return null;
 }

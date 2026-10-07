@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type Lenis from "lenis";
 import { useLenis } from "lenis/react";
 
@@ -76,6 +76,7 @@ interface SiteHeaderProps {
     avatarUrl: string | null;
     primaryHref: string;
     primaryLabel: string;
+    publicProfileHref?: string;
   } | null;
 }
 
@@ -86,6 +87,7 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
   const isArtStudioUnit = pathname === "/" || pathname.startsWith(siteRoutes.services) || pathname.startsWith(siteRoutes.contact);
   const isArtBoardUnit =
     pathname === siteRoutes.artboard ||
+    pathname.startsWith(siteRoutes.artboardContact) ||
     pathname.startsWith("/admin") ||
     pathname.startsWith(siteRoutes.artists) ||
     pathname.startsWith(siteRoutes.artistProfileBase) ||
@@ -115,8 +117,6 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
   const resolvedHeaderCtaLabel = isArtStudioUnit ? "Kontakt" : "Prijavi se";
   const [isTransparentHeader, setIsTransparentHeader] = useState(isArtistHeroPage);
   const [isArtBoardHeaderScrolled, setIsArtBoardHeaderScrolled] = useState(false);
-  const [isArtStudioHeaderHidden, setIsArtStudioHeaderHidden] = useState(false);
-  const lastArtStudioScrollRef = useRef(0);
   const isAuthenticated = Boolean(session);
   const shouldShowAccountMenu = isAuthenticated && !isArtStudioUnit;
   const shouldShowHeaderCta = isArtStudioUnit || !isAuthenticated;
@@ -129,9 +129,29 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
   }, [pathname]);
 
   useEffect(() => {
-    lastArtStudioScrollRef.current = window.scrollY;
-    setIsArtStudioHeaderHidden(false);
-  }, [isArtStudioUnit, pathname]);
+    if (!isMobileMenuVisible) {
+      return;
+    }
+
+    const previousDocumentOverflow = document.documentElement.style.overflow;
+    const previousBodyOverflow = document.body.style.overflow;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        closeMobileMenu();
+      }
+    }
+
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.documentElement.style.overflow = previousDocumentOverflow;
+      document.body.style.overflow = previousBodyOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isMobileMenuVisible]);
 
   useEffect(() => {
     if (!isArtistHeroPage) {
@@ -147,29 +167,8 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
       if (isArtistHeroPage) {
         setIsTransparentHeader(lenis.scroll < window.innerHeight * 0.72);
       }
-
-      if (!isArtStudioUnit || isMobileMenuVisible) {
-        setIsArtStudioHeaderHidden(false);
-        lastArtStudioScrollRef.current = lenis.scroll;
-        return;
-      }
-
-      if (lenis.scroll <= 24) {
-        setIsArtStudioHeaderHidden(false);
-        lastArtStudioScrollRef.current = lenis.scroll;
-        return;
-      }
-
-      const scrollDelta = lenis.scroll - lastArtStudioScrollRef.current;
-
-      if (Math.abs(scrollDelta) < 6) {
-        return;
-      }
-
-      setIsArtStudioHeaderHidden(scrollDelta > 0);
-      lastArtStudioScrollRef.current = lenis.scroll;
     },
-    [isArtistHeroPage, isArtStudioUnit, isMobileMenuVisible],
+    [isArtistHeroPage],
   );
 
   useLenis(handleLenisScroll, [handleLenisScroll]);
@@ -267,13 +266,13 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
 
   return (
     <div
-      className={`site-header-frame-control fixed z-30 w-[100vw] ${
+      className={`site-header-root site-header-frame-control ${isMobileMenuVisible ? "site-header-frame-control--menu-open" : ""} ${isArtStudioUnit ? "sticky" : "fixed"} z-30 w-[100vw] ${
         isArtBoardUnit
           ? `artboard-header-frame ${shouldCondenseArtBoardHeader ? "artboard-header-frame--scrolled" : ""}`
           : isArtStudioUnit
             ? "art-studio-header-frame"
           : "px-[5vw] pt-[5vh]"
-      } ${isArtStudioUnit && isArtStudioHeaderHidden ? "site-header-frame-control--hidden" : ""}`}
+      }`}
     >
       <header className={desktopHeaderClass}>
         <div
@@ -295,11 +294,12 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
               />
             ) : isArtStudioUnit ? (
               <span className="art-studio-header-logo" aria-hidden="true">
-                <span className="art-studio-header-logo__dots" data-art-studio-logo>
-                  <span data-art-studio-dot="blue" />
-                  <span data-art-studio-dot="red" />
-                  <span data-art-studio-dot="yellow" />
-                </span>
+                <img
+                  alt=""
+                  className="art-studio-header-logo__mark"
+                  data-art-studio-logo
+                  src="/artstudio-logo/ArtStudio360-Mark-Color.svg"
+                />
                 <span className="art-studio-header-logo__word">Art Studio 360</span>
               </span>
             ) : (
@@ -320,8 +320,9 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
           }`}
         >
           {navigationItems.map((item, index) => {
+            const isActive = isRouteActive(pathname, item.activePrefixes);
             const className = `${desktopNavLinkClass} h-full px-2 xl:px-3 ${
-              isRouteActive(pathname, item.activePrefixes) ? "home-nav-link--active" : ""
+              isActive ? "home-nav-link--active" : ""
             }`;
             const style = { ["--nav-accent" as string]: navColors[index % navColors.length] };
             const content = (
@@ -332,11 +333,23 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
             );
 
             return isArtStudioUnit && item.href === siteRoutes.artboard ? (
-              <ArtBoardTransitionLink className={className} href={item.href} key={item.label} style={style}>
+              <ArtBoardTransitionLink
+                aria-current={isActive ? "page" : undefined}
+                className={className}
+                href={item.href}
+                key={item.label}
+                style={style}
+              >
                 {content}
               </ArtBoardTransitionLink>
             ) : (
-              <Link className={className} href={item.href} key={item.label} style={style}>
+              <Link
+                aria-current={isActive ? "page" : undefined}
+                className={className}
+                href={item.href}
+                key={item.label}
+                style={style}
+              >
                 {content}
               </Link>
             );
@@ -490,13 +503,15 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
           <div className="site-mobile-menu__content">
             <nav aria-label="Mobile navigation" className="site-mobile-menu__nav">
               {navigationItems.map((item, index) => {
+                const isActive = isRouteActive(pathname, item.activePrefixes);
                 const className = `site-mobile-menu__link ${
-                  isRouteActive(pathname, item.activePrefixes) ? "site-mobile-menu__link--active" : ""
+                  isActive ? "site-mobile-menu__link--active" : ""
                 }`;
                 const style = { ["--nav-accent" as string]: navColors[index % navColors.length] };
 
                 return isArtStudioUnit && item.href === siteRoutes.artboard ? (
                   <ArtBoardTransitionLink
+                    aria-current={isActive ? "page" : undefined}
                     className={className}
                     href={item.href}
                     key={item.label}
@@ -507,6 +522,7 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
                   </ArtBoardTransitionLink>
                 ) : (
                   <Link
+                    aria-current={isActive ? "page" : undefined}
                     className={className}
                     href={item.href}
                     key={item.label}

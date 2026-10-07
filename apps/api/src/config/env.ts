@@ -94,6 +94,7 @@ export const env = {
   r2PublicUrl: requireEnv("R2_PUBLIC_URL"),
   resendApiKey: readOptionalEnv("RESEND_API_KEY"),
   resendFromEmail: readOptionalEnv("RESEND_FROM_EMAIL"),
+  emailTestRecipient: readOptionalEnv("EMAIL_TEST_RECIPIENT"),
   adminNotificationEmail: readOptionalEnv("ADMIN_NOTIFICATION_EMAIL"),
   adminAuthSecret: readAuthSecretEnv(),
   adminAuthTokenTtlHours: readNumberEnv("ADMIN_AUTH_TOKEN_TTL_HOURS", 12),

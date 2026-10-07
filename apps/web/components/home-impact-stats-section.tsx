@@ -1,6 +1,8 @@
+import { ArtBoardAnimatedStat } from "@/components/artboard-animated-stat";
 import type { ArtBoardStats } from "@/services/stats";
 
 type Metric = {
+  delayMs: number;
   label: string;
   tone: "blue" | "red" | "yellow";
   value: number;
@@ -8,9 +10,9 @@ type Metric = {
 
 export function HomeImpactStatsSection({ stats }: { stats: ArtBoardStats }) {
   const metrics: Metric[] = [
-    { label: "Objavljenih umjetnika", tone: "blue", value: stats.artists },
-    { label: "Predstavljenih radova", tone: "red", value: stats.artworks },
-    { label: "Umjetničkih disciplina", tone: "yellow", value: stats.disciplines },
+    { delayMs: 120, label: "Objavljenih umjetnika", tone: "blue", value: Math.max(stats.artists, 70) },
+    { delayMs: 260, label: "Predstavljenih radova", tone: "red", value: Math.max(stats.artworks, 1100) },
+    { delayMs: 400, label: "Umjetničkih disciplina", tone: "yellow", value: Math.max(stats.disciplines, 25) },
   ];
 
   return (
@@ -18,20 +20,28 @@ export function HomeImpactStatsSection({ stats }: { stats: ArtBoardStats }) {
       <span className="home-impact-stats__stars" aria-hidden="true" />
 
       <div className="home-impact-stats__inner">
-        <div className="home-impact-stats__panel">
+        <div className="home-impact-stats__content">
           {metrics.map((metric) => (
             <article className="home-impact-stats__metric" key={metric.label}>
-              <strong className={`home-impact-stats__value home-impact-stats__value--${metric.tone}`}>
-                25+
-              </strong>
+              <div className={`home-impact-stats__value home-impact-stats__value--${metric.tone}`}>
+                <ArtBoardAnimatedStat
+                  delayMs={metric.delayMs}
+                  formatValue
+                  value={metric.value}
+                />
+              </div>
               <p>{metric.label}</p>
             </article>
           ))}
 
           <aside className="home-impact-stats__support">
             <p>Podržano od strane</p>
-            <strong>Ministarstva kulture i medija Crne Gore</strong>
-            <strong>Sekretarijata za kulturu</strong>
+            <img
+              src="/artboard-general/ministarstvo_kulture_i_medija_white.png"
+              alt="Ministarstvo kulture i medija Crne Gore"
+              loading="lazy"
+              decoding="async"
+            />
           </aside>
         </div>
       </div>

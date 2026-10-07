@@ -11,7 +11,6 @@ type ShowcaseArtist = {
   disciplines: string[];
   id: string;
   imageUrls: string[];
-  location: string;
   name: string;
   slug: string;
 };
@@ -50,42 +49,71 @@ const fallbackArtists: ShowcaseArtist[] = [
 ];
 
 export function HomeArtistsCommunitySection({ artists }: { artists: Artist[] }) {
-  const showcaseArtists = useMemo(() => getShowcaseArtists(artists), [artists]);
+  const desktopArtists = useMemo(() => getShowcaseArtists(artists, 10), [artists]);
+  const initialMobileArtists = useMemo(() => getShowcaseArtists(artists, 8), [artists]);
+  const [mobileArtists, setMobileArtists] = useState(initialMobileArtists);
+
+  useEffect(() => {
+    const shuffledArtists = [...artists];
+
+    for (let index = shuffledArtists.length - 1; index > 0; index -= 1) {
+      const randomIndex = Math.floor(Math.random() * (index + 1));
+      const currentArtist = shuffledArtists[index];
+      const randomArtist = shuffledArtists[randomIndex];
+
+      if (!currentArtist || !randomArtist) {
+        continue;
+      }
+
+      shuffledArtists[index] = randomArtist;
+      shuffledArtists[randomIndex] = currentArtist;
+    }
+
+    setMobileArtists(getShowcaseArtists(shuffledArtists, 8));
+  }, [artists]);
 
   return (
-    <section className="home-artists-community" id="zajednica-umjetnika">
-      <div className="home-artists-community__inner">
-        <header className="home-artists-community__heading">
-          <p>
-            <span aria-hidden="true" />
-            ArtBoard zajednica
-          </p>
-          <h2>
-            Zajednica umjetnika
-            <br />
-            {" "}koja svakodnevno raste<span>.</span>
-          </h2>
-        </header>
+    <section className="home-artists-community" id="zajednica">
+      <div className="home-artists-community__surface">
+        <div className="home-artists-community__inner">
+          <header className="home-artists-community__heading">
+            <p>
+              <span aria-hidden="true" />
+              ArtBoard umjetnici
+            </p>
+            <h2>
+              Upoznaj <span>umjetnike</span>
+              <br />
+              ArtBoard platforme.
+            </h2>
+          </header>
 
-        <div className="home-artists-community__grid">
-          {showcaseArtists.map((artist) => (
-            <CommunityArtistCard artist={artist} key={artist.id} />
-          ))}
-        </div>
+          <div className="home-artists-community__grid home-artists-community__grid--desktop">
+            {desktopArtists.map((artist) => (
+              <CommunityArtistCard artist={artist} key={artist.id} />
+            ))}
+          </div>
 
-        <div className="home-artists-community__actions">
-          <ArtBoardTransitionLink
-            className="home-artists-community__button home-artists-community__button--secondary"
-            href={siteRoutes.artists}
-          >
-            Istraži umjetnike <span aria-hidden="true">↗</span>
-          </ArtBoardTransitionLink>
-          <ArtBoardTransitionLink
-            className="home-artists-community__button home-artists-community__button--primary"
-            href={siteRoutes.artistApplication}
-          >
-            Postani dio ArtBoard zajednice <span aria-hidden="true">↗</span>
-          </ArtBoardTransitionLink>
+          <div className="home-artists-community__grid home-artists-community__grid--mobile">
+            {mobileArtists.map((artist) => (
+              <CommunityArtistCard artist={artist} key={artist.id} />
+            ))}
+          </div>
+
+          <div className="home-artists-community__actions">
+            <ArtBoardTransitionLink
+              className="home-artists-community__button home-artists-community__button--secondary"
+              href={siteRoutes.artists}
+            >
+              Istraži umjetnike <span aria-hidden="true">↗</span>
+            </ArtBoardTransitionLink>
+            <ArtBoardTransitionLink
+              className="home-artists-community__button home-artists-community__button--primary"
+              href={siteRoutes.artistApplication}
+            >
+              Postani dio ArtBoard zajednice <span aria-hidden="true">↗</span>
+            </ArtBoardTransitionLink>
+          </div>
         </div>
       </div>
     </section>
@@ -142,7 +170,6 @@ function CommunityArtistCard({ artist }: { artist: ShowcaseArtist }) {
         <span className="home-community-artist-card__identity">
           <span>
             <strong>{artist.name}</strong>
-            <small>{artist.location}</small>
           </span>
           <span className="home-community-artist-card__avatar" aria-hidden="true">
             {artist.avatarUrl ? <img alt="" src={artist.avatarUrl} /> : artist.name.charAt(0)}
@@ -157,17 +184,17 @@ function CommunityArtistCard({ artist }: { artist: ShowcaseArtist }) {
   );
 }
 
-function getShowcaseArtists(artists: Artist[]) {
+function getShowcaseArtists(artists: Artist[], limit: number) {
   const mappedArtists = artists
     .map(mapArtist)
     .filter((artist) => artist.imageUrls.length > 0)
-    .slice(0, 10);
+    .slice(0, limit);
 
-  if (mappedArtists.length >= 10) {
+  if (mappedArtists.length >= limit) {
     return mappedArtists;
   }
 
-  const missingCount = 10 - mappedArtists.length;
+  const missingCount = limit - mappedArtists.length;
   return [...mappedArtists, ...fallbackArtists.slice(0, missingCount)];
 }
 
@@ -193,7 +220,6 @@ function mapArtist(artist: Artist): ShowcaseArtist {
     disciplines: artist.disciplines.slice(0, 2).map((discipline) => discipline.name),
     id: artist.id,
     imageUrls,
-    location: "ArtBoard zajednica",
     name: artist.name,
     slug: artist.slug,
   };
@@ -210,7 +236,6 @@ function createFallbackArtist(
     disciplines: discipline.split(" · "),
     id: `fallback-${slug}`,
     imageUrls,
-    location: "Crna Gora",
     name,
     slug,
   };

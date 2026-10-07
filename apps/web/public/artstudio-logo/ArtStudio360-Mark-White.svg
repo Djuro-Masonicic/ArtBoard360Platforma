@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="346" height="100" viewBox="0 0 346 100">
+  <title>Art Studio 360 — Three dots — White</title>
+  <g id="Tacke">
+    <path id="tacka-1" d="M 0.000000,50.000000 A 50,50 0 1 1 100.000000,50.000000 A 50,50 0 1 1 0.000000,50.000000 Z" fill="#FFFFFF" />
+    <path id="tacka-2" d="M 123.000000,50.000000 A 50,50 0 1 1 223.000000,50.000000 A 50,50 0 1 1 123.000000,50.000000 Z" fill="#FFFFFF" />
+    <path id="tacka-3" d="M 246.000000,50.000000 A 50,50 0 1 1 346.000000,50.000000 A 50,50 0 1 1 246.000000,50.000000 Z" fill="#FFFFFF" />
+  </g>
+</svg>

@@ -11,6 +11,8 @@ import type {
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
+import { shouldOpenArtBoardInNewTab } from "@/lib/site-surface";
+
 export const ARTBOARD_TRANSITION_DURATION_MS = 8100;
 export const ARTBOARD_TRANSITION_SESSION_KEY = "artboard-transition-started-at";
 export const ARTBOARD_INTRO_SEEN_SESSION_KEY = "artboard-intro-seen-v1";
@@ -115,10 +117,16 @@ function shouldUseNativeLink(event: MouseEvent<HTMLAnchorElement>) {
 function useArtBoardTransition(href: string) {
   const router = useRouter();
   const pathname = usePathname();
+  const opensArtBoardInNewTab = shouldOpenArtBoardInNewTab(pathname, href);
   const [isAnimating, setIsAnimating] = useState(false);
   const [sourceDots, setSourceDots] = useState<ArtBoardTransitionSourceDots | null>(null);
 
   const navigate = useCallback(() => {
+    if (opensArtBoardInNewTab) {
+      window.open(href, "_blank", "noopener,noreferrer");
+      return;
+    }
+
     if (href.startsWith("#")) {
       document.querySelector(href)?.scrollIntoView({ behavior: "smooth" });
       setIsAnimating(false);
@@ -131,7 +139,7 @@ function useArtBoardTransition(href: string) {
     }
 
     router.push(href);
-  }, [href, router]);
+  }, [href, opensArtBoardInNewTab, router]);
 
   useEffect(() => {
     if (!isAnimating) {
@@ -148,8 +156,14 @@ function useArtBoardTransition(href: string) {
 
   return {
     isAnimating,
+    opensArtBoardInNewTab,
     sourceDots,
     startTransition: () => {
+      if (opensArtBoardInNewTab) {
+        navigate();
+        return;
+      }
+
       if (!shouldAnimateArtBoardTransition(pathname, href)) {
         navigate();
         return;
@@ -214,7 +228,8 @@ export function ArtBoardTransitionLink({
   onClick,
   ...props
 }: ArtBoardTransitionLinkProps) {
-  const { isAnimating, sourceDots, startTransition } = useArtBoardTransition(href);
+  const { isAnimating, opensArtBoardInNewTab, sourceDots, startTransition } =
+    useArtBoardTransition(href);
 
   return (
     <>
@@ -222,6 +237,8 @@ export function ArtBoardTransitionLink({
         {...props}
         className={className}
         href={href}
+        rel={opensArtBoardInNewTab ? "noopener noreferrer" : props.rel}
+        target={opensArtBoardInNewTab ? "_blank" : props.target}
         onClick={(event) => {
           onClick?.(event);
 

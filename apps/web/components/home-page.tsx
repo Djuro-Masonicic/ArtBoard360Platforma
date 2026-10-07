@@ -2,6 +2,7 @@ import { ArtStudioContactCtaSection } from "@/components/art-studio-contact-cta-
 import { ArtStudioHero } from "@/components/art-studio-hero";
 import { ArtStudioToolsSection } from "@/components/art-studio-tools-section";
 import { ArtStudioWorkAreasSection } from "@/components/art-studio-work-areas-section";
+import { HomeAnimationVisibility } from "@/components/home-animation-visibility";
 import { HomeArtboardArtistsSection } from "@/components/home-artboard-artists-section";
 import { HomeArtistsCommunitySection } from "@/components/home-artists-community-section";
 import { HomeCollaborationStrip } from "@/components/home-collaboration-strip";
@@ -19,12 +20,14 @@ export async function HomePage() {
 
   return (
     <>
+      <HomeAnimationVisibility />
+
       <div className="-mx-5 -mt-8 sm:-mx-8 sm:-mt-10 lg:-mx-10 lg:-mt-12">
         <ArtStudioHero artists={artists} />
       </div>
 
       <ArtStudioWorkAreasSection />
-      <HomeCosmosSection />
+      <HomeCosmosSection artists={artists} />
       <HomeArtboardArtistsSection />
       <ArtStudioToolsSection />
       <HomeArtistsCommunitySection artists={artists} />

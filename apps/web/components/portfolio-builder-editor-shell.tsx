@@ -1,12 +1,15 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Moon, Pencil, Sun } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
+import styles from "@/components/portfolio-builder-editor-shell.module.css";
+
 import {
-  downloadPortfolioCoverTestPdf,
   generatePublicPortfolioPdf,
   updatePortfolioArtwork,
   updatePortfolioProject,
@@ -21,6 +24,9 @@ import type {
   PortfolioDesignConfig,
   PortfolioDesignPageKey,
   PortfolioFooterTemplate,
+  PortfolioFontStyle,
+  PortfolioLanguage,
+  PortfolioPageFormat,
   PortfolioProject,
   PortfolioTemplate,
 } from "@/types/api";
@@ -30,6 +36,7 @@ type PortfolioBuilderEditorShellProps = {
 };
 
 type BuilderStep = "profile" | "works" | "design" | "export";
+type StudioTheme = "dark" | "light";
 
 const steps: Array<{
   id: BuilderStep;
@@ -37,9 +44,9 @@ const steps: Array<{
   helper: string;
 }> = [
   { id: "profile", label: "Podaci", helper: "Ime, bio, kontakt" },
-  { id: "works", label: "Radovi", helper: "Upload, izbor, detalji" },
-  { id: "design", label: "Template", helper: "Stil, format, branding" },
-  { id: "export", label: "Preview / PDF", helper: "Watermark, download, placanje" },
+  { id: "works", label: "Radovi", helper: "Izbor i redoslijed" },
+  { id: "design", label: "Dizajn", helper: "Šablon, format, jezik" },
+  { id: "export", label: "Izvoz", helper: "Pregled, PDF, link" },
 ];
 
 const templateLabels: Record<PortfolioTemplate, string> = {
@@ -90,13 +97,13 @@ function isPremiumProject(project: PortfolioProject) {
 }
 
 const studioCardClassName =
-  "rounded-2xl border border-white/[0.08] bg-[#0e1522]/88 shadow-[0_18px_48px_rgba(0,0,0,0.24)] backdrop-blur-xl";
+  "rounded-[22px] border border-white/[0.08] bg-[#0b0d15]/95 shadow-[0_18px_46px_rgba(0,0,0,0.22)]";
 
 const studioInputClassName =
-  "h-10 rounded-xl border border-[#3b4658] bg-[#121b2a] px-3 text-[13px] font-semibold text-[#f8fafc] shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_0_1px_rgba(255,255,255,0.02)] outline-none transition placeholder:text-[#8490a4] hover:border-[#566276] hover:bg-[#162033] focus:border-[#d6a94f]/90 focus:bg-[#172235] focus:ring-4 focus:ring-[#d6a94f]/18 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d6a94f]/70";
+  "h-12 w-full min-w-0 rounded-xl border border-white/[0.1] bg-white/[0.055] px-4 text-[13px] font-semibold text-[#f3f4f7] outline-none transition placeholder:text-[#6b7184] hover:border-white/20 focus:border-[#1a7cff] focus:bg-white/[0.08] focus:ring-4 focus:ring-[#1a7cff]/10";
 
 const studioTextareaClassName =
-  "resize-y rounded-xl border border-[#3b4658] bg-[#121b2a] px-3 py-3 text-[13px] font-semibold leading-6 text-[#f8fafc] shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_0_1px_rgba(255,255,255,0.02)] outline-none transition placeholder:text-[#8490a4] hover:border-[#566276] hover:bg-[#162033] focus:border-[#d6a94f]/90 focus:bg-[#172235] focus:ring-4 focus:ring-[#d6a94f]/18 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d6a94f]/70";
+  "w-full min-w-0 resize-y rounded-xl border border-white/[0.1] bg-white/[0.055] px-4 py-3 text-[13px] font-semibold leading-6 text-[#f3f4f7] outline-none transition placeholder:text-[#6b7184] hover:border-white/20 focus:border-[#1a7cff] focus:bg-white/[0.08] focus:ring-4 focus:ring-[#1a7cff]/10";
 
 const portfolioDisciplineOptions = [
   "3D umjetnost",
@@ -144,11 +151,14 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
   const router = useRouter();
   const [currentProject, setCurrentProject] = useState(project);
   const [activeStep, setActiveStep] = useState<BuilderStep>("profile");
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<PortfolioTemplate>(project.template);
   const [designConfig, setDesignConfig] = useState<PortfolioDesignConfig>(() =>
     normalizeDesignConfig(project, project.template),
   );
+  const [pageFormat, setPageFormat] = useState<PortfolioPageFormat>(project.pageFormat);
+  const [language, setLanguage] = useState<PortfolioLanguage>(project.language);
+  const [fontStyle, setFontStyle] = useState<PortfolioFontStyle>(project.fontStyle);
+  const [includeBranding, setIncludeBranding] = useState(project.includeBranding);
   const [artistName, setArtistName] = useState(project.artistName);
   const [discipline, setDiscipline] = useState(project.discipline ?? "");
   const [email, setEmail] = useState(project.email ?? "");
@@ -168,9 +178,17 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
   const [isUploadingProfileImage, setIsUploadingProfileImage] = useState(false);
   const [isUploadingCollectionCover, setIsUploadingCollectionCover] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-  const [isDownloadingCoverTest, setIsDownloadingCoverTest] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [studioTheme, setStudioTheme] = useState<StudioTheme>("dark");
+
+  useEffect(() => {
+    const savedTheme = window.localStorage.getItem("artboard-portfolio-studio-theme");
+
+    if (savedTheme === "dark" || savedTheme === "light") {
+      setStudioTheme(savedTheme);
+    }
+  }, []);
 
   const selectedArtworks = useMemo(
     () => currentProject.artworks.filter((artwork) => artwork.isSelected),
@@ -200,6 +218,10 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
         collectionCoverUrl,
         biography: bio,
         template: selectedTemplate,
+        pageFormat,
+        language,
+        fontStyle,
+        includeBranding,
         designConfig:
           designConfig.mode === "CUSTOM"
             ? designConfig
@@ -214,6 +236,10 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
       setCollectionDescription(savedProject.collectionDescription ?? "");
       setCollectionCoverUrl(savedProject.collectionCoverUrl ?? "");
       setDesignConfig(normalizeDesignConfig(savedProject, savedProject.template));
+      setPageFormat(savedProject.pageFormat);
+      setLanguage(savedProject.language);
+      setFontStyle(savedProject.fontStyle);
+      setIncludeBranding(savedProject.includeBranding);
       setSaveMessage("Draft je sacuvan.");
       return savedProject;
     } catch (error) {
@@ -358,39 +384,6 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
     }
   }
 
-  async function moveArtwork(artworkId: string, direction: "up" | "down") {
-    const orderedArtworks = [...currentProject.artworks].sort((a, b) => a.orderIndex - b.orderIndex);
-    const currentIndex = orderedArtworks.findIndex((artwork) => artwork.id === artworkId);
-    const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
-    const currentArtwork = orderedArtworks[currentIndex];
-    const targetArtwork = orderedArtworks[targetIndex];
-
-    if (!currentArtwork || !targetArtwork) {
-      return;
-    }
-
-    setIsSaving(true);
-    setSaveMessage(null);
-    setSaveError(null);
-
-    try {
-      await updatePortfolioArtwork(currentProject.id, currentArtwork.id, {
-        orderIndex: targetArtwork.orderIndex,
-      });
-
-      const savedProject = await updatePortfolioArtwork(currentProject.id, targetArtwork.id, {
-        orderIndex: currentArtwork.orderIndex,
-      });
-
-      setCurrentProject(savedProject);
-      setSaveMessage("Redosljed radova je azuriran.");
-    } catch (error) {
-      setSaveError(error instanceof Error ? error.message : "Redosljed nije mogao biti azuriran.");
-    } finally {
-      setIsSaving(false);
-    }
-  }
-
   async function reorderArtwork(draggedArtworkId: string, targetArtworkId: string) {
     if (draggedArtworkId === targetArtworkId) {
       return;
@@ -478,21 +471,6 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
     }
   }
 
-  async function downloadCoverTestPdf() {
-    setIsDownloadingCoverTest(true);
-    setSaveMessage(null);
-    setSaveError(null);
-
-    try {
-      await downloadPortfolioCoverTestPdf(currentProject.id);
-      setSaveMessage("Cover test PDF je generisan.");
-    } catch (error) {
-      setSaveError(error instanceof Error ? error.message : "Cover PDF nije mogao biti generisan.");
-    } finally {
-      setIsDownloadingCoverTest(false);
-    }
-  }
-
   function openPreviewPage() {
     router.push(`/portfolio-builder/${currentProject.id}/preview`);
   }
@@ -509,44 +487,35 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
     }
   }
 
+  function changeStudioTheme(theme: StudioTheme) {
+    setStudioTheme(theme);
+    window.localStorage.setItem("artboard-portfolio-studio-theme", theme);
+  }
+
   return (
-    <main className="relative flex h-screen min-h-screen flex-col overflow-hidden bg-[#080d16] text-[#f3f5f8]">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_8%,rgba(139,92,246,0.08),transparent_24%),radial-gradient(circle_at_88%_18%,rgba(59,130,246,0.055),transparent_22%),linear-gradient(135deg,#080d16_0%,#0b111d_54%,#070b13_100%)]"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 opacity-[0.025] [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:56px_56px]"
-      />
+    <main className={styles.studio} data-theme={studioTheme}>
       <StudioTopbar
         isSaving={isSaving}
         onOpenPreview={openPreviewPage}
         onSave={() => void saveProject()}
+        onThemeChange={changeStudioTheme}
         project={currentProject}
         template={selectedTemplate}
+        theme={studioTheme}
       />
 
-      <div
-        className={`relative z-10 grid min-h-0 flex-1 grid-cols-1 ${
-          isSidebarCollapsed
-            ? "xl:grid-cols-[72px_minmax(650px,1fr)_minmax(410px,470px)]"
-            : "xl:grid-cols-[290px_minmax(650px,1fr)_minmax(410px,470px)]"
-        }`}
-      >
+      <div className={styles.workspaceLayout}>
         <StudioSidebar
           activeStep={activeStep}
-          isCollapsed={isSidebarCollapsed}
-          onToggleCollapsed={() => setIsSidebarCollapsed((value) => !value)}
           project={currentProject}
           selectedArtworks={selectedArtworks.length}
           setActiveStep={setActiveStep}
         />
 
-        <section className="portfolio-builder-scroll min-h-0 overflow-y-auto border-x border-white/[0.07] bg-[#080d16]/42">
+        <section className={styles.editorColumn}>
           <MobileSteps activeStep={activeStep} setActiveStep={setActiveStep} />
 
-          <div className="mx-auto grid w-full max-w-[1240px] gap-5 px-4 py-5 lg:px-6">
+          <div className={styles.editorContent}>
             <SaveNotice error={saveError} message={saveMessage} />
 
             {activeStep === "profile" ? (
@@ -562,11 +531,9 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
                 instagramUrl={instagramUrl}
                 isUploadingCollectionCover={isUploadingCollectionCover}
                 isUploadingProfileImage={isUploadingProfileImage}
-                isSaving={isSaving}
                 location={location}
                 onArtistNameChange={setArtistName}
                 onBioChange={setBio}
-                onCollectionCoverChange={setCollectionCoverUrl}
                 onCollectionCoverUpload={uploadCollectionCover}
                 onCollectionDescriptionChange={setCollectionDescription}
                 onCollectionNameChange={setCollectionName}
@@ -575,9 +542,7 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
                 onEmailChange={setEmail}
                 onInstagramUrlChange={setInstagramUrl}
                 onLocationChange={setLocation}
-                onProfileImageChange={setProfileImageUrl}
                 onProfileImageUpload={uploadProfileImage}
-                onSave={() => void saveProject()}
                 onWebsiteUrlChange={setWebsiteUrl}
                 profileImageUrl={profileImageUrl}
                 websiteUrl={websiteUrl}
@@ -589,9 +554,7 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
                 artworks={currentProject.artworks}
                 coverImageUrl={currentProject.coverImageUrl}
                 isBusy={isSaving || isUploadingArtwork}
-                isSidebarCollapsed={isSidebarCollapsed}
                 isUploadingArtwork={isUploadingArtwork}
-                onMoveArtwork={moveArtwork}
                 onReorderArtwork={reorderArtwork}
                 onSetCoverArtwork={setCoverArtwork}
                 onUploadArtworks={uploadArtworks}
@@ -604,10 +567,18 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
             {activeStep === "design" ? (
               <DesignWorkspace
                 designConfig={designConfig}
+                fontStyle={fontStyle}
+                includeBranding={includeBranding}
                 isSaving={isSaving}
                 isPremium={isPremiumProject(currentProject)}
+                language={language}
+                onFontStyleChange={setFontStyle}
+                onIncludeBrandingChange={setIncludeBranding}
+                onLanguageChange={setLanguage}
+                onPageFormatChange={setPageFormat}
                 onSave={() => void saveProject()}
                 onDesignConfigChange={setDesignConfig}
+                pageFormat={pageFormat}
                 selectedTemplate={selectedTemplate}
                 onTemplateChange={changePresetTemplate}
               />
@@ -615,9 +586,7 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
 
             {activeStep === "export" ? (
               <ExportWorkspace
-                isDownloadingCoverTest={isDownloadingCoverTest}
                 isGeneratingPdf={isGeneratingPdf}
-                onDownloadCoverTest={() => void downloadCoverTestPdf()}
                 onGeneratePdf={() => void generatePdfVersion()}
                 onOpenCleanPdf={() => void generateAndOpenCleanPdf()}
                 onOpenPayment={openPaymentPage}
@@ -625,10 +594,12 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
                 project={currentProject}
               />
             ) : null}
+
+            <StepNavigation activeStep={activeStep} setActiveStep={setActiveStep} />
           </div>
         </section>
 
-        <PreviewPanel
+        <StudioPreviewPanel
           artistName={artistName}
           bio={bio}
           collectionCoverUrl={collectionCoverUrl}
@@ -654,63 +625,81 @@ function StudioTopbar({
   isSaving,
   onOpenPreview,
   onSave,
+  onThemeChange,
   project,
   template,
+  theme,
 }: {
   isSaving: boolean;
   onOpenPreview: () => void;
   onSave: () => void;
+  onThemeChange: (theme: StudioTheme) => void;
   project: PortfolioProject;
   template: PortfolioTemplate;
+  theme: StudioTheme;
 }) {
   return (
-    <header className="relative z-20 flex h-16 shrink-0 items-center justify-between border-b border-white/[0.08] bg-[#080d16]/94 px-5 text-[#f3f5f8] backdrop-blur-xl">
-      <div className="flex min-w-0 items-center gap-3">
-        <Link
-          className="flex shrink-0 items-center gap-3 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#8b5cf6]/80"
-          href="/portfolio-builder"
-        >
-          <img
-            alt="Art Studio 360"
-            className="h-5 w-auto"
-            src="https://cdn.prod.website-files.com/681b5dac4415aa941af374fe/68c978c51b6638fa49b92f6b_360%20Logo%20White.svg"
+    <header className={styles.topbar}>
+      <div className={styles.topbarProject}>
+        <Link className={styles.topbarLogo} href="/portfolio-builder" aria-label="Portfolio Builder početna">
+          <Image
+            alt="ArtBoard"
+            height={32}
+            priority
+            src={
+              theme === "dark"
+                ? "/artboard-logo/ArtBoard-Horizontal-Gradient-Mark-White-Text.svg"
+                : "/artboard-logo/ArtBoard-Horizontal-Gradient-Mark-Black-Text.svg"
+            }
+            width={148}
           />
-          <span className="hidden text-[10px] font-bold uppercase tracking-[0.34em] text-[#a3adbd] md:inline">
-            Portfolio Builder
-          </span>
         </Link>
-
-        <div className="hidden h-5 w-px bg-white/15 md:block" />
-
-        <div className="min-w-0">
-          <p className="truncate text-[14px] font-black leading-none tracking-[-0.02em] text-white">{project.title}</p>
-          <p className="mt-1 truncate text-[10px] font-semibold uppercase tracking-[0.08em] text-[#6f7a8c]">
-            {templateLabels[template]} / {project.status} / {project.paymentStatus}
-          </p>
+        <span className={styles.topbarDivider} aria-hidden="true" />
+        <div className={styles.projectMeta}>
+          <div className={styles.projectTitleRow}>
+            <strong>{project.artistName} - Portfolio</strong>
+            <span className={styles.savedBadge}>
+              <i aria-hidden="true" />
+              {isSaving ? "Čuvanje..." : "Sačuvano"}
+            </span>
+          </div>
+          <span className={styles.projectSubtitle}>
+            {templateLabels[template]} <b>{project.status === "DRAFT" ? "Draft" : project.status}</b>
+          </span>
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        <Link
-          className="hidden rounded-xl border border-white/[0.11] bg-white/[0.035] px-5 py-3 text-[12px] font-black !text-[#f3f5f8] transition hover:-translate-y-0.5 hover:border-white/[0.2] hover:!bg-white/[0.075] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b5cf6]/80 md:inline-flex"
-          href={project.sourceArtist?.slug ? `/artists/${project.sourceArtist.slug}` : "/"}
-        >
-          {project.sourceArtist?.slug ? "Nazad na profil" : "Nazad na sajt"}
+      <div className={styles.topbarActions}>
+        <div aria-label="Tema Portfolio Studija" className={styles.themeToggle} role="group">
+          <button
+            aria-label="Svijetla tema"
+            aria-pressed={theme === "light"}
+            className={theme === "light" ? styles.activeThemeButton : undefined}
+            onClick={() => onThemeChange("light")}
+            title="Svijetla tema"
+            type="button"
+          >
+            <Sun aria-hidden="true" size={16} strokeWidth={2.2} />
+          </button>
+          <button
+            aria-label="Tamna tema"
+            aria-pressed={theme === "dark"}
+            className={theme === "dark" ? styles.activeThemeButton : undefined}
+            onClick={() => onThemeChange("dark")}
+            title="Tamna tema"
+            type="button"
+          >
+            <Moon aria-hidden="true" size={16} strokeWidth={2.2} />
+          </button>
+        </div>
+        <Link className={styles.studioLink} href="/portfolio-builder">
+          Portfolio Studio
         </Link>
-        <button
-          className="hidden rounded-xl border border-white/[0.11] bg-white/[0.035] px-5 py-3 text-[12px] font-black text-[#f3f5f8] transition hover:-translate-y-0.5 hover:border-white/[0.2] hover:bg-white/[0.075] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b5cf6]/80 disabled:cursor-wait disabled:opacity-70 sm:inline-flex"
-          disabled={isSaving}
-          onClick={onSave}
-          type="button"
-        >
-          {isSaving ? "Cuvam..." : "Sacuvaj draft"}
+        <button className={styles.outlineButton} disabled={isSaving} onClick={onSave} type="button">
+          {isSaving ? "Čuvam..." : "Sačuvaj draft"}
         </button>
-        <button
-          className="rounded-xl border border-[#8b5cf6]/70 bg-[#8b5cf6] px-5 py-3 text-[12px] font-black text-white shadow-[0_14px_38px_rgba(139,92,246,0.18)] transition hover:-translate-y-0.5 hover:border-[#9c72f8] hover:bg-[#9c72f8] hover:shadow-[0_18px_48px_rgba(139,92,246,0.26)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b5cf6]/80"
-          onClick={onOpenPreview}
-          type="button"
-        >
-          Otvori preview
+        <button className={styles.gradientButton} onClick={onOpenPreview} type="button">
+          Otvori pregled
         </button>
       </div>
     </header>
@@ -719,152 +708,64 @@ function StudioTopbar({
 
 function StudioSidebar({
   activeStep,
-  isCollapsed,
-  onToggleCollapsed,
   project,
   selectedArtworks,
   setActiveStep,
 }: {
   activeStep: BuilderStep;
-  isCollapsed: boolean;
-  onToggleCollapsed: () => void;
   project: PortfolioProject;
   selectedArtworks: number;
   setActiveStep: (step: BuilderStep) => void;
 }) {
-  return (
-    <aside
-      className={`relative hidden min-h-0 overflow-hidden border-r border-white/[0.07] bg-[#090f19]/95 text-[#f3f5f8] shadow-[18px_0_60px_rgba(0,0,0,0.3)] transition-[width] duration-300 xl:flex xl:flex-col ${
-        isCollapsed ? "items-center" : ""
-      }`}
-    >
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -left-28 top-8 h-72 w-72 rounded-full bg-[#8b5cf6]/4 blur-3xl"
-      />
-      <div
-        className={`relative w-full border-b border-white/10 ${
-          isCollapsed ? "flex flex-col items-center gap-3 p-3" : "p-4"
-        }`}
-      >
-        <button
-          aria-label={isCollapsed ? "Rasiri sidebar" : "Skupi sidebar"}
-          className={`grid h-10 w-10 place-items-center rounded-full border border-white/[0.11] bg-white/[0.04] text-[#a3adbd] shadow-[0_12px_34px_rgba(0,0,0,0.2)] transition hover:bg-white/[0.09] hover:text-white ${
-            isCollapsed ? "" : "ml-auto"
-          }`}
-          onClick={onToggleCollapsed}
-          type="button"
-        >
-          <svg
-            aria-hidden="true"
-            className={`h-4 w-4 transition ${isCollapsed ? "" : "rotate-180"}`}
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="m9 6 6 6-6 6"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2.5"
-            />
-          </svg>
-        </button>
+  const estimatedPages = Math.max(4, selectedArtworks + 4);
 
-        {isCollapsed ? (
-          <div className="grid h-10 w-10 place-items-center rounded-full border border-white/[0.11] bg-white/[0.045] text-[10px] font-black uppercase tracking-[0.12em] text-[#a78bfa]">
-            AB
-          </div>
-        ) : (
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.32em] text-[#a78bfa]">
-              Project
-            </p>
-            <h1 className="mt-2 truncate text-[18px] font-black tracking-[-0.03em]">{project.artistName}</h1>
-            <p className="mt-1 text-[11px] text-white/45">
-              {project.source === "ARTBOARD_PROFILE" ? "Iz ArtBoard profila" : "Guest portfolio"}
-            </p>
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              <StatusPill tone={project.access.canDownloadCleanPdf ? "green" : "yellow"}>
-                {project.access.canDownloadCleanPdf ? "PDF otkljucan" : "Watermark preview"}
-              </StatusPill>
-              <StatusPill tone={project.access.reason === "PREMIUM" ? "blue" : "neutral"}>
-                {project.access.reason === "PREMIUM"
-                  ? "Premium"
-                  : project.access.reason === "PAID"
-                    ? "Placeno"
-                    : "Basic"}
-              </StatusPill>
-            </div>
-          </div>
-        )}
+  return (
+    <aside className={styles.sidebar}>
+      <div className={styles.profileSummary}>
+        <div className={styles.sourceLabel}>
+          {project.source === "ARTBOARD_PROFILE" ? "Iz ArtBoard profila" : "Portfolio bez profila"}
+        </div>
+        <div className={styles.sidebarAvatar}>
+          {project.profileImageUrl ? <img alt="" src={project.profileImageUrl} /> : <span>AB</span>}
+        </div>
+        <h1>{project.artistName}</h1>
+        <div className={styles.planBadges}>
+          <span>Free korisnik</span>
+          <strong>
+            <i>✓</i>
+            {project.access.reason === "PREMIUM" ? "Premium korisnik" : project.access.reason === "PAID" ? "PDF otključan" : "Basic korisnik"}
+          </strong>
+        </div>
       </div>
 
-      <nav className={`relative flex-1 ${isCollapsed ? "w-full px-2 py-3" : "p-3"}`}>
-        <div className="space-y-1">
-          {steps.map((step) => {
-            const isActive = activeStep === step.id;
-
-            return (
-              <button
-                className={`group relative grid w-full rounded-2xl text-left transition ${
-                  isCollapsed ? "place-items-center px-0 py-3" : "grid-cols-[28px_1fr] gap-3 px-3 py-3"
-                } ${
-                  isActive
-                    ? "border border-[#8b5cf6]/24 bg-[#8b5cf6]/[0.075] text-white before:absolute before:bottom-3 before:left-0 before:top-3 before:w-[3px] before:rounded-r-full before:bg-[#8b5cf6]"
-                    : "border border-transparent text-[#a3adbd] hover:border-white/[0.1] hover:bg-white/[0.045] hover:text-white"
-                }`}
-                key={step.id}
-                onClick={() => setActiveStep(step.id)}
-                type="button"
-              >
-                <span
-                  className={`flex h-8 w-8 items-center justify-center rounded-full border ${
-                    isActive
-                      ? "border-[#8b5cf6]/55 bg-[#8b5cf6]/14 text-[#c4b5fd]"
-                      : "border-white/[0.12] bg-white/[0.03] text-[#a3adbd]"
-                  }`}
-                >
-                  <BuilderStepIcon step={step.id} />
-                </span>
-
-                {isCollapsed ? (
-                  <span className="pointer-events-none absolute left-[calc(100%+10px)] top-1/2 z-50 min-w-[170px] -translate-y-1/2 rounded-xl border border-white/[0.1] bg-[#0e1522] px-3 py-2 text-left opacity-0 shadow-[0_18px_45px_rgba(0,0,0,0.35)] transition group-hover:opacity-100">
-                    <span className="block text-[12px] font-black text-white">{step.label}</span>
-                    <span className="mt-0.5 block text-[10px] font-semibold text-white/55">
-                      {step.helper}
-                    </span>
-                  </span>
-                ) : (
-                  <span>
-                    <span className="block text-[13px] font-bold">{step.label}</span>
-                    <span className="mt-0.5 block text-[11px] opacity-60">{step.helper}</span>
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+      <nav className={styles.stepNav} aria-label="Koraci izrade portfolija">
+        {steps.map((step, index) => {
+          const isActive = activeStep === step.id;
+          return (
+            <button
+              className={isActive ? styles.activeStep : undefined}
+              data-step={step.id}
+              key={step.id}
+              onClick={() => setActiveStep(step.id)}
+              type="button"
+            >
+              <span className={styles.stepIcon}><BuilderStepIcon step={step.id} /></span>
+              <span className={styles.stepCopy}>
+                <strong><i>{String(index + 1).padStart(2, "0")}</i>{step.label}</strong>
+                <small>{step.helper}</small>
+              </span>
+            </button>
+          );
+        })}
       </nav>
 
-      <div className={`relative w-full border-t border-white/10 ${isCollapsed ? "p-2" : "p-3"}`}>
-        {isCollapsed ? (
-          <div className="grid gap-2">
-            <CollapsedMetric label="Odabrani radovi" value={String(selectedArtworks)} />
-            <CollapsedMetric label="PDF verzije" value={String(project.counts.versions)} />
-          </div>
-        ) : (
-          <div className="rounded-2xl border border-white/[0.08] bg-white/[0.025] p-3 shadow-[0_18px_50px_rgba(0,0,0,0.2)]">
-            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#a78bfa]">
-              Status
-            </p>
-            <div className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
-              <MiniMetric label="Odabrani" value={`${selectedArtworks}/${project.artworks.length}`} />
-              <MiniMetric label="Verzije" value={String(project.counts.versions)} />
-            </div>
-          </div>
-        )}
+      <div className={styles.sidebarMetrics}>
+        <div><strong>{selectedArtworks}<span>/{project.artworks.length}</span></strong><small>Radova iz ArtBoard profila</small></div>
+        <div><strong>{estimatedPages}</strong><small>Strana ima tvoj portfolio</small></div>
       </div>
+      <button className={styles.sidebarPreviewButton} onClick={() => setActiveStep("export")} type="button">
+        Pregled PDF-a
+      </button>
     </aside>
   );
 }
@@ -944,14 +845,14 @@ function MobileSteps({
   setActiveStep: (step: BuilderStep) => void;
 }) {
   return (
-    <div className="border-b border-white/[0.08] bg-[#080d16]/94 px-3 py-2 backdrop-blur-xl xl:hidden">
+    <div className="border-b border-white/[0.08] bg-[#07080d]/95 px-3 py-2 backdrop-blur-xl xl:hidden">
       <div className="flex gap-2 overflow-x-auto">
         {steps.map((step, index) => (
           <button
             className={`shrink-0 rounded-full px-3 py-2 text-[11px] font-bold ${
               activeStep === step.id
-                ? "bg-[#8b5cf6] text-white shadow-[0_10px_28px_rgba(139,92,246,0.18)]"
-                : "border border-white/[0.1] text-[#a3adbd]"
+                ? "bg-[#111318] text-white shadow-[0_10px_28px_rgba(17,19,24,0.14)]"
+                : "border border-white/[0.1] bg-white/[0.04] text-[#8d93a5]"
             }`}
             key={step.id}
             onClick={() => setActiveStep(step.id)}
@@ -962,6 +863,33 @@ function MobileSteps({
         ))}
       </div>
     </div>
+  );
+}
+
+function StepNavigation({
+  activeStep,
+  setActiveStep,
+}: {
+  activeStep: BuilderStep;
+  setActiveStep: (step: BuilderStep) => void;
+}) {
+  const currentIndex = steps.findIndex((step) => step.id === activeStep);
+  const previousStep = currentIndex > 0 ? steps[currentIndex - 1] : null;
+  const nextStep = currentIndex < steps.length - 1 ? steps[currentIndex + 1] : null;
+
+  return (
+    <nav className={styles.stepNavigation} aria-label="Navigacija kroz korake">
+      {previousStep ? (
+        <button onClick={() => setActiveStep(previousStep.id)} type="button">
+          ← {previousStep.label}
+        </button>
+      ) : <span />}
+      {nextStep ? (
+        <button className={styles.nextStepButton} onClick={() => setActiveStep(nextStep.id)} type="button">
+          Dalje: {nextStep.label} →
+        </button>
+      ) : null}
+    </nav>
   );
 }
 
@@ -977,11 +905,9 @@ function ProfileWorkspace({
   instagramUrl,
   isUploadingCollectionCover,
   isUploadingProfileImage,
-  isSaving,
   location,
   onArtistNameChange,
   onBioChange,
-  onCollectionCoverChange,
   onCollectionCoverUpload,
   onCollectionDescriptionChange,
   onCollectionNameChange,
@@ -990,9 +916,7 @@ function ProfileWorkspace({
   onEmailChange,
   onInstagramUrlChange,
   onLocationChange,
-  onProfileImageChange,
   onProfileImageUpload,
-  onSave,
   onWebsiteUrlChange,
   profileImageUrl,
   websiteUrl,
@@ -1008,11 +932,9 @@ function ProfileWorkspace({
   instagramUrl: string;
   isUploadingCollectionCover: boolean;
   isUploadingProfileImage: boolean;
-  isSaving: boolean;
   location: string;
   onArtistNameChange: (value: string) => void;
   onBioChange: (value: string) => void;
-  onCollectionCoverChange: (value: string) => void;
   onCollectionCoverUpload: (files: FileList | null) => void;
   onCollectionDescriptionChange: (value: string) => void;
   onCollectionNameChange: (value: string) => void;
@@ -1021,9 +943,7 @@ function ProfileWorkspace({
   onEmailChange: (value: string) => void;
   onInstagramUrlChange: (value: string) => void;
   onLocationChange: (value: string) => void;
-  onProfileImageChange: (value: string) => void;
   onProfileImageUpload: (files: FileList | null) => void;
-  onSave: () => void;
   onWebsiteUrlChange: (value: string) => void;
   profileImageUrl: string;
   websiteUrl: string;
@@ -1041,55 +961,51 @@ function ProfileWorkspace({
   return (
     <>
       <WorkspaceHeader
-        label="Sadrzaj portfolija"
-        title="Uredi podatke koji ulaze u PDF"
-        description="Ovo je centralni tekstualni sloj portfolija: cover, profil, statement i kontakt."
-        action={
-          <PrimaryButton disabled={isSaving} onClick={onSave}>
-            {isSaving ? "Cuvam..." : "Sacuvaj"}
-          </PrimaryButton>
-        }
+        label="Korak 1 od 4"
+        title="Uredi podatke za PDF"
+        description="Povukli smo podatke sa tvog ArtBoard profila. Provjeri ih i dopuni — sve izmjene se odmah vide u pregledu."
       />
 
-      <section className={`${studioCardClassName} p-5`}>
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#a78bfa]">
-            Readiness
-          </p>
-          <p className="mt-1 text-[12px] font-semibold text-[#a3adbd]">
-            Brza provjera da li portfolio ima osnovne podatke prije preview-a i exporta.
-          </p>
-        </div>
-
-        <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
+      <section className={`${studioCardClassName} flex flex-wrap items-center gap-3 px-5 py-3`}>
+        <strong className="text-[13px] text-[#f3f4f7]">Spremno za pregled</strong>
+        <strong className="text-[12px] text-[#199653]">{checks.filter((check) => check.done).length}/5</strong>
+        <span className="h-[18px] w-px bg-white/[0.12]" />
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           {checks.map((check) => (
             <div
-              className="flex min-h-12 items-center justify-between gap-3 rounded-xl border border-white/[0.08] bg-[#0b121e]/72 px-3 py-2"
+              className={`flex items-center gap-1.5 text-[12px] font-semibold ${check.done ? "text-[#c4c8d4]" : "text-[#6b7184]"}`}
               key={check.label}
             >
-              <span className="min-w-0 text-[12px] font-semibold leading-4 text-[#cbd5e1]">
-                {check.label}
-              </span>
-              <span
-                className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                  check.done
-                    ? "bg-[#4cc98a]/14 text-[#9df0c2]"
-                    : "bg-[#ef6471]/12 text-[#ff9aa5]"
-                }`}
-              >
-                {check.done ? "OK" : "Popuni"}
-              </span>
+              <span className={check.done ? "text-[#35d07f]" : "text-[#6b7184]"}>{check.done ? "✓" : "○"}</span>
+              <span>{check.label}</span>
             </div>
           ))}
         </div>
       </section>
 
-      <div className="grid gap-4">
-        <Panel title="Artist profile">
-          <div className="grid gap-3 lg:grid-cols-3">
-            <BuilderInput label="Ime umjetnika" value={artistName} onChange={onArtistNameChange} />
+      <div className="grid gap-[18px]">
+        <Panel title="Osnovni podaci">
+          <div className="grid grid-cols-1 gap-x-[18px] gap-y-4 md:grid-cols-2 lg:grid-cols-3">
+            <BuilderInput label="Ime i prezime" value={artistName} onChange={onArtistNameChange} />
+            <BuilderInput label="Email" value={email} onChange={onEmailChange} />
+            <BuilderInput
+              label="Lokacija"
+              placeholder="npr. Podgorica, Crna Gora"
+              value={location}
+              onChange={onLocationChange}
+            />
+            <BuilderInput
+              label="Website"
+              placeholder="npr. ivonamedenica.com"
+              value={websiteUrl}
+              onChange={onWebsiteUrlChange}
+            />
+            <BuilderInput label="Instagram" value={instagramUrl} onChange={onInstagramUrlChange} />
+          </div>
+
+          <div className="mt-[22px]">
             <BuilderMultiSelect
-              label="Disciplina"
+              label="Discipline"
               onToggle={(value) => {
                 const nextValues = toggleDisciplineValue(parseDisciplineList(discipline), value);
                 onDisciplineChange(formatDisciplineList(nextValues));
@@ -1097,137 +1013,107 @@ function ProfileWorkspace({
               options={getPortfolioDisciplineOptions(discipline)}
               selectedValues={parseDisciplineList(discipline)}
             />
-            <BuilderInput label="Email" value={email} onChange={onEmailChange} />
-            <BuilderInput label="Lokacija" value={location} onChange={onLocationChange} />
-            <BuilderInput label="Website" value={websiteUrl} onChange={onWebsiteUrlChange} />
-            <BuilderInput label="Instagram" value={instagramUrl} onChange={onInstagramUrlChange} />
           </div>
 
-          <label className="mt-4 grid gap-1.5 text-[11px] font-bold text-[#a3adbd]">
-            Biografija / artist statement
+          <label className="mt-[22px] grid gap-2 text-[12px] font-bold text-[#c4c8d4]">
+            <span className="flex items-center justify-between gap-3">
+              <span>Biografija i umjetniÄki iskaz</span>
+              <span className="font-semibold text-[#8d93a5]">{bio.length} / 1200</span>
+            </span>
             <textarea
-              className={`${studioTextareaClassName} min-h-48`}
+              className={`${studioTextareaClassName} min-h-[210px] text-[14px] font-medium leading-[1.65]`}
+              maxLength={1200}
               onChange={(event) => onBioChange(event.target.value)}
+              rows={6}
               value={bio}
             />
           </label>
-
-          <div className="mt-4 grid gap-4 xl:grid-cols-2">
-            <div className="rounded-2xl border border-white/[0.08] bg-[#0b121e]/70 p-4">
-              <div className="grid gap-4 sm:grid-cols-[88px_minmax(0,1fr)]">
-                <div className="h-20 w-20 overflow-hidden rounded-2xl border border-white/[0.1] bg-white/[0.05] shadow-[0_14px_36px_rgba(0,0,0,0.22)]">
-                  {profileImageUrl ? (
-                    <img alt="" className="h-full w-full object-cover" src={profileImageUrl} />
-                  ) : null}
-                </div>
-                <div>
-                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-[#a78bfa]">
-                    Profilna slika
-                  </p>
-                  <p className="mt-1 text-[12px] leading-5 text-[#a3adbd]">
-                    Ova slika se koristi na cover strani i kontakt strani portfolija.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
-                <BuilderInput
-                  label="URL profilne slike"
-                  value={profileImageUrl}
-                  onChange={onProfileImageChange}
-                />
-                <div className="flex items-end">
-                  <input
-                    accept="image/jpeg,image/png,image/webp,image/avif"
-                    className="hidden"
-                    onChange={(event) => {
-                      onProfileImageUpload(event.target.files);
-                      event.target.value = "";
-                    }}
-                    ref={profileImageInputRef}
-                    type="file"
-                  />
-                  <SecondaryStudioButton
-                    disabled={isUploadingProfileImage}
-                    onClick={() => profileImageInputRef.current?.click()}
-                  >
-                    {isUploadingProfileImage ? "Upload..." : "Upload sliku"}
-                  </SecondaryStudioButton>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-white/[0.08] bg-[#0b121e]/70 p-4">
-              <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_128px]">
-                <div>
-                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-[#a78bfa]">
-                    Kolekcija
-                  </p>
-                  <p className="mt-1 max-w-xl text-[12px] leading-5 text-[#a3adbd]">
-                    Ovi podaci pune uvodnu stranu kolekcije u PDF-u: naziv, godina, opis i cover.
-                  </p>
-                </div>
-                <div className="h-20 w-full overflow-hidden rounded-xl border border-white/[0.1] bg-white/[0.05]">
-                  {collectionCoverUrl ? (
-                    <img alt="" className="h-full w-full object-cover" src={collectionCoverUrl} />
-                  ) : (
-                    <div className="flex h-full items-center justify-center px-2 text-center text-[9px] font-bold uppercase tracking-[0.14em] text-[#6f7a8c]">
-                      Cover
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="mt-3 grid gap-3 md:grid-cols-2">
-                <BuilderInput
-                  label="Ime kolekcije"
-                  value={collectionName}
-                  onChange={onCollectionNameChange}
-                />
-                <BuilderInput
-                  label="Godina"
-                  value={collectionYear}
-                  onChange={onCollectionYearChange}
-                />
-              </div>
-
-              <label className="mt-3 grid gap-1.5 text-[11px] font-bold text-[#a3adbd]">
-                Opis kolekcije
-                <textarea
-                  className={`${studioTextareaClassName} min-h-28`}
-                  onChange={(event) => onCollectionDescriptionChange(event.target.value)}
-                  value={collectionDescription}
-                />
-              </label>
-
-              <div className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
-                <BuilderInput
-                  label="URL cover slike"
-                  value={collectionCoverUrl}
-                  onChange={onCollectionCoverChange}
-                />
-                <div className="flex items-end">
-                  <input
-                    accept="image/jpeg,image/png,image/webp,image/avif"
-                    className="hidden"
-                    onChange={(event) => {
-                      onCollectionCoverUpload(event.target.files);
-                      event.target.value = "";
-                    }}
-                    ref={collectionCoverInputRef}
-                    type="file"
-                  />
-                  <SecondaryStudioButton
-                    disabled={isUploadingCollectionCover}
-                    onClick={() => collectionCoverInputRef.current?.click()}
-                  >
-                    {isUploadingCollectionCover ? "Upload..." : "Upload cover"}
-                  </SecondaryStudioButton>
-                </div>
-              </div>
-            </div>
-          </div>
         </Panel>
+
+        <div className={styles.profileBottomRow}>
+          <section className={styles.profileImageCard}>
+            <div className={styles.profileCardAvatar}>
+              {profileImageUrl ? (
+                <img alt="Profilna slika" src={profileImageUrl} />
+              ) : (
+                <span>Profilna</span>
+              )}
+            </div>
+            <div className={styles.profileCardCopy}>
+              <h2>Profilna slika</h2>
+              <p>
+                Koristi se na naslovnoj i kontakt strani.
+              </p>
+              <input
+                accept="image/jpeg,image/png,image/webp,image/avif"
+                className="hidden"
+                onChange={(event) => {
+                  onProfileImageUpload(event.target.files);
+                  event.target.value = "";
+                }}
+                ref={profileImageInputRef}
+                type="file"
+              />
+              <button
+                className={styles.changeProfileImageButton}
+                disabled={isUploadingProfileImage}
+                onClick={() => profileImageInputRef.current?.click()}
+                type="button"
+              >
+                <Pencil aria-hidden="true" size={12} strokeWidth={2.2} />
+                {isUploadingProfileImage ? "Upload..." : "Izmijeni fotografiju"}
+              </button>
+            </div>
+          </section>
+
+          <section className={styles.collectionCard}>
+            <input
+              accept="image/jpeg,image/png,image/webp,image/avif"
+              className="hidden"
+              onChange={(event) => {
+                onCollectionCoverUpload(event.target.files);
+                event.target.value = "";
+              }}
+              ref={collectionCoverInputRef}
+              type="file"
+            />
+            <button
+              className={styles.collectionCoverButton}
+              disabled={isUploadingCollectionCover}
+              onClick={() => collectionCoverInputRef.current?.click()}
+              title="Izmijeni cover kolekcije"
+              type="button"
+            >
+              {collectionCoverUrl ? (
+                <img alt="Cover kolekcije" src={collectionCoverUrl} />
+              ) : (
+                <span>Cover kolekcije</span>
+              )}
+            </button>
+            <div className={styles.collectionFields}>
+              <h2>Kolekcija</h2>
+              <div className={styles.collectionFieldRow}>
+                <input
+                  aria-label="Ime kolekcije"
+                  onChange={(event) => onCollectionNameChange(event.target.value)}
+                  value={collectionName}
+                />
+                <input
+                  aria-label="Godina kolekcije"
+                  onChange={(event) => onCollectionYearChange(event.target.value)}
+                  value={collectionYear}
+                />
+              </div>
+              <textarea
+                aria-label="Opis kolekcije"
+                onChange={(event) => onCollectionDescriptionChange(event.target.value)}
+                placeholder="Kratak opis kolekcije za uvodnu stranu (opciono)"
+                rows={3}
+                value={collectionDescription}
+              />
+            </div>
+          </section>
+        </div>
       </div>
     </>
   );
@@ -1237,9 +1123,7 @@ function WorksWorkspace({
   artworks,
   coverImageUrl,
   isBusy,
-  isSidebarCollapsed,
   isUploadingArtwork,
-  onMoveArtwork,
   onReorderArtwork,
   onSetCoverArtwork,
   onUploadArtworks,
@@ -1250,9 +1134,7 @@ function WorksWorkspace({
   artworks: PortfolioProject["artworks"];
   coverImageUrl?: string | null;
   isBusy: boolean;
-  isSidebarCollapsed: boolean;
   isUploadingArtwork: boolean;
-  onMoveArtwork: (artworkId: string, direction: "up" | "down") => void;
   onReorderArtwork: (draggedArtworkId: string, targetArtworkId: string) => void;
   onSetCoverArtwork: (artwork: PortfolioProject["artworks"][number]) => void;
   onUploadArtworks: (files: FileList | null) => void;
@@ -1271,51 +1153,44 @@ function WorksWorkspace({
   return (
     <>
       <WorkspaceHeader
-        label="Portfolio radovi"
+        label="Korak 2 od 4"
         title="Izbor radova i redosljed"
-        description="Dodaj radove, ukljuci ih u PDF i kasnije uredi podatke rada. MVP limit je 30 radova po portfoliju."
-        action={
-          <div className="flex items-center gap-2">
-            <input
-              accept="image/jpeg,image/png,image/webp,image/avif"
-              className="hidden"
-              multiple
-              onChange={(event) => {
-                onUploadArtworks(event.target.files);
-                event.target.value = "";
-              }}
-              ref={fileInputRef}
-              type="file"
-            />
-            <PrimaryButton
-              disabled={isBusy}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              {isUploadingArtwork ? "Dodajem..." : "Dodaj rad"}
-            </PrimaryButton>
-          </div>
-        }
+        description="Uključi radove koji ulaze u PDF i poređaj ih prevlačenjem. Prvi rad se koristi kao naslovna slika."
       />
 
-      <Panel title={`Radovi (${selectedArtworks}/${artworks.length})`}>
-        <div className="mb-5 rounded-2xl border border-white/[0.08] bg-[#080d16]/72 p-4 text-[12px] leading-5 text-[#a3adbd]">
-          Biraj 10-30 radova za finalni PDF. MVP trenutno cuva izbor rada, a redosljed je vezan
-          za broj rada iz drafta.
+      <section>
+        <input
+          accept="image/jpeg,image/png,image/webp,image/avif"
+          className="hidden"
+          multiple
+          onChange={(event) => {
+            onUploadArtworks(event.target.files);
+            event.target.value = "";
+          }}
+          ref={fileInputRef}
+          type="file"
+        />
+        <div className="mb-5 flex flex-wrap items-center gap-4 rounded-[20px] border border-white/[0.1] bg-[#0b0d15]/90 px-5 py-4 text-[12px] font-semibold leading-5 text-[#8d93a5]">
+          <strong className="text-[#f3f4f7]">{selectedArtworks} radova u PDF-u</strong>
+          <span className="h-1 w-40 overflow-hidden rounded-full bg-white/[0.1]">
+            <i className="block h-full rounded-full bg-[#f3f4f7]" style={{ width: `${Math.min(100, selectedArtworks * 5)}%` }} />
+          </span>
+          <span className="min-w-[220px] flex-1">Preporuka 10–30 · prevuci karticu za redoslijed</span>
+          <SecondaryStudioButton disabled={isBusy} onClick={() => fileInputRef.current?.click()}>
+            {isUploadingArtwork ? "Dodajem..." : "+ Dodaj rad"}
+          </SecondaryStudioButton>
         </div>
         {orderedArtworks.length > 0 ? (
           <div className="-mx-1 pb-3">
-            <div className={`grid gap-4 px-1 ${isSidebarCollapsed ? "grid-cols-3" : "grid-cols-2"}`}>
-              {orderedArtworks.map((artwork, index) => (
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(190px,1fr))] gap-4 px-1">
+              {orderedArtworks.map((artwork) => (
                 <ArtworkEditorCard
                   artwork={artwork}
-                  canMoveDown={index < orderedArtworks.length - 1}
-                  canMoveUp={index > 0}
                   isCoverArtwork={coverImageUrl === artwork.imageUrl}
                   isDragTarget={dragOverArtworkId === artwork.id && draggedArtworkId !== artwork.id}
                   isDragging={draggedArtworkId === artwork.id}
                   isBusy={isBusy}
                   key={artwork.id}
-                  onMove={onMoveArtwork}
                   onDragEnd={() => {
                     setDraggedArtworkId(null);
                     setDragOverArtworkId(null);
@@ -1340,7 +1215,7 @@ function WorksWorkspace({
         ) : (
           <EmptyState text="Jos nema radova u ovom draftu." />
         )}
-      </Panel>
+      </section>
     </>
   );
 }
@@ -1357,8 +1232,6 @@ const artworkAvailabilityOptions: Array<{
 
 function ArtworkEditorCard({
   artwork,
-  canMoveDown,
-  canMoveUp,
   isCoverArtwork,
   isDragging,
   isDragTarget,
@@ -1367,14 +1240,11 @@ function ArtworkEditorCard({
   onDragOver,
   onDragStart,
   onDrop,
-  onMove,
   onSetCover,
   onToggle,
   onUpdate,
 }: {
   artwork: PortfolioProject["artworks"][number];
-  canMoveDown: boolean;
-  canMoveUp: boolean;
   isCoverArtwork: boolean;
   isDragging: boolean;
   isDragTarget: boolean;
@@ -1383,7 +1253,6 @@ function ArtworkEditorCard({
   onDragOver: () => void;
   onDragStart: () => void;
   onDrop: () => void;
-  onMove: (artworkId: string, direction: "up" | "down") => void;
   onSetCover: (artwork: PortfolioProject["artworks"][number]) => void;
   onToggle: (artworkId: string, isSelected: boolean) => void;
   onUpdate: (artworkId: string, payload: UpdatePortfolioArtworkPayload) => void;
@@ -1427,12 +1296,10 @@ function ArtworkEditorCard({
   return (
     <>
       <article
-        className={`group flex min-h-[432px] min-w-0 flex-col overflow-hidden rounded-[18px] border bg-[#0b121e]/94 shadow-[0_18px_44px_rgba(0,0,0,0.28)] transition duration-200 hover:-translate-y-0.5 hover:border-white/[0.16] hover:bg-[#101827] ${
-          artwork.isSelected
-            ? "border-[#8b5cf6]/55 ring-1 ring-[#8b5cf6]/16"
-            : "border-white/[0.09]"
+        className={`group flex min-w-0 flex-col overflow-hidden rounded-[18px] border border-white/[0.06] bg-[#0b0d15]/95 shadow-[0_10px_26px_rgba(0,0,0,0.16)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_20px_42px_rgba(0,0,0,0.3)] ${
+          artwork.isSelected ? "opacity-100" : "opacity-55"
         } ${isDragging ? "scale-[0.98] opacity-45" : ""} ${
-          isDragTarget ? "border-[#8b5cf6] bg-[#111a2b] ring-2 ring-[#8b5cf6]/20" : ""
+          isDragTarget ? "border-[#1a7cff] ring-2 ring-[#1a7cff]/20" : ""
         }`}
         draggable={!isBusy}
         onDragEnd={onDragEnd}
@@ -1450,110 +1317,62 @@ function ArtworkEditorCard({
           onDrop();
         }}
       >
-        <div className="relative aspect-[4/3] overflow-hidden bg-[#050912]">
+        <div className="relative aspect-[4/5] overflow-hidden bg-[#eef0f4]">
           <img
             alt={artwork.title || "Portfolio artwork"}
             className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.035]"
             src={artwork.imageUrl}
           />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#0b121e] via-[#0b121e]/45 to-transparent" />
-          <span className="absolute left-3 top-3 grid h-7 min-w-7 place-items-center rounded-md bg-[#8b5cf6] px-2 text-[12px] font-black text-white shadow-[0_10px_26px_rgba(139,92,246,0.24)]">
-            {artwork.orderIndex + 1}
-          </span>
           <button
-            aria-label="Uredi detalje rada"
-            className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-lg border border-white/15 bg-black/55 text-white shadow-[0_10px_26px_rgba(0,0,0,0.32)] backdrop-blur transition hover:bg-[#f3f5f8] hover:text-[#0b121e] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b5cf6]/80"
-            onClick={() => setIsEditing(true)}
+            aria-label={isCoverArtwork ? "Naslovna slika" : "Postavi kao naslovnu sliku"}
+            className="absolute left-3 top-3 grid h-7 min-w-7 place-items-center rounded-full border-0 bg-[#05060b]/75 px-2 text-[12px] font-black text-[#f3f4f7] shadow-[0_8px_20px_rgba(0,0,0,0.22)] backdrop-blur"
+            disabled={isBusy || isCoverArtwork || !artwork.isSelected}
+            onClick={() => onSetCover(artwork)}
             type="button"
           >
-            <span className="text-lg leading-none">...</span>
+            {artwork.isSelected ? artwork.orderIndex + 1 : "—"}
           </button>
+          {isCoverArtwork && artwork.isSelected ? (
+            <span className="absolute right-3 top-3 inline-flex h-7 items-center rounded-full bg-[#f3f4f7] px-3 text-[10px] font-black uppercase text-[#07080d]">
+              Naslovna
+            </span>
+          ) : null}
         </div>
 
-        <div className="flex flex-1 flex-col space-y-3 p-4">
+        <div className="flex flex-1 flex-col gap-3 p-3.5">
           <div>
-            <h3 className="truncate text-[14px] font-black text-white">
+            <h3 className="truncate text-[14px] font-black text-[#f3f4f7]">
               {artwork.title || `Rad ${artwork.orderIndex + 1}`}
             </h3>
-            <p className="mt-1 text-[10px] font-black uppercase tracking-[0.16em] text-[#6f7a8c]">
-              Prevuci za promjenu redosljeda
-            </p>
-            <p className="mt-2 truncate text-[12px] text-[#a3adbd]">
-              {artwork.technique || artwork.year || "Detalji rada nisu uneseni"}
+            <p
+              className={`mt-1 truncate text-[12px] ${
+                artwork.technique || artwork.year ? "text-[#8d93a5]" : "text-[#ff6b85]"
+              }`}
+            >
+              {[artwork.technique, artwork.year].filter(Boolean).join(", ") || "Dodaj naziv, tehniku i dimenzije"}
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="mt-auto flex items-center justify-between gap-3">
             <button
-              className={`min-h-10 rounded-lg border px-3 py-2 text-[11px] font-black transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b5cf6]/80 ${
-                artwork.isSelected
-                  ? "border-[#8b5cf6]/70 bg-[#8b5cf6] text-white shadow-[0_10px_22px_rgba(139,92,246,0.16)]"
-                  : "border-white/10 bg-white/[0.045] text-[#a3adbd] hover:border-[#8b5cf6]/60 hover:text-white"
-              }`}
+              aria-pressed={artwork.isSelected}
+              className="inline-flex items-center gap-2 bg-transparent p-0 text-[12px] font-bold text-[#c4c8d4]"
               disabled={isBusy}
               onClick={() => onToggle(artwork.id, !artwork.isSelected)}
               type="button"
             >
-              {artwork.isSelected ? "U PDF-u" : "Van PDF-a"}
+              <span className={`relative h-5 w-[34px] rounded-full transition ${artwork.isSelected ? "bg-[#f3f4f7]" : "bg-white/20"}`}>
+                <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-[#05060b] shadow transition ${artwork.isSelected ? "left-4" : "left-0.5"}`} />
+              </span>
+              U PDF-u
             </button>
 
             <button
-              className={`min-h-10 rounded-lg border px-3 py-2 text-[11px] font-black transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b5cf6]/80 ${
-                isCoverArtwork
-                  ? "border-[#4cc98a]/70 bg-[#4cc98a]/16 text-[#b9f7d4]"
-                  : "border-white/10 bg-white/[0.045] text-[#a3adbd] hover:border-[#4cc98a]/60 hover:bg-[#4cc98a]/12 hover:text-[#dfffea]"
-              }`}
-              disabled={isBusy || isCoverArtwork}
-              onClick={() => onSetCover(artwork)}
-              type="button"
-            >
-              {isCoverArtwork ? "Pocetni" : "Pocetni"}
-            </button>
-          </div>
-
-          <div className="mt-auto flex items-center gap-2 border-t border-white/10 pt-3">
-            <button
-              className="rounded-lg border border-white/10 bg-white/[0.045] px-3 py-2 text-[11px] font-black text-white transition hover:border-white/[0.18] hover:bg-white/[0.09] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b5cf6]/80"
+              className="bg-transparent p-0 text-[12px] font-bold text-[#8d93a5] transition hover:text-[#f3f4f7]"
               onClick={() => setIsEditing(true)}
               type="button"
             >
-              Detalji
-              <span aria-hidden="true" className="ml-2">
-                -&gt;
-              </span>
-            </button>
-            <button
-              aria-label="Pomjeri rad gore"
-              className="ml-auto grid h-8 w-8 place-items-center rounded-full border border-white/[0.12] bg-white/[0.035] text-[10px] font-black text-[#a3adbd] transition hover:border-[#8b5cf6] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b5cf6]/80 disabled:cursor-not-allowed disabled:opacity-30"
-              disabled={isBusy || !canMoveUp}
-              onClick={() => onMove(artwork.id, "up")}
-              type="button"
-            >
-              <svg aria-hidden="true" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
-                <path d="m6 14 6-6 6 6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.4" />
-              </svg>
-            </button>
-            <button
-              aria-label="Pomjeri rad dolje"
-              className="grid h-8 w-8 place-items-center rounded-full border border-white/[0.12] bg-white/[0.035] text-[10px] font-black text-[#a3adbd] transition hover:border-[#8b5cf6] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b5cf6]/80 disabled:cursor-not-allowed disabled:opacity-30"
-              disabled={isBusy || !canMoveDown}
-              onClick={() => onMove(artwork.id, "down")}
-              type="button"
-            >
-              <svg aria-hidden="true" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
-                <path d="m6 10 6 6 6-6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.4" />
-              </svg>
-            </button>
-            <button
-              aria-label="Ukloni iz PDF-a"
-              className="grid h-8 w-8 place-items-center rounded-full border border-[#dc1735]/35 bg-[#dc1735]/[0.08] text-[#ff6f83] transition hover:bg-[#dc1735] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#dc1735]/80 disabled:cursor-not-allowed disabled:opacity-40"
-              disabled={isBusy || !artwork.isSelected}
-              onClick={() => onToggle(artwork.id, false)}
-              type="button"
-            >
-              <svg aria-hidden="true" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
-                <path d="m6 6 12 12M18 6 6 18" stroke="currentColor" strokeLinecap="round" strokeWidth="2.4" />
-              </svg>
+              Uredi
             </button>
           </div>
         </div>
@@ -1648,19 +1467,19 @@ function ArtworkEditModal({
 
   const modal = (
     <div
-      className="fixed inset-0 z-[99999] flex h-dvh w-dvw items-center justify-center overflow-hidden bg-[#02040a]/96 p-4 backdrop-blur-2xl sm:p-6"
+      className="fixed inset-0 z-[99999] flex h-dvh w-dvw items-center justify-center overflow-hidden bg-[#111318]/70 p-4 backdrop-blur-xl sm:p-6"
       onMouseDown={onClose}
       role="presentation"
     >
       <section
         aria-label="Detalji rada"
         aria-modal="true"
-        className="relative grid h-[min(90dvh,860px)] w-[min(94dvw,1480px)] overflow-hidden rounded-[34px] border border-white/[0.14] bg-[#080d16] text-white shadow-[0_44px_150px_rgba(0,0,0,0.82)] lg:grid-cols-[minmax(0,0.95fr)_minmax(470px,1.05fr)]"
+        className="relative grid h-[min(90dvh,860px)] w-[min(94dvw,1480px)] overflow-hidden rounded-[28px] border border-white/[0.1] bg-[#0b0d15] text-[#f3f4f7] shadow-[0_44px_150px_rgba(0,0,0,0.56)] lg:grid-cols-[minmax(0,0.95fr)_minmax(470px,1.05fr)]"
         onMouseDown={(event) => event.stopPropagation()}
         role="dialog"
       >
-        <div className="relative flex min-h-[300px] items-center justify-center border-b border-white/[0.08] bg-[#050912] p-4 lg:h-full lg:min-h-0 lg:border-b-0 lg:border-r lg:border-white/[0.08] lg:p-8">
-          <div className="absolute left-4 top-4 z-10 rounded-full border border-white/[0.12] bg-black/45 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-[#a78bfa] backdrop-blur">
+        <div className="relative flex min-h-[300px] items-center justify-center border-b border-white/[0.08] bg-[#10121b] p-4 lg:h-full lg:min-h-0 lg:border-b-0 lg:border-r lg:border-white/[0.08] lg:p-8">
+          <div className="absolute left-4 top-4 z-10 rounded-full border border-white/[0.1] bg-[#0b0d15]/90 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-[#c4c8d4] backdrop-blur">
             Preview rada
           </div>
           <img
@@ -1673,19 +1492,19 @@ function ArtworkEditModal({
         <div className="portfolio-builder-scroll h-full min-h-0 overflow-y-auto p-5 sm:p-7 lg:p-9">
           <header className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#a78bfa]">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#1764e8]">
                 Detalji za PDF
               </p>
-              <h2 className="mt-2 text-[30px] font-black leading-tight tracking-[-0.05em] text-white">
+              <h2 className="mt-2 text-[30px] font-black leading-tight tracking-[-0.05em] text-[#f3f4f7]">
                 {title || "Bez naziva"}
               </h2>
-              <p className="mt-2 text-[13px] leading-5 text-white/[0.58]">
+              <p className="mt-2 text-[13px] leading-5 text-[#9aa0ae]">
                 Ovi podaci ulaze u PDF stranicu rada i kasnije mogu da se koriste za sales
                 template, katalog ili price list.
               </p>
             </div>
             <button
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-white/[0.12] bg-white/[0.04] text-[18px] font-black text-white/70 transition hover:border-white hover:bg-white hover:text-[#0b121e]"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-white/[0.1] bg-white/[0.04] text-[18px] font-black text-[#9aa0ae] transition hover:border-white/30 hover:text-white"
               onClick={onClose}
               type="button"
             >
@@ -1704,7 +1523,7 @@ function ArtworkEditModal({
             <BuilderInput label="Tehnika" value={technique} onChange={onTechniqueChange} />
             <BuilderInput label="Dimenzije" value={dimensions} onChange={onDimensionsChange} />
             <BuilderInput label="Cijena" value={price} onChange={onPriceChange} />
-            <label className="grid gap-1.5 text-[11px] font-bold text-white/[0.62]">
+            <label className="grid gap-1.5 text-[11px] font-bold text-[#c4c8d4]">
               Status dostupnosti
               <select
                 className={studioInputClassName}
@@ -1722,7 +1541,7 @@ function ArtworkEditModal({
             </label>
           </div>
 
-          <label className="mt-4 grid gap-1.5 text-[11px] font-bold text-white/[0.62]">
+          <label className="mt-4 grid gap-1.5 text-[11px] font-bold text-[#c4c8d4]">
             Opis rada
             <textarea
               className={`${studioTextareaClassName} min-h-36`}
@@ -1731,9 +1550,9 @@ function ArtworkEditModal({
             />
           </label>
 
-          <div className="mt-6 flex flex-wrap justify-end gap-2 border-t border-white/10 pt-4">
+          <div className="mt-6 flex flex-wrap justify-end gap-2 border-t border-white/[0.08] pt-4">
             <button
-              className="rounded-full border border-white/[0.12] bg-white/[0.04] px-5 py-2 text-[12px] font-black text-white/70 transition hover:border-white hover:bg-white hover:text-[#0b121e]"
+              className="rounded-full border-2 border-[#f3f4f7] bg-transparent px-5 py-2 text-[12px] font-black text-[#f3f4f7] transition hover:bg-[#f3f4f7] hover:text-[#07080d]"
               onClick={onClose}
               type="button"
             >
@@ -1760,18 +1579,34 @@ function ArtworkEditModal({
 
 function DesignWorkspace({
   designConfig,
+  fontStyle,
+  includeBranding,
   isSaving,
   isPremium,
+  language,
   onDesignConfigChange,
+  onFontStyleChange,
+  onIncludeBrandingChange,
+  onLanguageChange,
+  onPageFormatChange,
   onSave,
+  pageFormat,
   selectedTemplate,
   onTemplateChange,
 }: {
   designConfig: PortfolioDesignConfig;
+  fontStyle: PortfolioFontStyle;
+  includeBranding: boolean;
   isSaving: boolean;
   isPremium: boolean;
+  language: PortfolioLanguage;
   onDesignConfigChange: (config: PortfolioDesignConfig) => void;
+  onFontStyleChange: (font: PortfolioFontStyle) => void;
+  onIncludeBrandingChange: (include: boolean) => void;
+  onLanguageChange: (language: PortfolioLanguage) => void;
+  onPageFormatChange: (format: PortfolioPageFormat) => void;
   onSave: () => void;
+  pageFormat: PortfolioPageFormat;
   selectedTemplate: PortfolioTemplate;
   onTemplateChange: (template: PortfolioTemplate) => void;
 }) {
@@ -1827,40 +1662,33 @@ function DesignWorkspace({
   return (
     <>
       <WorkspaceHeader
-        label="Dizajn sistema"
-        title="Odaberi strukturu PDF-a"
-        description="Ove opcije kontrolisu vizuelni ton, format i sta ulazi u finalni export."
-        action={
-          <PrimaryButton disabled={isSaving} onClick={onSave}>
-            {isSaving ? "Cuvam..." : "Sacuvaj dizajn"}
-          </PrimaryButton>
-        }
+        label="Korak 3 od 4"
+        title="Izaberi dizajn PDF-a"
+        description="Šablon određuje izgled svih strana. Format, jezik i font možeš promijeniti bilo kad."
       />
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className={styles.designTemplateGrid}>
         {templates.map((template) => (
           <button
-            className={`relative overflow-hidden rounded-2xl border p-5 text-left transition duration-200 hover:-translate-y-0.5 ${
-              selectedTemplate === template.id
-                ? "border-[#8b5cf6]/80 bg-[#8b5cf6]/[0.075] shadow-[0_18px_44px_rgba(0,0,0,0.26)]"
-                : "border-white/[0.09] bg-[#0b121e]/78 shadow-[0_16px_42px_rgba(0,0,0,0.22)] hover:border-white/[0.17] hover:bg-[#121b2a]"
+            className={`${styles.designTemplateCard} ${
+              selectedTemplate === template.id ? styles.selectedDesignTemplate : ""
             }`}
             key={template.id}
             onClick={() => onTemplateChange(template.id)}
             type="button"
           >
             {selectedTemplate === template.id ? (
-              <span className="absolute left-4 top-4 grid h-7 w-7 place-items-center rounded-full bg-[#8b5cf6] text-white shadow-[0_12px_30px_rgba(139,92,246,0.2)]">
+              <span className={`${styles.designTemplateIndicator} ${styles.selectedDesignTemplateIndicator}`}>
                 <svg aria-hidden="true" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
                   <path d="m5 12 4 4L19 6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.6" />
                 </svg>
               </span>
             ) : (
-              <span className="absolute left-4 top-4 h-7 w-7 rounded-full border border-white/20 bg-black/30" />
+              <span className={styles.designTemplateIndicator} />
             )}
 
-            <div className="aspect-[4/3] rounded-xl border border-white/[0.08] bg-[#050912] p-4">
-              <div className="h-full rounded-lg bg-[#f3f4f6] p-4 text-black/70 shadow-[0_14px_34px_rgba(0,0,0,0.25)]">
+            <div className={styles.designTemplatePreview}>
+              <div className={styles.designTemplatePage}>
                 <div className="h-1.5 w-16 rounded-full bg-black/45" />
                 <div className="mt-4 grid h-[70%] grid-cols-[1fr_0.7fr] gap-3">
                   <div className="rounded bg-black/12" />
@@ -1876,38 +1704,63 @@ function DesignWorkspace({
                 </div>
               </div>
             </div>
-            <h3 className="mt-4 text-[16px] font-black text-white">{template.title}</h3>
-            <p className="mt-2 text-[12px] leading-5 text-white/[0.52]">{template.description}</p>
+            <h3>{template.title}</h3>
+            <p>{template.description}</p>
           </button>
         ))}
       </div>
 
-      <Panel title="PDF settings">
-        <div className="grid gap-3 md:grid-cols-4">
-          <OptionBox label="Format" value="A4" />
-          <OptionBox label="Jezik" value="ME" />
-          <OptionBox label="Font" value="Sans" />
-          <OptionBox label="Branding" value="ArtBoard" />
+      <Panel className={styles.designSettingsPanel} title="Podešavanja PDF-a">
+        <div className={styles.designSettingsGrid}>
+          <StudioSegmentedControl
+            label="Format"
+            onChange={(value) => onPageFormatChange(value as PortfolioPageFormat)}
+            options={[{ label: "A4", value: "A4" }, { label: "Letter", value: "US_LETTER" }]}
+            value={pageFormat}
+          />
+          <StudioSegmentedControl
+            label="Jezik"
+            onChange={(value) => onLanguageChange(value as PortfolioLanguage)}
+            options={[{ label: "Crnogorski", value: "ME" }, { label: "English", value: "EN" }]}
+            value={language}
+          />
+          <StudioSegmentedControl
+            label="Font"
+            onChange={(value) => onFontStyleChange(value as PortfolioFontStyle)}
+            options={[{ label: "Sans", value: "SANS" }, { label: "Serif", value: "SERIF" }]}
+            value={fontStyle}
+          />
+          <StudioSegmentedControl
+            label="ArtBoard potpis"
+            onChange={(value) => onIncludeBrandingChange(value === "on")}
+            options={[{ label: "Uključen", value: "on" }, { label: "Isključen", value: "off" }]}
+            value={includeBranding ? "on" : "off"}
+          />
+          <div className={styles.designSaveAction}>
+            <SecondaryStudioButton disabled={isSaving} onClick={onSave}>
+              {isSaving ? "Čuvam..." : "Sačuvaj podešavanja"}
+            </SecondaryStudioButton>
+          </div>
         </div>
       </Panel>
 
-      <Panel title="Premium custom design">
+      <Panel className={styles.designMixPanel} title="Kombinuj šablone">
         <div className="grid gap-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="text-[13px] font-black text-white">Mix stranica iz razlicitih template-a</p>
-              <p className="mt-1 max-w-2xl text-[12px] leading-5 text-white/[0.52]">
+              <p className="text-[13px] font-black text-[#f3f4f7]">Mix stranica iz različitih template-a</p>
+              <p className="mt-1 max-w-2xl text-[12px] leading-5 text-[#9aa0ae]">
                 Preset mode koristi jedan kompletan template. Custom mode dozvoljava Platinum korisniku da
                 izabere poseban dizajn za cover, bio, kolekciju, radove, kontakt i footer.
               </p>
             </div>
 
-            <div className="flex rounded-full border border-white/[0.1] bg-black/25 p-1">
+            <div className="flex rounded-full bg-white/[0.06] p-1">
               <button
                 className={`rounded-full px-4 py-2 text-[11px] font-black transition ${
                   designConfig.mode === "PRESET"
-                    ? "bg-white text-[#080d16]"
-                    : "text-white/58 hover:text-white"
+                    ? "bg-[#f3f4f7] text-[#07080d] shadow-sm"
+                    : "text-[#8d93a5]"
                 }`}
                 onClick={() => setDesignMode("PRESET")}
                 type="button"
@@ -1917,8 +1770,8 @@ function DesignWorkspace({
               <button
                 className={`rounded-full px-4 py-2 text-[11px] font-black transition ${
                   designConfig.mode === "CUSTOM"
-                    ? "bg-[#d6a94f] text-[#080d16]"
-                    : "text-white/58 hover:text-white"
+                    ? "bg-[#f3f4f7] text-[#07080d] shadow-sm"
+                    : "text-[#8d93a5]"
                 } ${!isPremium ? "cursor-not-allowed opacity-45" : ""}`}
                 disabled={!isPremium}
                 onClick={() => setDesignMode("CUSTOM")}
@@ -1930,8 +1783,8 @@ function DesignWorkspace({
           </div>
 
           {!isPremium ? (
-            <div className="rounded-2xl border border-[#d6a94f]/22 bg-[#d6a94f]/[0.07] p-4 text-[12px] leading-5 text-[#f6e3ad]">
-              Custom kombinovanje stranica je zakljucano za Basic plan. Korisnik moze i dalje birati
+            <div className="rounded-2xl border border-[#e6b85c]/30 bg-[#e6b85c]/10 p-4 text-[12px] leading-5 text-[#f3d998]">
+              Custom kombinovanje stranica je zaključano za Basic plan. Korisnik može i dalje birati
               jedan kompletan template, a nakon prelaska na Platinum dobija page-by-page izbor.
             </div>
           ) : null}
@@ -1944,10 +1797,10 @@ function DesignWorkspace({
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {(Object.keys(pageDesignLabels) as PortfolioDesignPageKey[]).map((page) => (
                 <label
-                  className="grid gap-2 rounded-2xl border border-white/[0.08] bg-[#0b121e]/72 p-4"
+                  className="grid gap-2 rounded-2xl border border-white/[0.09] bg-white/[0.035] p-4"
                   key={page}
                 >
-                  <span className="text-[10px] font-black uppercase tracking-[0.24em] text-[#d6a94f]">
+                  <span className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8d93a5]">
                     {pageDesignLabels[page]}
                   </span>
                   <select
@@ -1964,8 +1817,8 @@ function DesignWorkspace({
                 </label>
               ))}
 
-              <label className="grid gap-2 rounded-2xl border border-white/[0.08] bg-[#0b121e]/72 p-4">
-                <span className="text-[10px] font-black uppercase tracking-[0.24em] text-[#d6a94f]">
+              <label className="grid gap-2 rounded-2xl border border-white/[0.09] bg-white/[0.035] p-4">
+                <span className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8d93a5]">
                   Footer
                 </span>
                 <select
@@ -1989,221 +1842,180 @@ function DesignWorkspace({
 }
 
 function ExportWorkspace({
-  isDownloadingCoverTest,
   isGeneratingPdf,
-  onDownloadCoverTest,
   onGeneratePdf,
   onOpenCleanPdf,
   onOpenPayment,
   onOpenPreview,
   project,
 }: {
-  isDownloadingCoverTest: boolean;
   isGeneratingPdf: boolean;
-  onDownloadCoverTest: () => void;
   onGeneratePdf: () => void;
   onOpenCleanPdf: () => void;
   onOpenPayment: () => void;
   onOpenPreview: () => void;
   project: PortfolioProject;
 }) {
- 
-  const accessLabel =
-    project.access.reason === "PREMIUM"
-      ? "Premium clan - cisti PDF je ukljucen"
-      : project.access.reason === "PAID"
-        ? "Jednokratno placanje evidentirano"
-        : "Download je zakljucan dok se ne odradi placanje";
+  const [linkCopied, setLinkCopied] = useState(false);
   const canGenerateCleanPdf = project.access.canDownloadCleanPdf;
+  const isPremium = project.access.reason === "PREMIUM";
+  const accessLabel = canGenerateCleanPdf
+    ? "Čist PDF bez vodenog žiga je uključen."
+    : "Otključaj čist PDF bez vodenog žiga.";
+
+  async function copyShareLink() {
+    await navigator.clipboard.writeText(
+      `${window.location.origin}/portfolio-builder/${project.id}/preview`,
+    );
+    setLinkCopied(true);
+    window.setTimeout(() => setLinkCopied(false), 1800);
+  }
+
+  function downloadLatestPdf() {
+    if (project.latestPdfUrl) {
+      window.open(project.latestPdfUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    onOpenCleanPdf();
+  }
 
   return (
     <>
       <WorkspaceHeader
-        label="Isporuka"
-        title="Export i dijeljenje portfolija"
-        description="Preview uvijek ima ArtBoard watermark. Cisti PDF se otkljucava placanjem ili premium statusom."
+        label="Korak 4 od 4"
+        title="Izvoz i dijeljenje"
+        description="Otvori pregled, generiši čist PDF ili pošalji privatni link galeriji i kupcima."
       />
 
-      <section className={`${studioCardClassName} overflow-hidden text-white`}>
-        <div className="grid gap-5 p-5 lg:grid-cols-[1fr_320px]">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#a78bfa]">
-              PDF status
+      <div className={styles.exportContent}>
+        <section className={styles.exportHero}>
+          <div className={styles.exportHeroCopy}>
+            <span className={styles.exportStatus}>
+              <i aria-hidden="true" />
+              {isPremium ? "Premium članstvo" : canGenerateCleanPdf ? "PDF je otključan" : "PDF izvoz"}
+            </span>
+            <h2>{accessLabel}</h2>
+            <p>
+              Pregled uvijek ima ArtBoard vodeni žig. Svaki put kad generišeš čist PDF, čuvamo ga kao novu verziju.
             </p>
-            <h2 className="mt-3 max-w-2xl text-[26px] font-black leading-tight tracking-[-0.05em]">
-              {accessLabel}
-            </h2>
-            <p className="mt-3 max-w-2xl text-[13px] leading-6 text-white/[0.65]">
-              Preview ostaje dostupan sa velikim ArtBoard watermarkom. Clean PDF se generise i
-              cuva kao verzija tek kada je portfolio placen ili kada je umjetnik premium clan.
-            </p>
-
-            <div className="mt-5 flex flex-wrap gap-2">
-              <button
-              className="rounded-full border border-white/[0.12] bg-white/[0.035] px-4 py-2 text-[12px] font-black text-white transition hover:border-white hover:bg-white hover:text-[#0b121e]"
-                onClick={onOpenPreview}
-                type="button"
-              >
-                Otvori preview
-              </button>
-
-              <button
-                className="rounded-full border border-white/[0.12] bg-white/[0.035] px-4 py-2 text-[12px] font-black text-white transition hover:border-white hover:bg-white hover:text-[#0b121e] disabled:cursor-not-allowed disabled:opacity-60"
-                disabled={isDownloadingCoverTest}
-                onClick={onDownloadCoverTest}
-                type="button"
-              >
-                {isDownloadingCoverTest ? "Generisem test..." : "Download cover test"}
-              </button>
-
-              {canGenerateCleanPdf ? (
-                <button
-                  className="rounded-full border border-[#8b5cf6]/70 bg-[#8b5cf6] px-4 py-2 text-[12px] font-black text-white transition hover:-translate-y-0.5 hover:bg-[#9c72f8] disabled:cursor-not-allowed disabled:opacity-60"
-                  disabled={isGeneratingPdf}
-                  onClick={onGeneratePdf}
-                  type="button"
-                >
-                  {isGeneratingPdf ? "Generisem..." : "Generisi novu PDF verziju"}
-                </button>
-              ) : (
-                <button
-                  className="rounded-full border border-[#8b5cf6]/70 bg-[#8b5cf6] px-4 py-2 text-[12px] font-black text-white transition hover:-translate-y-0.5 hover:bg-[#9c72f8]"
-                  onClick={onOpenPayment}
-                  type="button"
-                >
-                  Plati i otkljucaj PDF
-                </button>
-              )}
-
-              {project.latestPdfUrl ? (
-                <button
-                  className="rounded-full border border-[#8b5cf6]/70 bg-[#8b5cf6] px-4 py-2 text-[12px] font-black text-white transition hover:-translate-y-0.5 hover:bg-[#9c72f8] disabled:cursor-not-allowed disabled:opacity-60"
-                  onClick={() => window.open(project.latestPdfUrl!, "_blank", "noopener,noreferrer")}
-                  type="button"
-                >
-                  Download zadnje verzije
-                </button>
-              ) : null}
-            </div>
           </div>
+          <button
+            className={styles.exportPrimaryButton}
+            disabled={isGeneratingPdf}
+            onClick={canGenerateCleanPdf ? onGeneratePdf : onOpenPayment}
+            type="button"
+          >
+            {isGeneratingPdf ? "Generišem..." : canGenerateCleanPdf ? "Generiši PDF" : "Otključaj PDF"}
+          </button>
+        </section>
 
-          <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
-            <ExportMetric label="Payment" value={formatBuilderEnum(project.paymentStatus)} />
-            <ExportMetric label="PDF verzije" value={String(project.versions.length)} />
-            <ExportMetric
-              label="Clean access"
-              value={project.access.canDownloadCleanPdf ? "Otkljucan" : "Zakljucan"}
-            />
-          </div>
+        <div className={styles.exportActionGrid}>
+          <ExportActionCard
+            action="Otvori pregled"
+            onClick={onOpenPreview}
+            text="Pogledaj cijeli portfolio sa ArtBoard vodenim žigom."
+            title="Pregled"
+          />
+          <ExportActionCard
+            action={linkCopied ? "Link kopiran" : "Kopiraj link"}
+            onClick={() => void copyShareLink()}
+            text="Privatni link za galerije, kupce i saradnike."
+            title="Link za dijeljenje"
+          />
+          <ExportActionCard
+            action={canGenerateCleanPdf ? (isGeneratingPdf ? "Generišem..." : "Preuzmi") : "Otključaj"}
+            disabled={isGeneratingPdf}
+            onClick={canGenerateCleanPdf ? downloadLatestPdf : onOpenPayment}
+            text={
+              canGenerateCleanPdf
+                ? "Čist PDF bez vodenog žiga, spreman za slanje."
+                : "Otključaj čist PDF spreman za slanje."
+            }
+            title="Preuzmi PDF"
+          />
         </div>
-      </section>
 
-      <div className="grid gap-3 lg:grid-cols-3">
-        <ExportBox
-          title="PDF preview"
-          text="Otvori pregled portfolija sa ArtBoard watermarkom."
-          action="Otvori preview"
-          onClick={onOpenPreview}
-        />
-        <ExportBox title="Share link" text="Posalji privatni link galeriji ili kupcu." action="Kopiraj" />
-        <ExportBox
-          title="Download PDF"
-          text={
-            project.access.canDownloadCleanPdf
-              ? "Cisti PDF bez watermarka je otkljucan."
-              : "Basic i guest korisnici prvo otkljucavaju jednokratno placanje."
-          }
-          action={
-            project.access.canDownloadCleanPdf
-              ? isGeneratingPdf
-                ? "Generisem PDF..."
-                : "Otvori cisti PDF"
-              : "Plati i otkljucaj"
-          }
-          disabled={project.access.canDownloadCleanPdf ? isGeneratingPdf : false}
-          onClick={project.access.canDownloadCleanPdf ? onOpenCleanPdf : onOpenPayment}
-        />
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Panel title="PDF verzije">
-          {project.versions.length > 0 ? (
-            <div className="space-y-2">
-              {project.versions.map((version) => (
-                <button
-                  className="flex w-full items-center justify-between gap-3 rounded-2xl border border-white/[0.08] bg-[#0b121e]/70 px-4 py-3 text-left text-[12px] transition hover:-translate-y-0.5 hover:border-[#8b5cf6]/45"
-                  key={version.id}
-                  onClick={() => window.open(version.pdfUrl, "_blank", "noopener,noreferrer")}
-                  type="button"
-                >
-                  <span>
-                    <strong className="block text-[13px] text-white">
-                      Verzija {version.versionNumber}
-                    </strong>
-                    <span className="text-white/50">
-                      {formatBuilderDate(version.createdAt)} - {templateLabels[version.template]}
+        <div className={styles.exportHistoryGrid}>
+          <section className={styles.exportHistoryCard}>
+            <h2>Verzije PDF-a</h2>
+            {project.versions.length > 0 ? (
+              <div className={styles.exportHistoryList}>
+                {project.versions.map((version) => (
+                  <button
+                    className={styles.exportHistoryItem}
+                    key={version.id}
+                    onClick={() => window.open(version.pdfUrl, "_blank", "noopener,noreferrer")}
+                    type="button"
+                  >
+                    <span>
+                      <strong>Verzija {version.versionNumber}</strong>
+                      <small>
+                        {formatBuilderDate(version.createdAt)} · {templateLabels[version.template]}
+                      </small>
                     </span>
-                  </span>
-                  <span className="rounded-full border border-[#8b5cf6]/30 bg-[#8b5cf6]/12 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-[#c4b5fd]">
-                    PDF
-                  </span>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <EmptyExportState text="Jos nema generisanih clean PDF verzija. Kada korisnik dobije pristup, ovdje ce se cuvati svaka generisana verzija." />
-          )}
-        </Panel>
+                    <b>PDF</b>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className={styles.exportEmptyState}>
+                Još nema verzija. Prva će se pojaviti ovdje nakon što generišeš PDF.
+              </p>
+            )}
+          </section>
 
-        <Panel title="Placanja">
-          {project.payments.length > 0 ? (
-            <div className="space-y-2">
-              {project.payments.map((payment) => (
-                <div
-                  className="rounded-2xl border border-white/[0.08] bg-[#0b121e]/70 px-4 py-3"
-                  key={payment.id}
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-[13px] font-black text-white">
-                      {formatBuilderEnum(payment.status)}
-                    </p>
-                    <p className="text-[13px] font-black text-[#c4b5fd]">
-                      {formatBuilderMoney(payment.amountCents, payment.currency)}
-                    </p>
+          <section className={styles.exportHistoryCard}>
+            <h2>Plaćanje</h2>
+            {isPremium ? (
+              <p className={styles.exportEmptyState}>Nije potrebno — izvoz je uključen u Premium članstvo.</p>
+            ) : project.payments.length > 0 ? (
+              <div className={styles.exportHistoryList}>
+                {project.payments.map((payment) => (
+                  <div className={styles.exportPaymentItem} key={payment.id}>
+                    <span>
+                      <strong>{formatBuilderEnum(payment.status)}</strong>
+                      <small>
+                        {payment.paidAt
+                          ? `Plaćeno: ${formatBuilderDate(payment.paidAt)}`
+                          : `Kreirano: ${formatBuilderDate(payment.createdAt)}`}
+                      </small>
+                    </span>
+                    <b>{formatBuilderMoney(payment.amountCents, payment.currency)}</b>
                   </div>
-                  <p className="mt-1 text-[11px] text-white/50">
-                    {payment.paidAt
-                      ? `Placeno: ${formatBuilderDate(payment.paidAt)}`
-                      : `Kreirano: ${formatBuilderDate(payment.createdAt)}`}
-                  </p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <EmptyExportState text="Nema evidentiranih uplata za ovaj portfolio." />
-          )}
-        </Panel>
+                ))}
+              </div>
+            ) : (
+              <p className={styles.exportEmptyState}>Nema evidentiranih uplata za ovaj portfolio.</p>
+            )}
+          </section>
+        </div>
       </div>
     </>
   );
 }
 
-function ExportMetric({ label, value }: { label: string; value: string }) {
+function ExportActionCard({
+  action,
+  disabled = false,
+  onClick,
+  text,
+  title,
+}: {
+  action: string;
+  disabled?: boolean;
+  onClick: () => void;
+  text: string;
+  title: string;
+}) {
   return (
-    <div className="rounded-xl border border-white/[0.08] bg-[#0b121e]/70 p-3">
-      <p className="text-[20px] font-black text-white">{value}</p>
-      <p className="mt-1 text-[9px] font-black uppercase tracking-[0.2em] text-[#a78bfa]">
-        {label}
-      </p>
-    </div>
-  );
-}
-
-function EmptyExportState({ text }: { text: string }) {
-  return (
-    <div className="rounded-2xl border border-dashed border-white/[0.12] bg-white/[0.025] px-4 py-5 text-[12px] font-semibold leading-5 text-[#a3adbd]">
-      {text}
-    </div>
+    <article className={styles.exportActionCard}>
+      <h2>{title}</h2>
+      <p>{text}</p>
+      <button disabled={disabled} onClick={onClick} type="button">
+        {action}
+      </button>
+    </article>
   );
 }
 
@@ -2227,6 +2039,101 @@ function formatBuilderMoney(amountCents: number, currency: string) {
     currency,
     style: "currency",
   }).format(amountCents / 100);
+}
+
+function StudioPreviewPanel(props: React.ComponentProps<typeof PreviewPanel>) {
+  const {
+    artistName,
+    collectionCoverUrl,
+    collectionName,
+    coverImage,
+    designConfig,
+    discipline,
+    profileImageUrl,
+    project,
+    selectedArtworkItems,
+    template,
+  } = props;
+  const selectedItems = selectedArtworkItems
+    .slice()
+    .sort((a, b) => a.orderIndex - b.orderIndex)
+    .filter((artwork) => artwork.isSelected);
+  const previewTemplateLabel = designConfig.mode === "CUSTOM" ? "Custom mix" : templateLabels[template];
+  const estimatedPages = Math.max(4, selectedItems.length + 4);
+  const mainImage = coverImage || selectedItems[0]?.imageUrl || profileImageUrl;
+  const collectionImage = collectionCoverUrl || selectedItems[0]?.imageUrl;
+
+  return (
+    <aside className={styles.previewPanel}>
+      <div className={styles.previewHeader}>
+        <div className={styles.previewLabel}>
+          Pregled uživo
+        </div>
+        <p>
+          {previewTemplateLabel} · {project.pageFormat === "US_LETTER" ? "Letter" : "A4"} · {estimatedPages} strana
+        </p>
+      </div>
+
+      <div className={`${styles.previewScroll} portfolio-builder-scroll`}>
+        <PreviewThumbnail label="01 · Naslovna" large>
+          <div className={styles.previewCoverImage}>
+            {mainImage ? <img alt="" src={mainImage} /> : null}
+          </div>
+          <div className={styles.previewCoverMeta}>
+            <div className={styles.previewCoverText}>
+              <strong>{artistName || "Ime umjetnika"}</strong>
+              <small>{(discipline || "Vizuelna umjetnost").replace(/,\s*/g, " · ")}</small>
+            </div>
+            {profileImageUrl ? <img alt="" src={profileImageUrl} /> : null}
+          </div>
+        </PreviewThumbnail>
+
+        <div className={styles.previewGrid}>
+          <PreviewThumbnail label="02 · Profil">
+            <div className={styles.previewTextLines}>
+              <b />
+              <span /><span /><span /><span /><i />
+            </div>
+          </PreviewThumbnail>
+
+          <PreviewThumbnail label="03 · Kolekcija">
+            <div className={styles.previewArtworkImage}>
+              {collectionImage ? <img alt="" src={collectionImage} /> : null}
+            </div>
+            <strong className={styles.previewMiniTitle}>{collectionName || "Kolekcija"}</strong>
+          </PreviewThumbnail>
+
+          {selectedItems.slice(0, 4).map((artwork, index) => (
+            <PreviewThumbnail key={artwork.id} label={`${String(index + 4).padStart(2, "0")} · Rad`}>
+              <div className={styles.previewArtworkImage}>
+                <img alt={artwork.title || "Rad"} src={artwork.imageUrl} />
+              </div>
+              <strong className={styles.previewMiniTitle}>{artwork.title || `Rad ${index + 1}`}</strong>
+            </PreviewThumbnail>
+          ))}
+        </div>
+
+        {estimatedPages > 7 ? <p className={styles.morePages}>+ još {estimatedPages - 7} strana</p> : null}
+      </div>
+    </aside>
+  );
+}
+
+function PreviewThumbnail({
+  children,
+  label,
+  large = false,
+}: {
+  children: React.ReactNode;
+  label: string;
+  large?: boolean;
+}) {
+  return (
+    <section className={large ? styles.previewThumbnailLarge : styles.previewThumbnail}>
+      <span>{label}</span>
+      <div>{children}</div>
+    </section>
+  );
 }
 
 function PreviewPanel({
@@ -3597,10 +3504,10 @@ function SaveNotice({ error, message }: { error: string | null; message: string 
 
   return (
     <div
-      className={`rounded-2xl border px-4 py-3 text-[12px] font-semibold shadow-[0_16px_42px_rgba(0,0,0,0.16)] ${
+      className={`rounded-2xl border px-4 py-3 text-[12px] font-semibold shadow-[0_16px_42px_rgba(17,19,24,0.08)] ${
         error
-          ? "border-[#ff4f73]/35 bg-[#dc1735]/14 text-[#ffd6de]"
-          : "border-[#35d07f]/35 bg-[#16a34a]/14 text-[#dfffea]"
+          ? "border-[#ff4f73]/35 bg-[#fff1f4] text-[#b51638]"
+          : "border-[#35d07f]/35 bg-[#effbf4] text-[#147a42]"
       }`}
     >
       {error || message}
@@ -3707,16 +3614,16 @@ function WorkspaceHeader({
   title: string;
 }) {
   return (
-    <header className={`${studioCardClassName} px-6 py-6 lg:px-7`}>
+    <header className="px-1 pb-2 pt-1">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.38em] text-[#a78bfa]">
+          <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#8d93a5]">
             {label}
           </p>
-          <h1 className="mt-3 text-[clamp(1.7rem,2.35vw,2.15rem)] font-black tracking-[-0.055em] text-white">
+          <h1 className="mt-3 text-[clamp(2rem,3.2vw,3.25rem)] font-black leading-[0.98] tracking-[-0.055em] text-[#f3f4f7]">
             {title}
           </h1>
-          <p className="mt-2 max-w-[760px] text-[13px] leading-6 text-white/[0.56]">
+          <p className="mt-3 max-w-[760px] text-[15px] leading-6 text-[#9aa0ae]">
             {description}
           </p>
         </div>
@@ -3726,10 +3633,18 @@ function WorkspaceHeader({
   );
 }
 
-function Panel({ children, title }: { children: React.ReactNode; title: string }) {
+function Panel({
+  children,
+  className = "",
+  title,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  title: string;
+}) {
   return (
-    <section className={`${studioCardClassName} p-5 lg:p-6`}>
-      <h2 className="mb-4 text-[13px] font-black uppercase tracking-[0.28em] text-[#a78bfa]">
+    <section className={`${studioCardClassName} p-5 lg:p-6 ${className}`}>
+      <h2 className="mb-5 text-[18px] font-black tracking-[-0.025em] text-[#f3f4f7]">
         {title}
       </h2>
       {children}
@@ -3739,19 +3654,22 @@ function Panel({ children, title }: { children: React.ReactNode; title: string }
 
 function BuilderInput({
   label,
+  placeholder,
   value,
   onChange,
 }: {
   label: string;
+  placeholder?: string;
   value: string;
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="grid gap-1.5 text-[11px] font-bold text-white/[0.62]">
+    <label className="grid gap-1.5 text-[11px] font-bold text-[#c4c8d4]">
       {label}
       <input
         className={studioInputClassName}
         onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
         value={value}
       />
     </label>
@@ -3772,7 +3690,7 @@ function BuilderSelect({
   value: string;
 }) {
   return (
-    <label className="grid gap-1.5 text-[11px] font-bold text-white/[0.62]">
+    <label className="grid gap-1.5 text-[11px] font-bold text-[#c4c8d4]">
       {label}
       <select
         className={`${studioInputClassName} appearance-none pr-9`}
@@ -3802,10 +3720,23 @@ function BuilderMultiSelect({
   selectedValues: string[];
 }) {
   return (
-    <div className="grid gap-1.5 text-[11px] font-bold text-white/[0.62]">
-      <span>{label}</span>
-      <div className="rounded-[18px] border border-[#6b7280]/70 bg-[#111827] p-2 shadow-inner shadow-black/20">
-        <div className="grid gap-2 sm:grid-cols-2">
+    <div className="grid gap-2 text-[11px] font-bold text-[#c4c8d4]">
+      <div className="flex items-center justify-between gap-4">
+        <span>{label}</span>
+        <span className="font-semibold text-[#8d93a5]">Tvoje discipline · {selectedValues.length}</span>
+      </div>
+      <details className="group min-w-0">
+        <summary className="flex cursor-pointer list-none flex-wrap items-center gap-2">
+          {selectedValues.map((value) => (
+            <span className="inline-flex h-[34px] items-center rounded-full bg-[#f3f4f7] px-4 text-[12px] font-black text-[#07080d]" key={value}>
+              {value}
+            </span>
+          ))}
+          <span className="inline-flex h-[34px] items-center rounded-full border border-[#5d8ee7] px-4 text-[12px] font-black text-[#9cc2ff] transition group-open:bg-[#1a7cff]/10">
+            + Pogledaj sve ({options.length})
+          </span>
+        </summary>
+        <div className="mt-3 grid gap-2 rounded-2xl border border-white/[0.1] bg-white/[0.035] p-3 sm:grid-cols-2 lg:grid-cols-3">
           {options.map((option) => {
             const isSelected = selectedValues.includes(option);
 
@@ -3813,8 +3744,8 @@ function BuilderMultiSelect({
               <button
                 className={`rounded-full border px-3 py-2 text-left text-[12px] font-bold transition ${
                   isSelected
-                    ? "border-[#8b5cf6] bg-[#8b5cf6] text-white shadow-[0_10px_28px_rgba(139,92,246,0.28)]"
-                    : "border-white/[0.12] bg-white/[0.04] text-white/70 hover:border-[#8b5cf6]/70 hover:bg-white/[0.08] hover:text-white"
+                    ? "border-[#f3f4f7] bg-[#f3f4f7] text-[#07080d]"
+                    : "border-white/[0.1] bg-white/[0.04] text-[#aeb3c1] hover:border-[#1a7cff] hover:bg-white/[0.08] hover:text-[#9cc2ff]"
                 }`}
                 key={option}
                 onClick={() => onToggle(option)}
@@ -3825,10 +3756,7 @@ function BuilderMultiSelect({
             );
           })}
         </div>
-      </div>
-      <p className="text-[11px] font-semibold leading-4 text-white/40">
-        Mozes izabrati vise disciplina. Izbor se cuva u draftu i koristi u PDF-u.
-      </p>
+      </details>
     </div>
   );
 }
@@ -3876,50 +3804,52 @@ function PreviewMetric({ label, value }: { label: string; value: string }) {
   );
 }
 
-function OptionBox({ label, value }: { label: string; value: string }) {
+function StudioSegmentedControl({
+  label,
+  onChange,
+  options,
+  value,
+}: {
+  label: string;
+  onChange: (value: string) => void;
+  options: Array<{ label: string; value: string }>;
+  value: string;
+}) {
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#0b121e]/70 p-4 transition hover:border-white/[0.15] hover:bg-[#121b2a]/72">
-      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#a78bfa]">{label}</p>
-      <p className="mt-2 text-[14px] font-black text-white">{value}</p>
+    <div>
+      <p className="mb-2 text-[11px] font-bold text-[#c4c8d4]">{label}</p>
+      <div className="grid grid-cols-2 rounded-full bg-white/[0.06] p-1">
+        {options.map((option) => (
+          <button
+            className={`min-h-10 rounded-full px-3 text-[11px] font-black transition ${
+              value === option.value
+                ? "bg-[#f3f4f7] text-[#07080d] shadow-[0_3px_10px_rgba(0,0,0,0.24)]"
+                : "text-[#8d93a5] hover:text-[#f3f4f7]"
+            }`}
+            key={option.value}
+            onClick={() => onChange(option.value)}
+            type="button"
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
 
-function ExportBox({
-  action,
-  disabled = false,
-  onClick,
-  text,
-  title,
-}: {
-  action: string;
-  disabled?: boolean;
-  onClick?: () => void;
-  text: string;
-  title: string;
-}) {
-  const actionClassName =
-    "mt-4 inline-flex rounded-lg border border-white/[0.11] bg-white/[0.04] px-3 py-2 text-[11px] font-bold text-white transition hover:-translate-y-0.5 hover:border-[#8b5cf6] hover:bg-[#8b5cf6] hover:text-white";
-
+function OptionBox({ label, value }: { label: string; value: string }) {
   return (
-    <article className="rounded-2xl border border-white/[0.08] bg-[#0b121e]/70 p-4 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
-      <h2 className="text-[16px] font-black text-white">{title}</h2>
-      <p className="mt-2 min-h-10 text-[12px] leading-5 text-white/[0.52]">{text}</p>
-      <button
-        className={`${actionClassName} disabled:cursor-wait disabled:opacity-60`}
-        disabled={disabled}
-        onClick={onClick}
-        type="button"
-      >
-        {action}
-      </button>
-    </article>
+    <div className="rounded-2xl border border-white/[0.09] bg-white/[0.04] p-4 transition hover:border-white/20 hover:bg-white/[0.07]">
+      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#8d93a5]">{label}</p>
+      <p className="mt-2 text-[14px] font-black text-[#f3f4f7]">{value}</p>
+    </div>
   );
 }
 
 function EmptyState({ text }: { text: string }) {
   return (
-    <div className="rounded-2xl border border-dashed border-white/[0.12] bg-white/[0.025] p-8 text-center text-[12px] text-[#a3adbd]">
+    <div className="rounded-2xl border border-dashed border-white/[0.14] bg-white/[0.035] p-8 text-center text-[12px] text-[#8d93a5]">
       {text}
     </div>
   );
@@ -3936,7 +3866,7 @@ function PrimaryButton({
 }) {
   return (
     <button
-      className="rounded-lg border border-[#8b5cf6]/70 bg-[#8b5cf6] px-4 py-2.5 text-[12px] font-black text-white shadow-[0_12px_28px_rgba(139,92,246,0.16)] transition hover:-translate-y-0.5 hover:bg-[#9c72f8] hover:shadow-[0_16px_38px_rgba(139,92,246,0.22)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b5cf6]/80 disabled:cursor-wait disabled:opacity-60"
+      className="rounded-full border border-transparent bg-[linear-gradient(100deg,#1d82ff,#7656d4_57%,#dc326a)] px-5 py-2.5 text-[12px] font-black text-white shadow-[0_12px_28px_rgba(79,91,213,0.16)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_38px_rgba(79,91,213,0.22)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2878f6] disabled:cursor-wait disabled:opacity-60"
       disabled={disabled}
       onClick={onClick}
       type="button"
@@ -3957,7 +3887,7 @@ function SecondaryStudioButton({
 }) {
   return (
     <button
-      className="h-10 rounded-xl border border-white/[0.11] bg-white/[0.04] px-3 text-[11px] font-bold text-white transition hover:border-white/[0.2] hover:bg-white/[0.08] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b5cf6]/80 disabled:cursor-wait disabled:opacity-60"
+      className="h-10 rounded-full border-2 border-[#f3f4f7] bg-transparent px-4 text-[11px] font-black text-[#f3f4f7] transition hover:bg-[#f3f4f7] hover:text-[#07080d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2878f6] disabled:cursor-wait disabled:opacity-60"
       disabled={disabled}
       onClick={onClick}
       type="button"

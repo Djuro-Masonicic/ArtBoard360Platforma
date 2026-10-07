@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -37,33 +39,43 @@ export function PortfolioPrintToolbar({
   }
 
   return (
-    <div className="print:hidden fixed left-0 right-0 top-0 z-50 border-b border-[#d8deea] bg-white/92 px-4 py-3 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
-        <button
-          className="rounded-full border border-[#d8deea] px-4 py-2 text-[12px] font-bold text-[#20242d] transition hover:bg-[#f3f6fb]"
-          onClick={() => router.push(`/portfolio-builder/${projectId}`)}
-          type="button"
-        >
-          Nazad u builder
-        </button>
+    <header className="print:hidden fixed left-0 right-0 top-0 z-50 bg-[#05060b]/80 backdrop-blur-[14px]">
+      <div className="flex min-h-[72px] flex-wrap items-center gap-x-[18px] gap-y-3 px-[clamp(16px,2.4vw,32px)] py-3">
+        <Link className="flex shrink-0 items-center" href={`/portfolio-builder/${projectId}`}>
+          <Image
+            alt="ArtBoard"
+            className="h-auto w-[143px] max-sm:w-[116px]"
+            height={30}
+            priority
+            src="/artboard-logo/ArtBoard-Horizontal-Gradient-Mark-White-Text.svg"
+            width={143}
+          />
+        </Link>
+        <span className="h-[22px] w-px bg-white/15 max-md:hidden" aria-hidden="true" />
+        <strong className="text-[12.5px] font-extrabold uppercase text-[#c4c8d4] max-md:hidden">
+          {mode === "preview" ? "PDF pregled" : "Čist PDF"}
+        </strong>
 
-        <div className="flex items-center gap-2">
+        <div className="flex-1" />
+
+        <div className="flex flex-wrap items-center justify-end gap-x-[14px] gap-y-2">
           {mode === "download" ? (
             <>
-              <p className="hidden text-[12px] font-semibold text-[#667085] sm:block">
-                Cisti PDF je otkljucan. Pregledaj ga i preuzmi fajl.
+              <p className="hidden text-[12.5px] font-semibold text-[#8d93a5] lg:block">
+                Čist PDF je otključan. Pregledaj ga i preuzmi fajl.
               </p>
+              <ToolbarBackButton projectId={projectId} />
               {latestPdfUrl ? (
                 <button
-                  className="rounded-full bg-[#dc1735] px-5 py-2 text-[12px] font-bold text-white transition hover:bg-[#bd102a]"
+                  className="inline-flex h-[34px] items-center justify-center rounded-full bg-[linear-gradient(120deg,#1a7cff,#1a7cff_30%,#ff2d55)] px-[18px] text-[12.5px] font-extrabold uppercase text-white transition hover:brightness-110"
                   onClick={() => window.open(latestPdfUrl, "_blank", "noopener,noreferrer")}
                   type="button"
                 >
-                  Download PDF
+                  Preuzmi PDF
                 </button>
               ) : (
                 <PortfolioGeneratePdfButton
-                  className="rounded-full bg-[#dc1735] px-5 py-2 text-[12px] font-bold text-white transition hover:bg-[#bd102a] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-[34px] items-center justify-center rounded-full bg-[linear-gradient(120deg,#1a7cff,#1a7cff_30%,#ff2d55)] px-[18px] text-[12.5px] font-extrabold uppercase text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
                   mode="public"
                   portfolioId={projectId}
                 />
@@ -71,18 +83,19 @@ export function PortfolioPrintToolbar({
             </>
           ) : (
             <>
-              <p className="hidden text-[12px] font-semibold text-[#667085] sm:block">
-                Preview ima ArtBoard watermark i nije namijenjen za download.
+              <p className="hidden text-[12.5px] font-semibold text-[#8d93a5] xl:block">
+                Pregled ima ArtBoard vodeni žig i nije za preuzimanje.
               </p>
+              <ToolbarBackButton projectId={projectId} />
               {canDownload ? (
                 <div className="flex flex-col items-end gap-1">
                   <button
-                    className="rounded-full bg-[#dc1735] px-5 py-2 text-[12px] font-bold text-white transition hover:bg-[#bd102a] disabled:cursor-wait disabled:opacity-60"
+                    className="inline-flex h-[34px] items-center justify-center rounded-full bg-[linear-gradient(120deg,#1a7cff,#1a7cff_30%,#ff2d55)] px-[18px] text-[12.5px] font-extrabold uppercase text-white transition hover:brightness-110 disabled:cursor-wait disabled:opacity-60"
                     disabled={isGeneratingCleanPdf}
                     onClick={openCleanPdf}
                     type="button"
                   >
-                    {isGeneratingCleanPdf ? "Generisem PDF..." : "Otvori cisti PDF"}
+                    {isGeneratingCleanPdf ? "Generišem PDF..." : "Otvori čist PDF"}
                   </button>
                   {generateError ? (
                     <span className="max-w-[260px] text-right text-[11px] font-semibold text-[#dc1735]">
@@ -92,17 +105,31 @@ export function PortfolioPrintToolbar({
                 </div>
               ) : (
                 <button
-                  className="rounded-full bg-[#dc1735] px-5 py-2 text-[12px] font-bold text-white transition hover:bg-[#bd102a]"
+                  className="inline-flex h-[34px] items-center justify-center rounded-full bg-[linear-gradient(120deg,#1a7cff,#1a7cff_30%,#ff2d55)] px-[18px] text-[12.5px] font-extrabold uppercase text-white transition hover:brightness-110"
                   onClick={() => router.push(`/portfolio-builder/${projectId}/payment`)}
                   type="button"
                 >
-                  Otkljucaj download
+                  Otključaj PDF
                 </button>
               )}
             </>
           )}
         </div>
       </div>
-    </div>
+      <div className="h-0.5 bg-[linear-gradient(120deg,#1a7cff,#ff2d55,#ffd028)]" />
+    </header>
+  );
+}
+
+function ToolbarBackButton({ projectId }: { projectId: string }) {
+  return (
+    <Link
+      aria-label="Nazad u builder"
+      className="inline-flex h-[34px] items-center justify-center gap-1 rounded-full px-4 text-[12.5px] font-extrabold uppercase text-[#f3f4f7] shadow-[inset_0_0_0_1.5px_#f3f4f7] transition hover:bg-[#f3f4f7] hover:text-[#07080d] max-sm:w-[34px] max-sm:px-0"
+      href={`/portfolio-builder/${projectId}`}
+    >
+      <span aria-hidden="true">←</span>
+      <span className="max-sm:hidden">Nazad u builder</span>
+    </Link>
   );
 }

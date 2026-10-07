@@ -37,7 +37,26 @@ export class ArtistSubscriptionsService {
   }
 
   async cancelPlatinumRequest(artistAccountId: string) {
-    await this.ensureSubscription(artistAccountId);
+    const currentSubscription = await this.ensureSubscription(artistAccountId);
+
+    if (
+      currentSubscription.plan === SubscriptionPlan.PLATINUM &&
+      currentSubscription.status === SubscriptionStatus.ACTIVE
+    ) {
+      const subscription = await this.prisma.artistSubscription.update({
+        where: {
+          artistAccountId,
+        },
+        data: {
+          cancelAtPeriodEnd: true,
+          canceledAt: new Date(),
+          requestedPlan: null,
+          requestedAt: null,
+        },
+      });
+
+      return this.serialize(subscription);
+    }
 
     const subscription = await this.prisma.artistSubscription.update({
       where: {
@@ -97,8 +116,8 @@ export class ArtistSubscriptionsService {
     return this.serialize(subscription);
   }
 
-  private ensureSubscription(artistAccountId: string) {
-    return this.prisma.artistSubscription.upsert({
+  private async ensureSubscription(artistAccountId: string) {
+    const subscription = await this.prisma.artistSubscription.upsert({
       where: {
         artistAccountId,
       },
@@ -109,6 +128,30 @@ export class ArtistSubscriptionsService {
       },
       update: {},
     });
+
+    if (
+      subscription.cancelAtPeriodEnd &&
+      subscription.currentPeriodEnd &&
+      subscription.currentPeriodEnd <= new Date()
+    ) {
+      return this.prisma.artistSubscription.update({
+        where: {
+          artistAccountId,
+        },
+        data: {
+          plan: SubscriptionPlan.BASIC,
+          status: SubscriptionStatus.ACTIVE,
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: null,
+          cancelAtPeriodEnd: false,
+          provider: null,
+          providerCustomerId: null,
+          providerSubscriptionId: null,
+        },
+      });
+    }
+
+    return subscription;
   }
 
   private serialize(subscription: {

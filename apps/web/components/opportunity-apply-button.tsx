@@ -6,7 +6,15 @@ import { applyToOpportunity } from "@/services/opportunities";
 
 type SubmitState = "idle" | "loading" | "success" | "error";
 
-export function OpportunityApplyButton({ opportunityId }: { opportunityId: string }) {
+export function OpportunityApplyButton({
+  className,
+  label = "Prijavi se",
+  opportunityId,
+}: {
+  className?: string;
+  label?: string;
+  opportunityId: string;
+}) {
   const [status, setStatus] = useState<SubmitState>("idle");
   const [message, setMessage] = useState<string | null>(null);
 
@@ -36,7 +44,7 @@ export function OpportunityApplyButton({ opportunityId }: { opportunityId: strin
   return (
     <div className="space-y-3">
       <button
-        className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-[#e9153a] px-5 text-[15px] font-bold text-white transition hover:-translate-y-0.5 hover:bg-[#c81030] disabled:cursor-not-allowed disabled:opacity-70"
+        className={className ?? "inline-flex min-h-[48px] items-center justify-center rounded-full bg-[#e9153a] px-5 text-[15px] font-bold text-white transition hover:-translate-y-0.5 hover:bg-[#c81030] disabled:cursor-not-allowed disabled:opacity-70"}
         disabled={status === "loading" || status === "success"}
         onClick={handleApply}
         type="button"
@@ -45,7 +53,7 @@ export function OpportunityApplyButton({ opportunityId }: { opportunityId: strin
           ? "Salje se..."
           : status === "success"
             ? "Prijava poslata"
-            : "Prijavi se"}
+            : label}
       </button>
 
       {message ? (

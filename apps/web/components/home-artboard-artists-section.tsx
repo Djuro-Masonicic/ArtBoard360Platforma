@@ -1,107 +1,107 @@
 import type { LucideIcon } from "lucide-react";
-import { BookOpen, Eye, Sparkles, Wrench } from "lucide-react";
-import Image from "next/image";
+import { BookOpen, BriefcaseBusiness, Eye, Pencil } from "lucide-react";
 
-import { ArtBoardLogo } from "@/components/artboard-logo";
 import { ArtBoardTransitionLink } from "@/components/artboard-transition-link";
 import { siteRoutes } from "@/lib/site-routes";
 
 type Feature = {
-  accent: "blue" | "red" | "yellow" | "violet";
   description: string;
   href: string;
   icon: LucideIcon;
   image: string;
-  imageClassName?: string;
   label: string;
-  title: string;
+  title: [string, string?];
 };
 
 const features: Feature[] = [
   {
-    accent: "blue",
     description: "Umjetnički profil, portfolio i prostor za predstavljanje umjetničkog rada.",
     href: siteRoutes.artists,
     icon: Eye,
-    image: "/artboard-features/visibility-bust-v2.png",
-    imageClassName: "home-artboard-feature-card__object--bust",
+    image: "/artboard-why/01-bw-optimized.webp",
     label: "Vidljivost",
-    title: "Predstavi svoj rad",
+    title: ["Predstavi", "svoj rad"],
   },
   {
-    accent: "red",
     description: "Digitalni alati za prezentaciju, promociju i profesionalni razvoj karijere.",
     href: siteRoutes.portfolioBuilder,
-    icon: Wrench,
-    image: "/artboard-features/tools-sculpture.png",
+    icon: Pencil,
+    image: "/artboard-why/02-bw-optimized.webp",
     label: "Alati",
-    title: "Koristi praktične alate",
+    title: ["Koristi", "praktične alate"],
   },
   {
-    accent: "yellow",
     description: "Edukativni sadržaji, resursi i mjesto za razmjenu znanja i ideja.",
     href: siteRoutes.artboard,
     icon: BookOpen,
-    image: "/artboard-features/education-books-v2.png",
-    imageClassName: "home-artboard-feature-card__object--books",
+    image: "/artboard-opportunities-optimized.webp",
     label: "Edukacija",
-    title: "Uči i razmjenjuj znanje",
+    title: ["Uči i razmjenjuj", "znanje"],
   },
   {
-    accent: "violet",
     description: "Konkursi, poslovi, saradnje i druge prilike za karijerni razvoj i zaradu.",
     href: siteRoutes.opportunities,
-    icon: Sparkles,
-    image: "/artboard-features/opportunities-hand.png",
-    imageClassName: "home-artboard-feature-card__object--hand",
+    icon: BriefcaseBusiness,
+    image: "/artboard-why/03-bw-optimized.webp",
     label: "Karijera",
-    title: "Pronađi nove prilike",
+    title: ["Pronađi", "nove prilike"],
   },
 ];
 
 export function HomeArtboardArtistsSection() {
   return (
-    <section id="artboard-platforma" className="home-artboard-platform">
-      <div className="home-artboard-platform__intro">
-        <div className="home-artboard-platform__copy">
-          <p className="home-artboard-platform__eyebrow">Created by Art Studio 360</p>
-          <h2>
-            <span>ArtBoard.</span>
-            Tvoj prostor
-            <br />
-            za umjetnost.
-          </h2>
-          <p className="home-artboard-platform__description">
-            ArtBoard je digitalna platforma koja pruža umjetnicima prostor za profesionalno
-            predstavljanje, praktične alate, nova znanja i prilike za razvoj umjetničke karijere.
-          </p>
+    <section id="artboard" className="home-artboard-platform">
+      <div className="home-artboard-platform__surface">
+        <div className="home-artboard-platform__inner">
+          <div className="home-artboard-platform__intro">
+            <div className="home-artboard-platform__copy">
+              <p className="home-artboard-platform__eyebrow">
+                <span aria-hidden="true" />
+                Created by Art Studio 360
+              </p>
+              <h2>
+                <span>ArtBoard.</span>
+                Tvoj prostor
+                <br />
+                za umjetnost.
+              </h2>
+              <p className="home-artboard-platform__description">
+                ArtBoard je digitalna platforma koja pruža umjetnicima prostor za profesionalno
+                predstavljanje, praktične alate, nova znanja i prilike za razvoj umjetničke karijere.
+              </p>
+
+              <div className="home-artboard-platform__actions">
+                <ArtBoardTransitionLink
+                  className="home-artboard-platform__button home-artboard-platform__button--primary"
+                  href={siteRoutes.artboard}
+                >
+                  Istraži ArtBoard platformu
+                </ArtBoardTransitionLink>
+                <ArtBoardTransitionLink
+                  className="home-artboard-platform__button home-artboard-platform__button--secondary"
+                  href={siteRoutes.registration}
+                >
+                  Kreiraj profil besplatno
+                </ArtBoardTransitionLink>
+              </div>
+            </div>
+
+            <div className="home-artboard-platform__logo-stage" aria-hidden="true">
+              <span className="home-artboard-platform__logo-halo" />
+              <img
+                alt=""
+                className="home-artboard-platform__logo"
+                src="/artboard-logo/ArtBoard-Gradient.svg"
+              />
+            </div>
+          </div>
+
+          <div className="home-artboard-platform__features">
+            {features.map((feature) => (
+              <FeatureCard feature={feature} key={feature.label} />
+            ))}
+          </div>
         </div>
-
-        <div className="home-artboard-platform__logo-stage" aria-hidden="true">
-          <span className="home-artboard-platform__logo-halo" />
-          <ArtBoardLogo className="home-artboard-platform__logo" showWordmark={false} />
-        </div>
-      </div>
-
-      <div className="home-artboard-platform__features">
-        {features.map((feature) => (
-          <FeatureCard feature={feature} key={feature.title} />
-        ))}
-      </div>
-
-      <div className="home-artboard-platform__actions">
-        <ArtBoardTransitionLink
-          className="home-artboard-platform__button home-artboard-platform__button--primary"
-          href={siteRoutes.artboard}
-        >
-          Istraži ArtBoard platformu
-        </ArtBoardTransitionLink>
-        <ArtBoardTransitionLink
-          className="home-artboard-platform__button home-artboard-platform__button--secondary"
-          href={siteRoutes.registration}
-        >
-          Kreiraj profil besplatno
-        </ArtBoardTransitionLink>
       </div>
     </section>
   );
@@ -112,27 +112,32 @@ function FeatureCard({ feature }: { feature: Feature }) {
 
   return (
     <ArtBoardTransitionLink
-      className={`home-artboard-feature-card home-artboard-feature-card--${feature.accent}`}
+      className="home-artboard-feature-card"
       href={feature.href}
     >
-      <span className="home-artboard-feature-card__object-wrap" aria-hidden="true">
-        <Image
+      <span className="home-artboard-feature-card__photo-wrap" aria-hidden="true">
+        <img
           alt=""
-          className={`home-artboard-feature-card__object ${feature.imageClassName ?? ""}`}
-          fill
-          sizes="(max-width: 640px) 72vw, (max-width: 1024px) 40vw, 22vw"
+          className="home-artboard-feature-card__photo"
+          decoding="async"
+          loading="lazy"
           src={feature.image}
         />
       </span>
 
       <span className="home-artboard-feature-card__body">
-        <strong>{feature.title}</strong>
+        <strong>
+          {feature.title[0]}
+          {feature.title[1] ? <><br />{feature.title[1]}</> : null}
+        </strong>
         <span className="home-artboard-feature-card__description">{feature.description}</span>
         <span className="home-artboard-feature-card__tag">
-          <span className="home-artboard-feature-card__tag-icon" aria-hidden="true">
-            <Icon size={14} strokeWidth={2.25} />
+          <span className="home-artboard-feature-card__tag-inner">
+            <span className="home-artboard-feature-card__tag-icon" aria-hidden="true">
+              <Icon size={14} strokeWidth={2.1} />
+            </span>
+            {feature.label}
           </span>
-          {feature.label}
         </span>
       </span>
     </ArtBoardTransitionLink>

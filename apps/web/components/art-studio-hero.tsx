@@ -1,8 +1,11 @@
+import type { CSSProperties } from "react";
+
 import type { Artist } from "@/types/api";
 
 import { NavigationButton } from "./navigation-button";
 
 type HeroArtwork = { alt: string; src: string };
+type HeroGraphic = "bars" | "circle" | "corner" | "ring" | "square";
 
 const fallbackArtworkFiles: Array<[string, string]> = [
   ["Ilustrovani posteri", "68cd97ded342a415469018a2_Posteri%20bijela%20pozadina.jpg"],
@@ -29,12 +32,18 @@ export function ArtStudioHero({ artists }: { artists: Artist[] }) {
   const columns = Array.from({ length: 4 }, (_, columnIndex) =>
     artworks.filter((_, artworkIndex) => artworkIndex % 4 === columnIndex),
   );
+  const graphics: [HeroGraphic[], HeroGraphic[], HeroGraphic[], HeroGraphic[]] = [
+    ["circle", "corner"],
+    ["square", "ring"],
+    ["corner", "bars"],
+    ["circle", "square"],
+  ];
 
   return (
     <section className="art-studio-hero" id="studio">
       <div aria-hidden="true" className="art-studio-hero__rail art-studio-hero__rail--left">
-        <ArtworkColumn artworks={columns[0] ?? []} direction="up" />
-        <ArtworkColumn artworks={columns[1] ?? []} direction="down" />
+        <ArtworkColumn artworks={columns[0] ?? []} direction="up" graphics={graphics[0]} speed="52s" />
+        <ArtworkColumn artworks={columns[1] ?? []} direction="down" graphics={graphics[1]} speed="64s" />
       </div>
 
       <div className="art-studio-hero__content">
@@ -48,17 +57,12 @@ export function ArtStudioHero({ artists }: { artists: Artist[] }) {
         </div>
 
         <h1 className="art-studio-hero__title">
-          <span>Kreativni studio</span> za
-          <br />
-          dizajn, umjetničke
-          <br />
-          projekte i digitalne alate.
+          <span>Kreativni studio</span> za dizajn, umjetničke projekte i digitalne alate.
         </h1>
 
         <p className="art-studio-hero__copy">
-          Kreiramo vizuelne identitete i dizajnerska rješenja za kompanije i pojedince, razvijamo
-          ArtBoard platformu i digitalne alate koji umjetnicima i kreativcima olakšavaju
-          profesionalno predstavljanje i razvoj.
+          Kreiramo dizajnerska rješenja za kompanije i pojedince, razvijamo ArtBoard kao naš glavni
+          umjetnički projekat i gradimo digitalne alate za umjetnike i kreativce.
         </p>
 
         <div className="art-studio-hero__actions">
@@ -82,24 +86,48 @@ export function ArtStudioHero({ artists }: { artists: Artist[] }) {
       </div>
 
       <div aria-hidden="true" className="art-studio-hero__rail art-studio-hero__rail--right">
-        <ArtworkColumn artworks={columns[2] ?? []} direction="up" />
-        <ArtworkColumn artworks={columns[3] ?? []} direction="down" />
+        <ArtworkColumn artworks={columns[2] ?? []} direction="up" graphics={graphics[2]} speed="58s" />
+        <ArtworkColumn artworks={columns[3] ?? []} direction="down" graphics={graphics[3]} speed="70s" />
       </div>
     </section>
   );
 }
 
-function ArtworkColumn({ artworks, direction }: { artworks: HeroArtwork[]; direction: "down" | "up" }) {
+function ArtworkColumn({
+  artworks,
+  direction,
+  graphics,
+  speed,
+}: {
+  artworks: HeroArtwork[];
+  direction: "down" | "up";
+  graphics: HeroGraphic[];
+  speed: string;
+}) {
   return (
     <div className={`art-studio-hero__column art-studio-hero__column--${direction}`}>
-      <div className="art-studio-hero__track">
+      <div
+        className="art-studio-hero__track"
+        style={{ "--hero-column-speed": speed } as CSSProperties}
+      >
         {[0, 1].map((groupIndex) => (
           <div className="art-studio-hero__artwork-group" key={groupIndex}>
-            {artworks.map((artwork, artworkIndex) => (
-              <figure className="art-studio-hero__artwork" key={`${artwork.src}-${artworkIndex}`}>
-                <img alt="" loading={groupIndex === 0 ? "eager" : "lazy"} src={artwork.src} />
-              </figure>
-            ))}
+            {artworks.map((artwork, artworkIndex) => {
+              const graphic = artworkIndex % 3 === 1 ? graphics[artworkIndex % graphics.length] : null;
+
+              return graphic ? (
+                <div
+                  className={`art-studio-hero__artwork art-studio-hero__graphic art-studio-hero__graphic--${graphic}`}
+                  key={`${graphic}-${artworkIndex}`}
+                >
+                  <span />
+                </div>
+              ) : (
+                <figure className="art-studio-hero__artwork" key={`${artwork.src}-${artworkIndex}`}>
+                  <img alt="" loading={groupIndex === 0 ? "eager" : "lazy"} src={artwork.src} />
+                </figure>
+              );
+            })}
           </div>
         ))}
       </div>

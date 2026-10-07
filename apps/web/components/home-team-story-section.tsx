@@ -1,37 +1,31 @@
-import { Mail } from "lucide-react";
-
-import { siteRoutes } from "@/lib/site-routes";
-
 const teamMembers = [
   {
+    accent: "blue",
     contactHref: "mailto:medenica.ivona@yahoo.com",
     contactLabel: "medenica.ivona@yahoo.com",
     description: [
       "Ivona vodi kreativni pravac Art Studija 360 i razvoj ArtBoard platforme, spajajući vizuelnu umjetnost, dizajn i organizaciju u cjelovite projekte.",
       "U radu joj je važan neposredan odnos sa ljudima, jasno razumijevanje ideje i stvaranje rješenja iza kojih svi učesnici mogu da stanu.",
     ],
-    imageUrl:
-      "https://cdn.prod.website-files.com/681b5dac4415aa941af374fe/686d18c9a743949e2f9f0792_about--tim-card-_0002_Ivona-Medenica.webp",
+    imageUrl: "/artstudio-team/ivona-medenica.webp",
     name: "Ivona Medenica",
     socials: [
+      { href: "https://www.behance.net/", label: "Behance" },
       { href: "https://www.instagram.com/", label: "Instagram" },
       { href: "https://www.linkedin.com/", label: "LinkedIn" },
-      { href: "mailto:medenica.ivona@yahoo.com", label: "Email" },
     ],
   },
   {
-    contactHref: siteRoutes.contact,
+    accent: "red",
+    contactHref: "mailto:djuromas@gmail.com",
     contactLabel: "djuromas@gmail.com",
     description: [
       "Đuro razvija digitalne proizvode i tehničku infrastrukturu ArtBoard platforme, pretvarajući kreativne ideje u jasne i pouzdane alate.",
       "Fokusiran je na funkcionalnost, iskustvo korisnika i dugoročan razvoj sistema koji umjetnicima olakšava predstavljanje i profesionalni rad.",
     ],
-    imageUrl: null,
+    imageUrl: "/artstudio-team/djuro-masonicic.webp",
     name: "Đuro Masoničić",
-    socials: [
-      { href: "https://www.instagram.com/djuro_masonicic/?hl=en", label: "Instagram" },
-      { href: "https://www.linkedin.com/in/djuro-masonicic/", label: "LinkedIn" },
-    ],
+    socials: [],
   },
 ] as const;
 
@@ -62,13 +56,9 @@ export function HomeTeamStorySection() {
 
         <div className="home-team-story__grid">
           {teamMembers.map((member) => (
-            <article className="home-team-card" key={member.name}>
-              <div className={`home-team-card__portrait${member.imageUrl ? "" : " is-placeholder"}`}>
-                {member.imageUrl ? (
-                  <img alt={member.name} src={member.imageUrl} />
-                ) : (
-                  <span aria-label={member.name}>ĐM</span>
-                )}
+            <article className={`home-team-card home-team-card--${member.accent}`} key={member.name}>
+              <div className="home-team-card__portrait">
+                <img alt={member.name} src={member.imageUrl} />
               </div>
 
               <div className="home-team-card__content">
@@ -93,9 +83,7 @@ export function HomeTeamStorySection() {
                         >
                           {social.label === "Instagram" ? <InstagramIcon /> : null}
                           {social.label === "LinkedIn" ? <LinkedinIcon /> : null}
-                          {social.label === "Email" ? (
-                            <Mail aria-hidden="true" size={15} strokeWidth={2} />
-                          ) : null}
+                          {social.label === "Behance" ? <span aria-hidden="true">Bē</span> : null}
                         </a>
                       );
                     })}
@@ -110,26 +98,31 @@ export function HomeTeamStorySection() {
           ))}
         </div>
 
-        <blockquote className="home-team-story__quote">
-          <span className="home-team-story__quote-mark home-team-story__quote-mark--left" aria-hidden="true">
-            “
-          </span>
-          <p>
-            ArtBoard je nastao iz potrebe,
-            <br />
-            ali raste iz ljubavi prema
-            <br />
-            umjetnosti, autentičnosti
-            <br />
-            i ljudima koji stvaraju.
-          </p>
-          <cite>Ivona Medenica</cite>
-          <span className="home-team-story__quote-mark home-team-story__quote-mark--right" aria-hidden="true">
-            ”
-          </span>
-        </blockquote>
+        <figure className="home-team-story__quote">
+          <QuoteMark className="home-team-story__quote-mark home-team-story__quote-mark--left" />
+          <div>
+            <blockquote>
+              ArtBoard je nastao iz potrebe, ali raste iz ljubavi prema umjetnosti, autentičnosti i
+              ljudima koji stvaraju.
+            </blockquote>
+            <figcaption>
+              <span>Ivona Medenica</span>
+              <span>Izvršna direktorica Art Studio 360</span>
+            </figcaption>
+          </div>
+          <QuoteMark className="home-team-story__quote-mark home-team-story__quote-mark--right" />
+        </figure>
       </div>
     </section>
+  );
+}
+
+function QuoteMark({ className }: { className: string }) {
+  return (
+    <svg aria-hidden="true" className={className} fill="currentColor" viewBox="0 0 100 80">
+      <path d="M0 46C0 20 18 2 44 0v18C29 20 20 30 20 44h24v36H0z" />
+      <path d="M56 46C56 20 74 2 100 0v18C85 20 76 30 76 44h24v36H56z" />
+    </svg>
   );
 }
 

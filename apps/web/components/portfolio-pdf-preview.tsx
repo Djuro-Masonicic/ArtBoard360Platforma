@@ -23,9 +23,27 @@ const PAPER = "#fbfbfa";
 export function PortfolioPdfPreview({ mode = "preview", project }: PortfolioPdfPreviewProps) {
   if (mode === "preview") {
     const previewPdfUrl = `/api/portfolio-projects/${project.id}/pdf?mode=preview`;
+    const estimatedPages = Math.max(4, project.counts.selectedArtworks + 4);
+    const displayedPages = Math.min(7, estimatedPages);
+    const templateLabel = formatTemplateLabel(project.template);
+    const formatLabel = project.pageFormat === "US_LETTER" ? "Letter" : "A4";
 
     return (
-      <main className="min-h-screen bg-[#eef2f7] px-3 pb-3 pt-16 text-[#20242d]">
+      <div className="relative min-h-screen overflow-hidden bg-[#05060b] text-[#f3f4f7]">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none fixed inset-0 opacity-50"
+          style={{
+            backgroundImage:
+              "radial-gradient(1.5px 1.5px at 40px 60px, rgba(255,255,255,.9), transparent), radial-gradient(1.2px 1.2px at 160px 20px, rgba(255,255,255,.7), transparent), radial-gradient(1px 1px at 90px 180px, rgba(255,255,255,.55), transparent), radial-gradient(1.7px 1.7px at 240px 140px, rgba(199,215,255,.82), transparent), radial-gradient(1px 1px at 300px 260px, rgba(255,255,255,.5), transparent), radial-gradient(1.3px 1.3px at 20px 280px, rgba(255,214,150,.62), transparent)",
+            backgroundSize: "320px 320px",
+          }}
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_58%_44%,rgba(44,76,142,0.08),transparent_34%),radial-gradient(circle_at_100%_0%,rgba(255,45,85,0.05),transparent_30%)]"
+        />
+
         <PortfolioPrintToolbar
           canDownload={project.access.canDownloadCleanPdf}
           latestPdfUrl={project.latestPdfUrl}
@@ -33,27 +51,59 @@ export function PortfolioPdfPreview({ mode = "preview", project }: PortfolioPdfP
           projectId={project.id}
         />
 
-        <section className="mx-auto max-w-7xl">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#d5deec] bg-white/80 px-4 py-3 shadow-[0_12px_35px_rgba(20,31,56,0.08)]">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.35em] text-[#7c8494]">
-                PDF preview
-              </p>
-              <h1 className="mt-0.5 text-base font-black text-[#20242d]">
-                Watermark verzija portfolija
+        <main className="relative z-10 mx-auto flex w-full max-w-[1100px] flex-col gap-[clamp(28px,3vw,40px)] px-[clamp(16px,2.4vw,32px)] pb-[72px] pt-[clamp(104px,9vw,124px)]">
+          <section className="flex flex-wrap items-end gap-[18px_28px] rounded-[22px] bg-[rgba(10,12,20,0.78)] p-[clamp(20px,2.4vw,28px)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)] backdrop-blur-[18px]">
+            <div className="flex min-w-0 flex-[1_1_360px] flex-col gap-3">
+              <div className="flex items-center gap-[9px]">
+                <span className="h-[9px] w-[9px] rounded-full bg-[linear-gradient(120deg,#1a7cff,#1a7cff_35%,#ff2d55_70%,#ffd028)]" />
+                <span className="text-[11.5px] font-extrabold uppercase text-[#c4c8d4]">
+                  Pregled sa vodenim žigom
+                </span>
+              </div>
+              <h1 className="m-0 text-[clamp(26px,3vw,38px)] font-extrabold leading-[1.05]">
+                {formatPreviewTitle(project)}
               </h1>
+              <div className="flex flex-wrap gap-1.5">
+                {[templateLabel, formatLabel, `${estimatedPages} strana`].map((label) => (
+                  <span
+                    className="inline-flex h-[26px] items-center rounded-full px-[11px] text-[11.5px] font-bold text-[#c4c8d4] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.14)]"
+                    key={label}
+                  >
+                    {label}
+                  </span>
+                ))}
+              </div>
             </div>
-            <p className="max-w-xl text-right text-xs font-semibold leading-relaxed text-[#667085]">
-              Stvarni PDF za pregled. Cista verzija ostaje zakljucana dok ne postoji pristup.
+
+            <p className="m-0 flex-[0_1_340px] text-[13.5px] font-medium leading-[1.55] text-[#aab0bf]">
+              {project.access.canDownloadCleanPdf
+                ? "Ovo je stvarni izgled tvog PDF-a. Čist PDF bez vodenog žiga je uključen u tvoje članstvo."
+                : "Ovo je stvarni izgled tvog PDF-a. Otključaj čistu verziju bez ArtBoard vodenog žiga kada budeš spreman."}
             </p>
+          </section>
+
+          <div className="mx-auto w-full max-w-[760px]">
+            <PdfViewerFrame
+              maxPages={7}
+              showPageLabels
+              src={previewPdfUrl}
+              title={`${project.artistName} portfolio PDF preview`}
+            />
           </div>
 
-          <PdfViewerFrame
-            src={previewPdfUrl}
-            title={`${project.artistName} portfolio PDF preview`}
-          />
-        </section>
-      </main>
+          <div className="flex flex-wrap items-center justify-center gap-[10px_14px]">
+            <span className="text-[13px] font-semibold text-[#8d93a5]">
+              Prikazano {displayedPages} od {estimatedPages} strana
+            </span>
+            <a
+              className="inline-flex h-[34px] items-center justify-center rounded-full px-4 text-[12.5px] font-extrabold uppercase text-[#f3f4f7] shadow-[inset_0_0_0_1.5px_#f3f4f7] transition hover:bg-[#f3f4f7] hover:text-[#07080d]"
+              href={`/portfolio-builder/${project.id}`}
+            >
+              ← Nazad u builder
+            </a>
+          </div>
+        </main>
+      </div>
     );
   }
 
@@ -77,7 +127,7 @@ export function PortfolioPdfPreview({ mode = "preview", project }: PortfolioPdfP
               PDF download
             </p>
             <h1 className="mt-0.5 text-base font-black text-[#20242d]">
-              Cista verzija portfolija
+              Čista verzija portfolija
             </h1>
           </div>
           <p className="max-w-xl text-right text-xs font-semibold leading-relaxed text-[#667085]">
@@ -97,7 +147,7 @@ export function PortfolioPdfPreview({ mode = "preview", project }: PortfolioPdfP
                 PDF jos nije generisan
               </p>
               <h2 className="mt-3 text-2xl font-black text-[#20242d]">
-                Generisi cisti PDF da bi se prikazao ovdje.
+                Generiši čisti PDF da bi se prikazao ovdje.
               </h2>
               <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-[#667085]">
                 Kada kliknes dugme za generisanje u gornjoj traci, backend ce
@@ -113,17 +163,41 @@ export function PortfolioPdfPreview({ mode = "preview", project }: PortfolioPdfP
 }
 
 function PdfViewerFrame({
+  maxPages,
+  showPageLabels = false,
   src,
   title,
 }: {
+  maxPages?: number;
+  showPageLabels?: boolean;
   src: string;
   title: string;
 }) {
   return (
     <div aria-label={title} className="mx-auto w-full bg-transparent">
-      <PortfolioPdfCanvasViewer src={src} />
+      <PortfolioPdfCanvasViewer maxPages={maxPages} showPageLabels={showPageLabels} src={src} />
     </div>
   );
+}
+
+function formatTemplateLabel(template: PortfolioProject["template"]) {
+  if (template === "ARTBOARD_EDITORIAL") {
+    return "ArtBoard Editorial";
+  }
+
+  if (template === "SALES_PRO") {
+    return "Sales Pro";
+  }
+
+  return "Institutional Minimal";
+}
+
+function formatPreviewTitle(project: PortfolioProject) {
+  const defaultTitle = `${project.artistName} Portfolio`;
+
+  return !project.title || project.title === defaultTitle
+    ? `${project.artistName} — Portfolio`
+    : project.title;
 }
 
 function CoverPreviewPage({

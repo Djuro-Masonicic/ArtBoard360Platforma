@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 
-const contactEmail = "hello@artstudio360.me";
+const contactEmail = "info@artstudio360.me";
 
 export function ArtStudioContactCtaSection() {
   const [topic, setTopic] = useState("Usluge");
@@ -71,9 +71,12 @@ export function ArtStudioContactCtaSection() {
               </button>
             </div>
 
-            <a className="home-contact__email" href={`mailto:${contactEmail}`}>
-              {contactEmail}
-            </a>
+            <div className="home-contact__email-wrap">
+              <span>ili nam piši na e-mail</span>
+              <a className="home-contact__email" href={`mailto:${contactEmail}`}>
+                {contactEmail}
+              </a>
+            </div>
           </div>
         </div>
 
@@ -117,7 +120,7 @@ export function ArtStudioContactCtaSection() {
             </button>
 
             <p className="home-contact__form-note">
-              Odgovaramo direktno na email koji ostaviš u formi.
+              Forma priprema poruku u tvom email programu.
             </p>
           </form>
         </div>

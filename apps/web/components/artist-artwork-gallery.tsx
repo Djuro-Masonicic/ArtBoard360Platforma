@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import type { Artwork } from "@/types/api";
@@ -106,10 +107,10 @@ export function ArtistArtworkGallery({ artistName, artworks }: ArtistArtworkGall
 
   return (
     <>
-      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 xl:gap-4">
         {sortedArtworks.map((artwork, index) => (
           <article
-            className="overflow-hidden rounded-[18px] bg-white shadow-[0_8px_28px_rgba(37,48,71,0.08)]"
+            className="overflow-hidden rounded-[12px] bg-[#e7e8ec]"
             key={artwork.id}
           >
             <button
@@ -120,7 +121,7 @@ export function ArtistArtworkGallery({ artistName, artworks }: ArtistArtworkGall
             >
               <img
                 alt={artwork.altText || artwork.title || `${artistName} artwork`}
-                className="aspect-[0.92/1] w-full object-cover transition duration-500 hover:scale-[1.03]"
+                className="aspect-square w-full object-cover transition duration-500 hover:scale-[1.035]"
                 src={artwork.imageUrl}
               />
             </button>
@@ -138,31 +139,31 @@ export function ArtistArtworkGallery({ artistName, artworks }: ArtistArtworkGall
         >
           <button
             aria-label="Zatvori galeriju"
-            className="absolute right-5 top-5 z-20 inline-flex h-14 w-14 cursor-pointer items-center justify-center rounded-full border border-white/18 bg-black/20 text-[34px] text-white transition hover:bg-white/10 sm:right-8 sm:top-8"
+            className="absolute right-5 top-5 z-20 inline-flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border border-white/18 bg-black/20 text-white transition hover:bg-white/10 sm:right-8 sm:top-8"
             onClick={() => setActiveIndex(null)}
             type="button"
           >
-            <span aria-hidden="true">&times;</span>
+            <X aria-hidden="true" size={24} />
           </button>
 
           {sortedArtworks.length > 1 ? (
             <>
               <button
                 aria-label="Prethodni rad"
-                className="absolute left-3 top-1/2 z-20 inline-flex h-16 w-16 cursor-pointer -translate-y-1/2 items-center justify-center text-white transition hover:scale-110 sm:left-6"
+                className="absolute left-3 top-1/2 z-20 inline-flex h-14 w-14 cursor-pointer -translate-y-1/2 items-center justify-center rounded-full bg-black/20 text-white transition hover:bg-white/10 sm:left-6"
                 onClick={showPreviousArtwork}
                 type="button"
               >
-                <span className="text-[72px] leading-none">&lsaquo;</span>
+                <ChevronLeft aria-hidden="true" size={34} strokeWidth={1.5} />
               </button>
 
               <button
                 aria-label="Sljedeci rad"
-                className="absolute right-3 top-1/2 z-20 inline-flex h-16 w-16 cursor-pointer -translate-y-1/2 items-center justify-center text-white transition hover:scale-110 sm:right-6"
+                className="absolute right-3 top-1/2 z-20 inline-flex h-14 w-14 cursor-pointer -translate-y-1/2 items-center justify-center rounded-full bg-black/20 text-white transition hover:bg-white/10 sm:right-6"
                 onClick={showNextArtwork}
                 type="button"
               >
-                <span className="text-[72px] leading-none">&rsaquo;</span>
+                <ChevronRight aria-hidden="true" size={34} strokeWidth={1.5} />
               </button>
             </>
           ) : null}

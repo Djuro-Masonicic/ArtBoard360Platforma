@@ -273,19 +273,36 @@ export class ResendMailService {
     this.assertConfigured();
 
     const startedAt = Date.now();
+    const originalRecipients = Array.from(
+      new Set([...input.recipients, ...(input.cc ?? [])]),
+    );
+    const isTestDelivery = Boolean(env.emailTestRecipient);
+    const recipients = env.emailTestRecipient
+      ? [env.emailTestRecipient]
+      : input.recipients;
+    const cc = isTestDelivery ? undefined : input.cc;
+    const subject = isTestDelivery
+      ? `[TEST za: ${originalRecipients.join(", ")}] ${input.subject}`
+      : input.subject;
+    const testNoticeText = isTestDelivery
+      ? `TEST REZIM: Originalni primaoci: ${originalRecipients.join(", ")}\n\n`
+      : "";
+    const testNoticeHtml = isTestDelivery
+      ? `<p style="padding:10px 12px;border:1px solid #f0b429;background:#fff8db;color:#5f4700;font-family:Arial,sans-serif;"><strong>TEST REZIM</strong><br>Originalni primaoci: ${escapeHtml(originalRecipients.join(", "))}</p>`
+      : "";
 
     console.info(
-      `[mail] Starting ${input.mailType}. to=${input.recipients.join(",")} cc=${(input.cc ?? []).join(",")}`,
+      `[mail] Starting ${input.mailType}. to=${recipients.join(",")} cc=${(cc ?? []).join(",")}${isTestDelivery ? ` originalTo=${originalRecipients.join(",")}` : ""}`,
     );
 
     try {
       const response = await this.client!.emails.send({
         from: env.resendFromEmail!,
-        to: input.recipients,
-        cc: input.cc,
-        subject: input.subject,
-        text: input.text,
-        html: input.html,
+        to: recipients,
+        cc,
+        subject,
+        text: `${testNoticeText}${input.text}`,
+        html: `${testNoticeHtml}${input.html}`,
       });
 
       if (response.error) {
