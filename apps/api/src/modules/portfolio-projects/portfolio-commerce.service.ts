@@ -141,7 +141,7 @@ export class PortfolioCommerceService implements OnModuleInit, OnModuleDestroy {
     });
   }
   private purchaseStatus(purchase: { id: string; status: string; amountCents: number; currency: string; product: string }) {
-    return { id: purchase.id, status: purchase.status, amountCents: purchase.amountCents, currency: purchase.currency, product: purchase.product, checkoutAvailable: mockPaymentsEnabled(), message: mockPaymentsEnabled() ? "Sadržaj narudžbine je sačuvan. Dostupno je lokalno testno plaćanje bez banke i stvarne naplate." : "Sadržaj narudžbine je sačuvan. AllSecure plaćanje još nije dostupno; ništa nije naplaćeno." };
+    return { id: purchase.id, status: purchase.status, amountCents: purchase.amountCents, currency: purchase.currency, product: purchase.product, checkoutAvailable: mockPaymentsEnabled(), message: mockPaymentsEnabled() ? "Sadržaj narudžbine je sačuvan. Dostupno je testno plaćanje bez banke i stvarne naplate." : "Sadržaj narudžbine je sačuvan. AllSecure plaćanje još nije dostupno; ništa nije naplaćeno." };
   }
   private async grant(tx: Prisma.TransactionClient, id: string, token: string, paid = false) {
     if (!uuid.test(id) || !/^[a-f0-9]{64}$/.test(token)) throw new NotFoundException("Narudžbina nije pronađena.");
@@ -196,8 +196,8 @@ export class PortfolioCommerceService implements OnModuleInit, OnModuleDestroy {
     return this.prisma.$transaction(async tx => { await tx.$queryRaw`SELECT id FROM "PortfolioPurchase" WHERE id=${id}::uuid FOR UPDATE`; const exists = await tx.portfolioPurchase.findUnique({ where: { id } }); if (!exists) throw new NotFoundException(); await tx.portfolioDeliveryGrant.updateMany({ where: { purchaseId: id, revokedAt: null }, data: { revokedAt: new Date() } }); return { revoked: true }; });
   }
   async adminPreview(id: string) { const p=await this.detail(id);if(p.product==='GENERATOR_PACK')throw new BadRequestException('Dopuna Generatora nema PDF portfolio.');return generatePortfolioPdf(p.snapshot as any, { watermark: true }); }
-  // Trusted provider adapters and the explicitly enabled local simulator share
-  // the same settlement transaction. Production cannot accept mock proofs.
+  // Trusted provider adapters and the temporary mock checkout share settlement.
+  // Mock proofs are accepted only while the server-side test mode is enabled.
   async confirmVerifiedPayment(input: { purchaseId: string; provider: string; eventId: string; paymentRef: string; amountCents: number; currency: string; payloadHash: string }) {
     return this.recordVerifiedPayment(input, true);
   }

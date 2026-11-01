@@ -94,15 +94,15 @@ export function PaymentWorkspace({ context }: { context: PaymentContext }) {
         </div>
         <form className={`${styles.card} ${styles.details}`} aria-label="Detalji plaćanja" onSubmit={e => { e.preventDefault();if(mock)void simulate('success');else setError("AllSecure plaćanje još nije dostupno. Ništa nije naplaćeno."); }}>
           <h2>Detalji plaćanja</h2>
-          {mock&&<div className={styles.mockBanner}><strong>Testno plaćanje</strong><span>Simulacija bez banke i bez stvarne naplate. Ne unosi podatke kartice.</span></div>}
+          {mock&&<div className={styles.mockBanner}><strong>Testno plaćanje</strong><span>Ništa se ne naplaćuje i kartica nije potrebna. Uspješna simulacija aktivira Premium ili dodaje kupljena prava za testiranje.</span></div>}
           <div className={styles.summary}>
             {isPremium ? <Row label="ArtBoard Premium" value={`${money(amount)} / mj.`} /> : generator ? <>
               <Row label="Proizvod" value="Dopuna za Generator" /><Row label="Sadržaj" value="10 Instagram objava" /><Row label="Važenje" value="Ne ističe dok ih ne potrošiš" /><Row label="Koristi se u" value="Generator promotivnih materijala" /><Row label="Nalog" value={c.quota?.plan === "PREMIUM" ? "Premium" : c.account ? "Free" : "Potrebna prijava"} />
             </> : c.portfolio ? <><Row label="Portfolio" value={c.portfolio.title} /><Row label="Stil" value={c.portfolio.style} /><Row label="Format" value={c.portfolio.format} /><Row label="Broj strana" value={String(c.portfolio.pageCount)} /><Row label="Jezik" value={c.portfolio.language} /></> : <p className={styles.help}>Pripremi portfolio u editoru da bi se prikazali stvarni podaci narudžbine.</p>}
             {!isPremium ? <Row label={generator ? "Dopuna za Generator · 10 objava" : "Portfolio Builder export"} value={money(amount)} /> : null}
-            <Row label="Naplata" value={isPremium ? "Mjesečno" : "Jednokratno"} />
+            <Row label={mock ? "Testni period" : "Naplata"} value={mock ? isPremium ? "Jedan mjesec · bez automatske obnove" : "Jednokratno · bez naplate" : isPremium ? "Mjesečno" : "Jednokratno"} />
           </div>
-          <div className={styles.total}><span>Ukupno danas</span><strong data-price="total">{money(amount)}</strong></div>
+          <div className={styles.total}><span>{mock ? "Iznos simulacije · bez naplate" : "Ukupno danas"}</span><strong data-price="total">{money(amount)}</strong></div>
           {!isPremium && c.account ? <section className={styles.account}><h3>Tvoj nalog</h3><div className={styles.identity}><span aria-hidden="true">{(c.account.name || c.account.email).slice(0, 1).toUpperCase()}</span><strong>{c.account.email}</strong></div><p>{generator ? c.catalog.generatorAvailable ? "Objave iz seta dodaju se nakon serverske potvrde uplate." : "Saldo Generatora još nije povezan sa naplatom." : "Draft i PDF se čuvaju u tvom nalogu."}</p></section> : null}
           {guest ? <section className={styles.guest}><h3>E-mail za račun</h3><label><span className={styles.srOnly}>E-mail za račun</span><input type="email" autoComplete="email" placeholder="ime@primjer.me" required value={email} readOnly={Boolean(c.purchase)} onChange={e => setEmail(e.target.value)} /></label>
             <p>Na ovaj e-mail šaljemo račun i link za preuzimanje PDF-a. Za kupovinu ti ne treba nalog.</p>

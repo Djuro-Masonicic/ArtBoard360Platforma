@@ -1,6 +1,7 @@
 import { env } from './env';
 
-// An explicit server opt-in is required; production cannot enable the simulator.
+// Temporary test mode is also available in production by explicit product decision.
+// Keep the same server-side switch for checkout visibility and settlement.
 export function mockPaymentsEnabled() {
-  return env.mockPaymentsEnabled && ['development', 'test'].includes(env.nodeEnv);
+  return env.mockPaymentsEnabled;
 }

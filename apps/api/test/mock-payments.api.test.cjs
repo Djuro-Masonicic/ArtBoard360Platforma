@@ -7,15 +7,26 @@ before(async()=>{
   guest=h.app.get(require('../src/modules/portfolio-projects/portfolio-guest.service').PortfolioGuestService);
   require('../src/storage/r2-storage.service').R2StorageService.prototype.getOrCreatePurchasePdf=async function(id,render){if(h.storage.fail)throw Error('Isolated storage failure');const key='mock-test-pdf:'+id;if(!h.storage.objects.has(key))h.storage.objects.set(key,await render());return h.storage.objects.get(key);};
 });
-beforeEach(()=>{env.nodeEnv='test';env.mockPaymentsEnabled=true;h.app.get(require('../src/modules/portfolio-projects/portfolio-commerce.controller').GuestProcessingGuard).buckets.clear();});
+beforeEach(()=>{env.nodeEnv='production';env.mockPaymentsEnabled=true;h.app.get(require('../src/modules/portfolio-projects/portfolio-commerce.controller').GuestProcessingGuard).buckets.clear();});
 after(async()=>{env.mockPaymentsEnabled=false;env.nodeEnv='test';await h?.close();});
 async function send(path,actor,body,secret){const r=await fetch(h.base+'/portfolio-commerce/'+path,{method:body?'POST':'GET',headers:{...(actor?{Authorization:'Bearer '+actor.token}:{}),...(body?{'Content-Type':'application/json'}:{}),...(secret?{'X-Portfolio-Delivery':secret}:{})},body:body?JSON.stringify(body):undefined});return {status:r.status,data:r.headers.get('content-type')?.includes('application/pdf')?Buffer.from(await r.arrayBuffer()):await r.json()};}
 async function order(){const id=randomUUID(),secret=randomBytes(32).toString('hex'),snapshot=await guest.snapshot(JSON.stringify({project:{artistName:'Mock Guest',email:'mock@example.invalid'},artworks:[]}),[]);await commerce.createGuestPurchase(snapshot,id,secret);return {id,secret};}
 
-test('simulator requires explicit opt-in and is always closed in production, with no mutations',async()=>{
+test('temporary mock checkout defaults on in production; server disable blocks confirmations without mutations',async()=>{
   const a=await h.artist(),data={outcome:'success',operationKey:randomUUID()},before=await h.prisma.portfolioPurchase.count();
-  env.mockPaymentsEnabled=false;assert.equal((await send('mock/generator',a,data)).status,404);assert.equal((await send('checkout-context?product=generator',a)).data.catalog.mockPaymentsEnabled,false);
-  env.mockPaymentsEnabled=true;env.nodeEnv='production';assert.equal((await send('mock/generator',a,data)).status,404);assert.equal((await send('mock/premium',a,{...data,amountCents:890})).status,404);assert.equal((await send('checkout-public?product=premium')).data.catalog.mockPaymentsEnabled,false);
+  const {readMockPaymentsEnabled}=require('../src/config/env');
+  for(const [value,expected] of [[undefined,true],['true',true],['false',false],['invalid',false]])assert.equal(readMockPaymentsEnabled(value),expected);
+  env.mockPaymentsEnabled=readMockPaymentsEnabled(undefined);
+  assert.equal((await send('checkout-context?product=premium',a)).data.checkoutAvailable,true);
+  assert.equal((await send('checkout-context?product=generator',a)).data.catalog.mockPaymentsEnabled,true);
+  for(const nodeEnv of ['production','development','test']){
+    env.nodeEnv=nodeEnv;env.mockPaymentsEnabled=false;
+    assert.equal((await send('mock/generator',a,data)).status,404);
+    assert.equal((await send('mock/premium',a,{...data,amountCents:890})).status,404);
+    assert.equal((await send('checkout-context?product=generator',a)).data.catalog.mockPaymentsEnabled,false);
+    assert.equal((await send('checkout-public?product=premium')).data.catalog.mockPaymentsEnabled,false);
+  }
+  await assert.rejects(commerce.confirmVerifiedPayment({purchaseId:randomUUID(),provider:'mock',eventId:'disabled',paymentRef:'disabled',amountCents:490,currency:'EUR',payloadHash:'a'.repeat(64)}),/Neispravna potvrda/);
   assert.equal(await h.prisma.portfolioPurchase.count(),before);assert.equal(await h.prisma.artistSubscription.count({where:{artistAccountId:a.account.id}}),0);
 });
 test('authenticated identity and strict DTOs reject anonymous or forged purchases',async()=>{

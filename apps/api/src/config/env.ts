@@ -81,8 +81,14 @@ function readAuthSecretEnv(): string {
   throw new Error("Missing required environment variable: ADMIN_AUTH_SECRET");
 }
 
+// Temporary, user-approved test checkout, including deployed production.
+// An explicit false remains the server-side off switch before bank integration.
+export function readMockPaymentsEnabled(value: string | undefined): boolean {
+  return value === undefined || value === "true";
+}
+
 export const env = {
-  mockPaymentsEnabled: process.env.MOCK_PAYMENTS_ENABLED === "true",
+  mockPaymentsEnabled: readMockPaymentsEnabled(process.env.MOCK_PAYMENTS_ENABLED),
   // Explicit opt-in only after the separately approved collection migration.
   artistCollectionsEnabled: process.env.ARTIST_COLLECTIONS_ENABLED === "true",
   portfolioCollectionsEnabled: process.env.PORTFOLIO_COLLECTIONS_ENABLED === "true",

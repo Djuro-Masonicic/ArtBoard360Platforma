@@ -1,6 +1,6 @@
 # Izvoz, privatna isporuka i osnova kupovina — 27. 10. 2026.
 
-**1. 11. — Lokalno testno plaćanje:** [Mock checkout i uputstvo za testiranje](mock-payments.md). Premium, Generator dopuna i Guest/vlasnički PDF/CV povezani su sa simulacijom uspjeha, odbijanja i otkazivanja. Testna prava se čuvaju kroz postojeće modele; AllSecure stvarna naplata ostaje odvojena naredna faza. Simulator je zatvoren u produkciji.
+**2. 11. — Testno plaćanje i u produkciji:** [Mock checkout i uputstvo za testiranje](mock-payments.md). Premium, Generator dopuna i Guest/vlasnički PDF/CV koriste simulaciju uspjeha, odbijanja i otkazivanja bez naplate. Po posebnom odobrenju mock je privremeno podrazumijevano uključen i u produkciji; `MOCK_PAYMENTS_ENABLED=false` ga isključuje. Testna prava se čuvaju kroz postojeće modele i označena su kao mock; AllSecure ostaje odvojena naredna faza. API i web moraju biti deployovani iz novog commita.
 
 **29. 10. — Upravljanje pretplatom:** [Prikaz pet stanja, stvarna PDF potrošnja i bezbjedne lokalne operacije](subscription-management-20261029.md). Istek ne briše posljednji poznati period. Promjena iznosa/kartice i udaljene pretplate čekaju AllSecure; Instagram/QR potrošnja nije izmišljena. Ova funkcionalnost nije označena kao završen produkcioni billing sistem.
 

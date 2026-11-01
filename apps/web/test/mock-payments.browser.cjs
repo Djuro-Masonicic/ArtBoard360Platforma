@@ -4,7 +4,7 @@ const root=path.resolve(__dirname,'../../..'),out=path.join(root,'.tmp/mock-paym
 const checks=[],errors=[],check=(name,ok=true)=>{assert(ok,name);checks.push(name);},write=(file,body)=>{const p=path.join(dir,file);fs.mkdirSync(path.dirname(p),{recursive:true});fs.writeFileSync(p,body);};
 let h,browser,server,page;
 (async()=>{
- h=await require('../../api/test/promotions.fixture.cjs').promotionHarness();const apiEnv=require('../../api/src/config/env').env;apiEnv.mockPaymentsEnabled=true;
+ h=await require('../../api/test/promotions.fixture.cjs').promotionHarness();const apiEnv=require('../../api/src/config/env').env;apiEnv.nodeEnv='production';apiEnv.mockPaymentsEnabled=true;
  const premium=await h.artist(),generator=await h.artist();
  require('../../api/src/storage/r2-storage.service').R2StorageService.prototype.getOrCreatePurchasePdf=async function(id,render){const key='mock-browser:'+id;if(!h.storage.objects.has(key))h.storage.objects.set(key,await render());return h.storage.objects.get(key);};
  const reset=()=>h.app.get(require('../../api/src/modules/portfolio-projects/portfolio-commerce.controller').GuestProcessingGuard).buckets.clear();
