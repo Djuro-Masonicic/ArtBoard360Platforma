@@ -75,6 +75,7 @@ export function ArtBoardToolsSection() {
             const style = { "--tool-color": group.color, "--tool-foreground": group.foreground, "--tool-ring": group.ring, "--tool-rgb": group.rgb } as CSSProperties;
             return (
               <section className="artboard-toolkit__group" data-active={isActive ? "true" : "false"} data-reveal="" data-tool-reveal key={group.title} style={style}>
+                <h3 className="artboard-toolkit__group-heading"><i aria-hidden="true" />{group.title}</h3>
                 <button aria-controls={`artboard-toolkit-group-${groupIndex}`} aria-expanded={isActive} className="artboard-toolkit__group-toggle" onClick={() => setActiveGroup(groupIndex)} type="button">
                   <i aria-hidden="true" /><strong>{group.title}</strong><span>Pregled</span><Chevron /><b aria-hidden="true" />
                 </button>
