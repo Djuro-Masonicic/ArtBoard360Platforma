@@ -87,11 +87,16 @@ export function readMockPaymentsEnabled(value: string | undefined): boolean {
   return value === undefined || value === "true";
 }
 
+// Collections are an active feature after the approved schema rollout.
+// Older deployments may have no flags; an explicit false still disables them.
+export function readCollectionsEnabled(value: string | undefined): boolean {
+  return value === undefined || value === "true";
+}
+
 export const env = {
   mockPaymentsEnabled: readMockPaymentsEnabled(process.env.MOCK_PAYMENTS_ENABLED),
-  // Explicit opt-in only after the separately approved collection migration.
-  artistCollectionsEnabled: process.env.ARTIST_COLLECTIONS_ENABLED === "true",
-  portfolioCollectionsEnabled: process.env.PORTFOLIO_COLLECTIONS_ENABLED === "true",
+  artistCollectionsEnabled: readCollectionsEnabled(process.env.ARTIST_COLLECTIONS_ENABLED),
+  portfolioCollectionsEnabled: readCollectionsEnabled(process.env.PORTFOLIO_COLLECTIONS_ENABLED),
   nodeEnv: process.env.NODE_ENV ?? "development",
   apiPort: readFirstNumberEnv(["PORT", "API_PORT"], 4000),
   webOrigins: readCsvList("WEB_ORIGIN", ["http://localhost:3000"]),

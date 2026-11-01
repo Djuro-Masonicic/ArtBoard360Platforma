@@ -20,6 +20,43 @@ async function sourceCollections() {
 async function create() { const r = await send("POST", "from-profile"); assert.equal(r.status, 201, JSON.stringify(r.body)); return r.body; }
 function savedCv(label = "Academy") { return { version: 1, education: [{ id: 'education', values: { institution: label } }], experience: [], exhibitions: [], awards: [], certificates: [], publications: [], skills: 'Drawing', programs: '' }; }
 
+test('production defaults enable both collection flows without deployment flags and retain ownership checks', async () => {
+  const { readCollectionsEnabled } = require('../src/config/env');
+  for (const [value, expected] of [[undefined, true], ['true', true], ['false', false], ['invalid', false]]) assert.equal(readCollectionsEnabled(value), expected);
+  const previous = { nodeEnv: h.env.nodeEnv, artist: h.env.artistCollectionsEnabled, portfolio: h.env.portfolioCollectionsEnabled };
+  try {
+    h.env.nodeEnv = 'production';
+    h.env.artistCollectionsEnabled = readCollectionsEnabled(undefined);
+    h.env.portfolioCollectionsEnabled = readCollectionsEnabled(undefined);
+    await sourceCollections();
+    const p = await create();
+    assert.equal(p.collectionsAvailable, true);
+    assert.equal(p.collections.length, 2);
+    const catalog = await send('GET', `me/${p.id}/collections/catalog`);
+    assert.equal(catalog.status, 200);
+    assert.equal(catalog.body.collections.length, 2);
+    assert.equal((await send('GET', `me/${p.id}/collections/catalog`, null, 'b')).status, 404);
+    assert.equal((await send('GET', `me/${p.id}/collections/catalog`, null, null)).status, 401);
+  } finally {
+    h.env.nodeEnv = previous.nodeEnv; h.env.artistCollectionsEnabled = previous.artist; h.env.portfolioCollectionsEnabled = previous.portfolio;
+  }
+});
+
+test('explicitly disabled portfolio collections still reject reads and writes without changing the draft', async () => {
+  await sourceCollections(); const p = await create(), before = await get(p.id);
+  h.env.portfolioCollectionsEnabled = false;
+  try {
+    assert.equal((await send('GET', `me/${p.id}/collections/catalog`)).status, 503);
+    const denied = await send('POST', `me/${p.id}/collections/commands`, { expectedRevision: p.revision, action: 'toggle', collectionId: p.collections[0].id, included: false });
+    assert.equal(denied.status, 503);
+    // Compare raw data: the response capability flag intentionally reflects the switch.
+    const saved = await h.legacy.portfolioProject.findUnique({ where: { id: p.id }, include: { collections: true } });
+    assert.equal(saved.revision, before.revision);
+    assert(saved.collections.every(c => c.isIncluded));
+  } finally { h.env.portfolioCollectionsEnabled = true; }
+  assert.deepEqual(await get(p.id), before);
+});
+
 for (const style of [undefined, 'ROUNDED', 'GRADIENT', 'EDITORIAL', 'CARDS', 'BLOCKS']) test(`${style || 'Minimal'} covers save/reopen, transient preview does not overwrite and invalid/foreign choices have no effects`, async () => {
   let p=await create();const config={mode:'PRESET',pages:Object.fromEntries(['cover','profile','collection','artwork','contact'].map(key=>[key,'INSTITUTIONAL_MINIMAL'])),footer:'MINIMAL',minimal:{version:1,cover:'E',...(style?{style}:{})}};
   const r=await send('PATCH',`public/${p.id}`,{expectedRevision:p.revision,designConfig:config});assert.equal(r.status,200,JSON.stringify(r.body));p=r.body;assert.deepEqual((await get(p.id)).designConfig.minimal,config.minimal);
