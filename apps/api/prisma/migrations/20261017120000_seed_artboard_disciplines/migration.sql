@@ -1,0 +1,28 @@
+INSERT INTO "Discipline" ("id", "name", "slug", "createdAt", "updatedAt")
+VALUES
+  (gen_random_uuid(), 'Slikarstvo', 'slikarstvo', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (gen_random_uuid(), 'Crtež', 'crtez', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (gen_random_uuid(), 'Grafika', 'grafika', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (gen_random_uuid(), 'Skulptura', 'skulptura', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (gen_random_uuid(), 'Fotografija', 'fotografija', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (gen_random_uuid(), 'Ilustracija', 'ilustracija', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (gen_random_uuid(), 'Kolaž', 'kolaz', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (gen_random_uuid(), 'Mješoviti mediji', 'mixed-media', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (gen_random_uuid(), 'Mozaik', 'mozaik', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (gen_random_uuid(), 'Tekstilna umjetnost', 'tekstilna-umjetnost', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (gen_random_uuid(), 'Umjetnički nakit', 'umjetnicki-nakit', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (gen_random_uuid(), 'Digitalna umjetnost', 'digitalna-umjetnost', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (gen_random_uuid(), '3D umjetnost', '3d-umjetnost', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (gen_random_uuid(), 'Animacija', 'animacija', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (gen_random_uuid(), 'Video umjetnost', 'video-umjetnost', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (gen_random_uuid(), 'Instalacija', 'instalacija', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (gen_random_uuid(), 'Performans', 'performans', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (gen_random_uuid(), 'Konceptualna umjetnost', 'konceptualna-umjetnost', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (gen_random_uuid(), 'Multimedijalna umjetnost', 'multimedijalna-umjetnost', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (gen_random_uuid(), 'Generativna umjetnost', 'generativna-umjetnost', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (gen_random_uuid(), 'Street art', 'street-art', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (gen_random_uuid(), 'Strip', 'strip', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (gen_random_uuid(), 'Kaligrafija', 'kaligrafija', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (gen_random_uuid(), 'Grafički dizajn', 'graficki-dizajn', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (gen_random_uuid(), 'Scenografija', 'scenografija', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO NOTHING;

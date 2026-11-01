@@ -43,6 +43,8 @@ export interface SocialLink {
 }
 
 export interface Artwork {
+  artistCollectionId?: string | null;
+  collectionOrderIndex?: number | null;
   id: string;
   artistId: string;
   imageUrl: string;
@@ -93,10 +95,15 @@ export interface FaqQuestion {
 }
 
 export interface Artist {
+  isDraft?: boolean;
+  isArchived?: boolean;
+  collections?: Array<{ id: string; title: string; description: string | null; year: string | null; coverImageUrl: string | null; orderIndex: number }>;
   id: string;
   name: string;
   slug: string;
   bio?: string | null;
+  artistStatement?: string | null;
+  presentationForm?: "FEMININE" | "MASCULINE" | "NEUTRAL" | null;
   quote?: string | null;
   email?: string | null;
   profileImageUrl?: string | null;
@@ -200,6 +207,7 @@ export type PortfolioDesignMode = "PRESET" | "CUSTOM";
 export type PortfolioDesignPageKey = "cover" | "profile" | "collection" | "artwork" | "contact";
 export type PortfolioFooterTemplate = "MINIMAL" | "ARTBOARD" | "SALES";
 export type PortfolioDesignConfig = {
+  minimal?: import('@artboard/portfolio-document-plan').MinimalDesign;
   mode: PortfolioDesignMode;
   pages: Record<PortfolioDesignPageKey, PortfolioTemplate>;
   footer: PortfolioFooterTemplate;
@@ -217,6 +225,9 @@ export type PortfolioPaymentStatus =
   | "REFUNDED";
 
 export interface PortfolioArtwork {
+  portfolioCollectionId?: string | null;
+  collectionOrderIndex?: number | null;
+  sourceBaseline?: unknown;
   id: string;
   portfolioId: string;
   sourceArtworkId?: string | null;
@@ -237,6 +248,7 @@ export interface PortfolioArtwork {
 }
 
 export interface PortfolioVersion {
+  manifest?: { designConfig?: unknown } | null;
   id: string;
   portfolioId: string;
   versionNumber: number;
@@ -246,6 +258,11 @@ export interface PortfolioVersion {
   language: PortfolioLanguage;
   includeBranding: boolean;
   createdAt: string;
+  documentScope?: "PORTFOLIO" | "CV" | null;
+  pageCount?: number | null;
+  artworkCount?: number | null;
+  contentHash?: string | null;
+  sourceRevision?: number | null;
 }
 
 export interface PortfolioPayment {
@@ -261,7 +278,25 @@ export interface PortfolioPayment {
   updatedAt: string;
 }
 
+export interface PortfolioCollection {
+  id: string; portfolioId: string; sourceCollectionId?: string | null;
+  title: string; description?: string | null; year?: string | null;
+  coverImageUrl?: string | null; coverImageStoragePath?: string | null;
+  isIncluded: boolean; orderIndex: number; sourceBaseline?: unknown;
+}
+
 export interface PortfolioProject {
+  documentSelection?: import("@artboard/portfolio-document-plan").DocumentSelection;
+  collectionSchemaVersion?: number;
+  revision?: number;
+  collectionsAvailable?: boolean;
+  includeUncollectedArtworks?: boolean;
+  collections?: PortfolioCollection[];
+  dateOfBirth?: string | null;
+  behanceUrl?: string | null;
+  motto?: string | null;
+  mottoAuthor?: string | null;
+  coverImageStoragePath?: string | null;
   id: string;
   artistAccountId?: string | null;
   sourceArtistId?: string | null;
@@ -315,9 +350,13 @@ export interface PortfolioProject {
     slug: string;
   } | null;
   access: {
+    privatePdfStorageReady?: boolean;
+    localTestExportAvailable?: boolean;
+    canGeneratePdf?: boolean;
     canDownloadCleanPdf: boolean;
     requiresPayment: boolean;
-    reason: "PAID" | "PREMIUM" | "PAYMENT_REQUIRED";
+    reason: "PAID" | "PREMIUM" | "FREE" | "PAYMENT_REQUIRED";
+    quota?: { plan: "FREE" | "PREMIUM"; limit: number; used: number; reserved: number; remaining: number; periodEnd: string | null; extraExportCents: number; checkoutAvailable: boolean };
   };
   counts: {
     artworks: number;
@@ -342,13 +381,20 @@ export interface ArtistSubmissionListItem {
   fullName: string;
   email: string;
   phone?: string | null;
+  city?: string | null;
   biography: string;
+  artistStatement?: string | null;
   motto?: string | null;
+  mottoAuthor?: string | null;
+  showEmailPublic: boolean;
+  presentationForms: string[];
   blogUrl?: string | null;
   notes?: string | null;
   confirmedRules: boolean;
+  containsNsfw: boolean;
   portfolioPdfUrl?: string | null;
   profilePhotoUrl?: string | null;
+  coverPhotoUrl?: string | null;
   status: ArtistSubmissionStatus;
   createdAt: string;
   updatedAt: string;

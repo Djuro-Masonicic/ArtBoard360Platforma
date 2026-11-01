@@ -109,12 +109,19 @@ export function SiteHeader({ session = null }: SiteHeaderProps) {
       ? artStudioNavigationItems
       : publicNavigationItems;
   const logoHref = isArtBoardUnit ? siteRoutes.artboard : siteRoutes.home;
-  const headerCtaHref = isArtBoardUnit
+  const isOpportunitySubmission = pathname === siteRoutes.opportunitySubmit;
+  const headerCtaHref = isOpportunitySubmission
+    ? "#forma"
+    : isArtBoardUnit
     ? siteRoutes.artistApplication
     : isArtStudioUnit
       ? siteRoutes.contact
       : siteRoutes.login;
-  const resolvedHeaderCtaLabel = isArtStudioUnit ? "Kontakt" : "Prijavi se";
+  const resolvedHeaderCtaLabel = isOpportunitySubmission
+    ? "Objavi oglas besplatno"
+    : isArtStudioUnit
+      ? "Kontakt"
+      : "Prijavi se";
   const [isTransparentHeader, setIsTransparentHeader] = useState(isArtistHeroPage);
   const [isArtBoardHeaderScrolled, setIsArtBoardHeaderScrolled] = useState(false);
   const isAuthenticated = Boolean(session);

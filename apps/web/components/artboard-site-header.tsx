@@ -32,6 +32,11 @@ export function ArtBoardSiteHeader({ session = null }: ArtBoardSiteHeaderProps) 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentHash, setCurrentHash] = useState("");
   const isDashboard = pathname === "/artist/dashboard";
+  const isPortfolioBuilderLanding = pathname === siteRoutes.portfolioBuilder;
+  const isOpportunitySubmission = pathname === siteRoutes.opportunitySubmit;
+  const isOpportunityBoard = pathname === siteRoutes.opportunities;
+  const isOpportunitySurface = isOpportunitySubmission || isOpportunityBoard;
+  const opportunityHref = isOpportunitySubmission ? "#forma" : siteRoutes.opportunitySubmit;
 
   useEffect(() => {
     setIsMenuOpen(false);
@@ -74,8 +79,8 @@ export function ArtBoardSiteHeader({ session = null }: ArtBoardSiteHeaderProps) 
   }, [isMenuOpen]);
 
   return (
-    <div className={`site-header-root ${styles.frame} ${isMenuOpen ? styles.frameMenuOpen : ""}`}>
-      <header className={`${styles.shell} ${isDashboard ? "xl:!w-[min(94vw,1660px)] xl:!grid-cols-[360px_minmax(0,1fr)_160px]" : ""}`}>
+    <div className={`site-header-root ${styles.frame} ${isOpportunitySurface ? styles.submissionFrame : ""} ${isPortfolioBuilderLanding ? styles.portfolioFrame : ""} ${isMenuOpen ? styles.frameMenuOpen : ""}`}>
+      <header className={`${styles.shell} ${isOpportunitySurface ? styles.submissionShell : ""} ${isDashboard ? "xl:!w-[min(94vw,1660px)] xl:!grid-cols-[360px_minmax(0,1fr)_160px]" : ""}`}>
         <Link className={styles.brand} href={siteRoutes.artboard} aria-label="ArtBoard početna stranica">
           <ArtBoardLogo className={styles.logo} tone="dark" />
         </Link>
@@ -120,10 +125,18 @@ export function ArtBoardSiteHeader({ session = null }: ArtBoardSiteHeaderProps) 
           ) : (
             <>
               <Link className={styles.loginLink} href={siteRoutes.login}>Uloguj se</Link>
-              <Link className={styles.signupLink} href={siteRoutes.artistApplication}>Prijavi se</Link>
+              <Link className={`${styles.signupLink} ${isOpportunitySurface ? styles.submitOpportunityLink : ""}`} href={isOpportunitySurface ? opportunityHref : siteRoutes.artistApplication}>
+                {isOpportunitySurface ? "Objavi oglas besplatno" : "Prijavi se"}
+              </Link>
             </>
           )}
         </div>
+
+        {isPortfolioBuilderLanding ? (
+          <Link className={styles.portfolioMobileAction} href={session?.primaryHref ?? siteRoutes.artistApplication}>
+            {session ? "Moj nalog" : "Prijavi se"}
+          </Link>
+        ) : null}
 
         <button
           aria-controls="artboard-mobile-menu"
@@ -177,7 +190,9 @@ export function ArtBoardSiteHeader({ session = null }: ArtBoardSiteHeaderProps) 
           ) : (
             <>
               <Link className={styles.mobileLoginLink} href={siteRoutes.login} onClick={() => setIsMenuOpen(false)} tabIndex={isMenuOpen ? 0 : -1}>Uloguj se</Link>
-              <Link className={styles.mobileSignupLink} href={siteRoutes.artistApplication} onClick={() => setIsMenuOpen(false)} tabIndex={isMenuOpen ? 0 : -1}>Prijavi se</Link>
+              <Link className={styles.mobileSignupLink} href={isOpportunitySurface ? opportunityHref : siteRoutes.artistApplication} onClick={() => setIsMenuOpen(false)} tabIndex={isMenuOpen ? 0 : -1}>
+                {isOpportunitySurface ? "Objavi oglas besplatno" : "Prijavi se"}
+              </Link>
             </>
           )}
         </div>

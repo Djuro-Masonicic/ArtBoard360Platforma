@@ -1,12 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import * as pdfjs from "pdfjs-dist";
-
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  "pdfjs-dist/build/pdf.worker.min.mjs",
-  import.meta.url,
-).toString();
 
 type PortfolioPdfCanvasViewerProps = {
   maxPages?: number;
@@ -40,6 +34,9 @@ export function PortfolioPdfCanvasViewer({
       container.innerHTML = "";
 
       try {
+        const pdfjs = await import("pdfjs-dist");
+        if (isCancelled) return;
+        pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
         const loadingTask = pdfjs.getDocument({
           url: src,
         });
@@ -149,18 +146,5 @@ export function PortfolioPdfCanvasViewer({
 
 function formatPreviewPageLabel(pageNumber: number) {
   const number = String(pageNumber).padStart(2, "0");
-
-  if (pageNumber === 1) {
-    return `${number} · Naslovna`;
-  }
-
-  if (pageNumber === 2) {
-    return `${number} · Profil`;
-  }
-
-  if (pageNumber === 3) {
-    return `${number} · Kolekcija`;
-  }
-
-  return `${number} · Rad`;
+  return `${number} · Strana`;
 }

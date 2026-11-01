@@ -1,8 +1,20 @@
 "use client";
 
-import { startTransition, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Check, Info, Plus, Upload, X } from "lucide-react";
 
+import { DisciplineIcon } from "@/components/discipline-icon";
 import { useUiFeedback, useUiLoadingState } from "@/components/ui-feedback-provider";
+import styles from "@/components/prijava-page.module.css";
+import {
+  clearPrijavaDraft,
+  clearPrijavaDraftFiles,
+  loadPrijavaDraftFiles,
+  loadPrijavaDraftMetadata,
+  savePrijavaDraftFiles,
+  savePrijavaDraftMetadata,
+  type PrijavaDraftFormValues,
+} from "@/lib/prijava-draft";
 import { ApiError } from "@/services/api";
 import { submitArtistSubmission } from "@/services/artist-submissions";
 
@@ -16,15 +28,7 @@ interface PrijavaFormProps {
   disciplines: DisciplineOption[];
 }
 
-interface FormValues {
-  fullName: string;
-  email: string;
-  phone: string;
-  biography: string;
-  motto: string;
-  blogUrl: string;
-  notes: string;
-}
+type FormValues = PrijavaDraftFormValues;
 
 interface PreviewItem {
   key: string;
@@ -44,6 +48,11 @@ type StepDefinition = {
   description: string;
 };
 
+type StepValidationError = {
+  fieldId?: string;
+  message: string;
+};
+
 const emptyPortfolioLink = "";
 const emptySocialLink = "";
 
@@ -51,36 +60,42 @@ const steps: StepDefinition[] = [
   {
     eyebrow: "Korak 1",
     title: "Osnovni podaci",
-    description: "Predstavi se osnovnim informacijama kako bismo znali ko se prijavljuje.",
+    description: "Za početak, nekoliko osnovnih podataka o tebi.",
   },
   {
     eyebrow: "Korak 2",
     title: "Biografija i disciplina",
-    description: "Opisi svoj rad i izaberi do tri discipline koje te najbolje predstavljaju.",
+    description: "Napiši biografiju i izaberi discipline kojima se baviš.",
   },
   {
     eyebrow: "Korak 3",
-    title: "Portfolio i mreze",
-    description: "Dodaj portfolio linkove, PDF i profile na drustvenim mrezama.",
+    title: "Portfolio i mreže",
+    description: "Dodaj linkove ka portfoliju i profilima na kojima se može vidjeti tvoj rad.",
   },
   {
     eyebrow: "Korak 4",
     title: "Materijali za prijavu",
-    description: "Posalji izdvojene radove i profilnu fotografiju za pregled selekcije.",
+    description: "Izaberi radove koje želiš da predstaviš, dodaj profilnu fotografiju i naslovnu sliku.",
   },
   {
     eyebrow: "Korak 5",
     title: "Potvrda i slanje",
-    description: "Dodaj napomene, potvrdi uslove prijave i posalji materijale.",
+    description: "Još samo da provjeriš prijavu i pošalješ je.",
   },
 ];
+
+const disciplineTones = ["blue", "red", "gold"] as const;
+const disciplineColors = ["#0d74ff", "#fe171d", "#d9a400"] as const;
 
 const initialFormValues: FormValues = {
   fullName: "",
   email: "",
   phone: "",
+  city: "",
   biography: "",
+  artistStatement: "",
   motto: "",
+  mottoAuthor: "",
   blogUrl: "",
   notes: "",
 };
@@ -92,6 +107,7 @@ const initialFormValues: FormValues = {
  */
 export function PrijavaForm({ disciplines }: PrijavaFormProps) {
   const { showAlert } = useUiFeedback();
+  const draftRestoreStartedRef = useRef(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [animationDirection, setAnimationDirection] = useState<"forward" | "backward">("forward");
   const [formValues, setFormValues] = useState<FormValues>(initialFormValues);
@@ -100,20 +116,30 @@ export function PrijavaForm({ disciplines }: PrijavaFormProps) {
   const [socialLinks, setSocialLinks] = useState<string[]>([emptySocialLink]);
   const [portfolioPdfFile, setPortfolioPdfFile] = useState<File | null>(null);
   const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
+  const [coverPhotoFile, setCoverPhotoFile] = useState<File | null>(null);
   const [artworkFiles, setArtworkFiles] = useState<File[]>([]);
   const [artworkPreviews, setArtworkPreviews] = useState<PreviewItem[]>([]);
   const [profilePreviewUrl, setProfilePreviewUrl] = useState<string | null>(null);
-  const [activeArtworkPreviewIndex, setActiveArtworkPreviewIndex] = useState(0);
+  const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(null);
   const [confirmedRules, setConfirmedRules] = useState(false);
+  const [showEmailPublic, setShowEmailPublic] = useState(false);
+  const [presentationForms, setPresentationForms] = useState<string[]>([]);
+  const [showPresentationHelp, setShowPresentationHelp] = useState(false);
+  const [showStatementHelp, setShowStatementHelp] = useState(false);
+  const [showPortfolioHelp, setShowPortfolioHelp] = useState(false);
+  const [showRulesHelp, setShowRulesHelp] = useState(false);
+  const [containsNsfw, setContainsNsfw] = useState(false);
+  const [validationAttempted, setValidationAttempted] = useState(false);
   const [submitState, setSubmitState] = useState<SubmitState>({ kind: "idle" });
+  const [draftPersistenceReady, setDraftPersistenceReady] = useState(false);
 
   const fieldClassName =
-    "w-full rounded-[1.35rem] border border-black/10 bg-white px-5 py-4 text-[16px] text-[#2f3138] outline-none transition focus:border-[#2440d8] focus:ring-2 focus:ring-[#2440d8]/10";
+    "w-full rounded-[1.35rem] border border-black/10 bg-white px-5 py-4 text-[16px] text-[#2f3138] outline-none transition focus:border-[#2440d8] focus:ring-2 focus:ring-[#2440d8]/10 aria-[invalid=true]:border-[#ef3340] aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-[#ef3340]/10";
   const areaClassName = `${fieldClassName} min-h-40 resize-y`;
   const ghostButtonClassName =
-    "inline-flex items-center justify-center rounded-full border border-black/10 bg-white px-4 py-2.5 text-[15px] font-medium text-[#434855] transition hover:border-black/20 hover:text-[#1f2430] disabled:cursor-not-allowed disabled:opacity-45";
+    styles.ghostButton;
   const primaryButtonClassName =
-    "inline-flex items-center justify-center rounded-full bg-[#2440d8] px-5 py-2.5 text-[15px] font-semibold text-white transition hover:bg-[#1d34b7] disabled:cursor-not-allowed disabled:opacity-60";
+    styles.primaryButton;
 
   const artworkCountMessage = useMemo(() => {
     if (artworkFiles.length === 0) {
@@ -128,18 +154,183 @@ export function PrijavaForm({ disciplines }: PrijavaFormProps) {
       return `Trenutno je odabrano ${artworkFiles.length} radova. Maksimum je 25.`;
     }
 
-    return `Odabrano je ${artworkFiles.length} radova, sto je u dozvoljenom opsegu.`;
+    return `Odabrano je ${artworkFiles.length} radova, što je u dozvoljenom opsegu.`;
   }, [artworkFiles.length]);
 
   const activeStep = steps[currentStep] ?? steps[0]!;
   const completionPercent = ((currentStep + 1) / steps.length) * 100;
-  const activeArtworkPreview = artworkPreviews[activeArtworkPreviewIndex] ?? null;
+  const biographyWordCount = countWords(formValues.biography);
+  const statementWordCount = countWords(formValues.artistStatement);
+  const confirmationItems = [
+    { label: "Ime, e-mail i grad", complete: Boolean(formValues.fullName.trim() && formValues.email.trim() && formValues.city.trim()) },
+    { label: "Biografija od 80 do 200 riječi", complete: biographyWordCount >= 80 && biographyWordCount <= 200 },
+    { label: "Bar jedna disciplina", complete: selectedDisciplineSlugs.length > 0 },
+    { label: "Bar jedna društvena mreža", complete: socialLinks.some((link) => link.trim()) },
+    { label: "Od 6 do 25 radova (JPG ili PNG)", complete: artworkFiles.length >= 6 && artworkFiles.length <= 25 },
+    { label: "Profilna i naslovna slika", complete: Boolean(profilePhotoFile && coverPhotoFile) },
+  ];
+  const hasDraftContent = useMemo(
+    () =>
+      currentStep > 0 ||
+      Object.values(formValues).some((value) => value.trim()) ||
+      selectedDisciplineSlugs.length > 0 ||
+      portfolioLinks.some((value) => value.trim()) ||
+      socialLinks.some((value) => value.trim()) ||
+      Boolean(portfolioPdfFile || profilePhotoFile || coverPhotoFile || artworkFiles.length) ||
+      confirmedRules ||
+      showEmailPublic ||
+      presentationForms.length > 0 ||
+      containsNsfw,
+    [
+      artworkFiles.length,
+      confirmedRules,
+      containsNsfw,
+      coverPhotoFile,
+      currentStep,
+      formValues,
+      portfolioLinks,
+      portfolioPdfFile,
+      presentationForms.length,
+      profilePhotoFile,
+      selectedDisciplineSlugs.length,
+      showEmailPublic,
+      socialLinks,
+    ],
+  );
 
   useUiLoadingState(submitState.kind === "submitting");
 
   useEffect(() => {
-    const nextPreviews = artworkFiles.map((file) => ({
-      key: buildFileKey(file),
+    if (draftRestoreStartedRef.current) {
+      return;
+    }
+
+    draftRestoreStartedRef.current = true;
+
+    async function restoreDraft() {
+      const draft = loadPrijavaDraftMetadata();
+
+      if (!draft) {
+        await clearPrijavaDraftFiles().catch(() => undefined);
+        setDraftPersistenceReady(true);
+        return;
+      }
+
+      const storedFiles = await loadPrijavaDraftFiles().catch(() => null);
+
+      setCurrentStep(Math.min(Math.max(Math.trunc(draft.currentStep), 0), steps.length - 1));
+      setFormValues({ ...initialFormValues, ...draft.formValues });
+      setSelectedDisciplineSlugs(
+        Array.isArray(draft.selectedDisciplineSlugs) ? draft.selectedDisciplineSlugs : [],
+      );
+      setPortfolioLinks(
+        Array.isArray(draft.portfolioLinks) && draft.portfolioLinks.length > 0
+          ? draft.portfolioLinks
+          : [emptyPortfolioLink],
+      );
+      setSocialLinks(
+        Array.isArray(draft.socialLinks) && draft.socialLinks.length > 0
+          ? draft.socialLinks
+          : [emptySocialLink],
+      );
+      setConfirmedRules(draft.confirmedRules === true);
+      setShowEmailPublic(draft.showEmailPublic === true);
+      setPresentationForms(
+        Array.isArray(draft.presentationForms) ? draft.presentationForms.slice(0, 1) : [],
+      );
+      setContainsNsfw(draft.containsNsfw === true);
+
+      if (storedFiles) {
+        setPortfolioPdfFile(isStoredFile(storedFiles.portfolioPdfFile) ? storedFiles.portfolioPdfFile : null);
+        setProfilePhotoFile(isStoredFile(storedFiles.profilePhotoFile) ? storedFiles.profilePhotoFile : null);
+        setCoverPhotoFile(isStoredFile(storedFiles.coverPhotoFile) ? storedFiles.coverPhotoFile : null);
+        setArtworkFiles(
+          Array.isArray(storedFiles.artworkFiles)
+            ? storedFiles.artworkFiles.filter((file): file is File => isStoredFile(file))
+            : [],
+        );
+      }
+
+      setValidationAttempted(false);
+      setDraftPersistenceReady(true);
+      showAlert({
+        kind: "info",
+        title: "Nacrt prijave je vraćen",
+        message: "Vratili smo podatke sačuvane u posljednjih 30 minuta.",
+      });
+    }
+
+    restoreDraft().catch(() => {
+      setDraftPersistenceReady(true);
+    });
+  }, [showAlert]);
+
+  useEffect(() => {
+    if (!draftPersistenceReady) {
+      return;
+    }
+
+    if (!hasDraftContent) {
+      void clearPrijavaDraft().catch(() => undefined);
+      return;
+    }
+
+    try {
+      savePrijavaDraftMetadata({
+        currentStep,
+        formValues,
+        selectedDisciplineSlugs,
+        portfolioLinks,
+        socialLinks,
+        confirmedRules,
+        showEmailPublic,
+        presentationForms,
+        containsNsfw,
+      });
+    } catch {
+      // Storage failures must never interrupt filling out the application.
+    }
+  }, [
+    artworkFiles,
+    confirmedRules,
+    containsNsfw,
+    coverPhotoFile,
+    currentStep,
+    draftPersistenceReady,
+    formValues,
+    hasDraftContent,
+    portfolioLinks,
+    portfolioPdfFile,
+    presentationForms,
+    profilePhotoFile,
+    selectedDisciplineSlugs,
+    showEmailPublic,
+    socialLinks,
+  ]);
+
+  useEffect(() => {
+    if (!draftPersistenceReady || !hasDraftContent) {
+      return;
+    }
+
+    void savePrijavaDraftFiles({
+      portfolioPdfFile,
+      profilePhotoFile,
+      coverPhotoFile,
+      artworkFiles,
+    }).catch(() => undefined);
+  }, [
+    artworkFiles,
+    coverPhotoFile,
+    draftPersistenceReady,
+    hasDraftContent,
+    portfolioPdfFile,
+    profilePhotoFile,
+  ]);
+
+  useEffect(() => {
+    const nextPreviews = artworkFiles.map((file, index) => ({
+      key: `${buildFileKey(file)}-${index}`,
       url: URL.createObjectURL(file),
       file,
     }));
@@ -168,15 +359,16 @@ export function PrijavaForm({ disciplines }: PrijavaFormProps) {
   }, [profilePhotoFile]);
 
   useEffect(() => {
-    if (artworkPreviews.length === 0) {
-      setActiveArtworkPreviewIndex(0);
+    if (!coverPhotoFile) {
+      setCoverPreviewUrl(null);
       return;
     }
 
-    if (activeArtworkPreviewIndex > artworkPreviews.length - 1) {
-      setActiveArtworkPreviewIndex(artworkPreviews.length - 1);
-    }
-  }, [activeArtworkPreviewIndex, artworkPreviews.length]);
+    const nextUrl = URL.createObjectURL(coverPhotoFile);
+    setCoverPreviewUrl(nextUrl);
+
+    return () => URL.revokeObjectURL(nextUrl);
+  }, [coverPhotoFile]);
 
   useEffect(() => {
     if (submitState.kind === "success") {
@@ -196,15 +388,143 @@ export function PrijavaForm({ disciplines }: PrijavaFormProps) {
     }
   }, [showAlert, submitState]);
 
+  function getStepValidationError(stepIndex: number): StepValidationError | null {
+    if (stepIndex === 0) {
+      if (!formValues.fullName.trim()) {
+        return { fieldId: "fullName", message: "Unesi ime i prezime." };
+      }
+
+      if (!isValidEmail(formValues.email)) {
+        return { fieldId: "email", message: "Unesi ispravnu e-mail adresu." };
+      }
+
+      if (!formValues.city.trim()) {
+        return { fieldId: "city", message: "Unesi grad." };
+      }
+    }
+
+    if (stepIndex === 1) {
+      if (biographyWordCount < 80) {
+        return { fieldId: "biography", message: "Biografija mora imati najmanje 80 riječi." };
+      }
+
+      if (biographyWordCount > 200) {
+        return { fieldId: "biography", message: "Biografija može imati najviše 200 riječi." };
+      }
+
+      if (statementWordCount > 60) {
+        return {
+          fieldId: "artistStatement",
+          message: "Umjetnički iskaz može imati najviše 60 riječi.",
+        };
+      }
+
+      if (selectedDisciplineSlugs.length === 0) {
+        return { fieldId: "discipline-options", message: "Izaberi najmanje jednu disciplinu." };
+      }
+    }
+
+    if (stepIndex === 2) {
+      const invalidPortfolioIndex = portfolioLinks.findIndex(
+        (link) => link.trim() && !isValidHttpUrl(link),
+      );
+
+      if (invalidPortfolioIndex >= 0) {
+        return {
+          fieldId: `portfolioLink-${invalidPortfolioIndex}`,
+          message: "Unesi ispravan portfolio link.",
+        };
+      }
+
+      const firstSocialLinkIndex = socialLinks.findIndex((link) => link.trim());
+
+      if (firstSocialLinkIndex < 0) {
+        return { fieldId: "socialLink-0", message: "Dodaj najmanje jednu društvenu mrežu." };
+      }
+
+      const invalidSocialIndex = socialLinks.findIndex(
+        (link) => link.trim() && !isValidHttpUrl(link),
+      );
+
+      if (invalidSocialIndex >= 0) {
+        return {
+          fieldId: `socialLink-${invalidSocialIndex}`,
+          message: "Unesi ispravan link društvene mreže.",
+        };
+      }
+
+      if (formValues.blogUrl.trim() && !isValidHttpUrl(formValues.blogUrl)) {
+        return { fieldId: "blogUrl", message: "Unesi ispravan link ličnog sajta ili bloga." };
+      }
+    }
+
+    if (stepIndex === 3) {
+      if (artworkFiles.length < 6) {
+        return { fieldId: "featuredWorksDropzone", message: "Dodaj najmanje 6 radova." };
+      }
+
+      if (artworkFiles.length > 25) {
+        return { fieldId: "featuredWorksDropzone", message: "Možeš dodati najviše 25 radova." };
+      }
+
+      if (!profilePhotoFile) {
+        return { fieldId: "profilePhotoPicker", message: "Dodaj profilnu fotografiju." };
+      }
+
+      if (!coverPhotoFile) {
+        return { fieldId: "coverPhotoPicker", message: "Dodaj naslovnu sliku." };
+      }
+    }
+
+    if (stepIndex === 4 && !confirmedRules) {
+      return { fieldId: "confirmedRules", message: "Potvrdi uslove korišćenja i privatnosti." };
+    }
+
+    return null;
+  }
+
+  const activeStepValidationError = validationAttempted
+    ? getStepValidationError(currentStep)
+    : null;
+
+  function focusValidationField(fieldId?: string) {
+    if (!fieldId) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        document.getElementById(fieldId)?.focus();
+      });
+    });
+  }
+
   function goToStep(nextStep: number) {
     if (nextStep < 0 || nextStep >= steps.length) {
       return;
     }
 
+    if (nextStep > currentStep) {
+      for (let stepIndex = currentStep; stepIndex < nextStep; stepIndex += 1) {
+        const validationError = getStepValidationError(stepIndex);
+
+        if (validationError) {
+          setValidationAttempted(true);
+
+          if (stepIndex !== currentStep) {
+            setAnimationDirection("forward");
+            setCurrentStep(stepIndex);
+          }
+
+          focusValidationField(validationError.fieldId);
+          return;
+        }
+      }
+    }
+
     setAnimationDirection(nextStep > currentStep ? "forward" : "backward");
-    startTransition(() => {
-      setCurrentStep(nextStep);
-    });
+    setValidationAttempted(false);
+    setCurrentStep(nextStep);
   }
 
   function updateValue<K extends keyof FormValues>(key: K, value: FormValues[K]) {
@@ -266,8 +586,18 @@ export function PrijavaForm({ disciplines }: PrijavaFormProps) {
     event.target.value = "";
   }
 
+  function handleCoverPhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
+    setCoverPhotoFile(event.target.files?.[0] ?? null);
+    event.target.value = "";
+  }
+
+  function handlePresentationFormToggle(value: string) {
+    setPresentationForms((current) => (current.includes(value) ? [] : [value]));
+  }
+
   function handleArtworkSelection(event: React.ChangeEvent<HTMLInputElement>) {
-    const selectedFiles = Array.from(event.target.files ?? []).filter(
+    const pickedFiles = Array.from(event.currentTarget.files ?? []);
+    const supportedFiles = pickedFiles.filter(
       (file) =>
         file.type === "image/jpeg" ||
         file.type === "image/png" ||
@@ -275,27 +605,48 @@ export function PrijavaForm({ disciplines }: PrijavaFormProps) {
         file.name.toLowerCase().endsWith(".jpeg") ||
         file.name.toLowerCase().endsWith(".png"),
     );
+    const knownFileNames = new Set(artworkFiles.map((file) => normalizeFileName(file.name)));
+    const duplicateFileNames: string[] = [];
+    const selectedFiles: File[] = [];
 
-    if (selectedFiles.length === 0) {
-      event.target.value = "";
-      return;
-    }
+    for (const file of supportedFiles) {
+      const normalizedName = normalizeFileName(file.name);
 
-    setArtworkFiles((current) => {
-      const uniqueFiles = new Map(current.map((file) => [buildFileKey(file), file]));
-
-      for (const file of selectedFiles) {
-        uniqueFiles.set(buildFileKey(file), file);
+      if (knownFileNames.has(normalizedName)) {
+        duplicateFileNames.push(file.name);
+        continue;
       }
 
-      return Array.from(uniqueFiles.values());
-    });
-
-    if (artworkFiles.length === 0) {
-      setActiveArtworkPreviewIndex(0);
+      knownFileNames.add(normalizedName);
+      selectedFiles.push(file);
     }
 
-    event.target.value = "";
+    event.currentTarget.value = "";
+
+    if (selectedFiles.length > 0) {
+      setArtworkFiles((current) => [...current, ...selectedFiles]);
+    }
+
+    if (duplicateFileNames.length > 0) {
+      const uniqueDuplicateNames = Array.from(new Set(duplicateFileNames));
+      showAlert({
+        kind: "error",
+        title: "Duplirani radovi nijesu dodati",
+        message:
+          uniqueDuplicateNames.length === 1
+            ? `Fajl sa imenom „${uniqueDuplicateNames[0]}” već postoji u listi.`
+            : `Fajlovi sa imenima ${uniqueDuplicateNames.map((name) => `„${name}”`).join(", ")} već postoje u listi.`,
+      });
+    }
+
+    const rejectedFileCount = pickedFiles.length - supportedFiles.length;
+    if (rejectedFileCount > 0) {
+      showAlert({
+        kind: "info",
+        title: "Dio fajlova nije dodat",
+        message: `${rejectedFileCount} ${rejectedFileCount === 1 ? "fajl nije u" : "fajla nijesu u"} JPG ili PNG formatu.`,
+      });
+    }
   }
 
   function removeArtwork(index: number) {
@@ -313,34 +664,22 @@ export function PrijavaForm({ disciplines }: PrijavaFormProps) {
       return;
     }
 
+    for (let stepIndex = 0; stepIndex < steps.length; stepIndex += 1) {
+      const validationError = getStepValidationError(stepIndex);
+
+      if (validationError) {
+        setValidationAttempted(true);
+        if (stepIndex !== currentStep) {
+          setAnimationDirection("backward");
+          setCurrentStep(stepIndex);
+        }
+        focusValidationField(validationError.fieldId);
+        return;
+      }
+    }
+
     const cleanedPortfolioLinks = portfolioLinks.map((item) => item.trim()).filter(Boolean);
     const cleanedSocialLinks = socialLinks.map((item) => item.trim()).filter(Boolean);
-
-    if (!profilePhotoFile) {
-      setSubmitState({ kind: "error", message: "Profilna fotografija je obavezna." });
-      return;
-    }
-
-    if (artworkFiles.length < 6 || artworkFiles.length > 25) {
-      setSubmitState({
-        kind: "error",
-        message: "Potrebno je poslati izmedju 6 i 25 JPG ili PNG radova.",
-      });
-      return;
-    }
-
-    if (!portfolioPdfFile && cleanedPortfolioLinks.length === 0) {
-      setSubmitState({
-        kind: "error",
-        message: "Dodajte barem jedan portfolio link ili uploadujte portfolio PDF.",
-      });
-      return;
-    }
-
-    if (cleanedSocialLinks.length === 0) {
-      setSubmitState({ kind: "error", message: "Dodajte barem jedan link za drustvene mreze." });
-      return;
-    }
 
     setSubmitState({ kind: "submitting" });
 
@@ -349,19 +688,28 @@ export function PrijavaForm({ disciplines }: PrijavaFormProps) {
         fullName: formValues.fullName.trim(),
         email: formValues.email.trim(),
         phone: formValues.phone.trim(),
+        city: formValues.city.trim(),
         biography: formValues.biography.trim(),
+        artistStatement: formValues.artistStatement.trim(),
         motto: formValues.motto.trim(),
+        mottoAuthor: formValues.mottoAuthor.trim(),
+        showEmailPublic,
+        presentationForms,
         blogUrl: formValues.blogUrl.trim(),
         notes: formValues.notes.trim(),
         confirmedRules,
+        containsNsfw,
         disciplines: selectedDisciplineSlugs,
         portfolioLinks: cleanedPortfolioLinks,
         socialLinks: cleanedSocialLinks,
         portfolioPdf: portfolioPdfFile,
-        profilePhoto: profilePhotoFile,
+        profilePhoto: profilePhotoFile!,
+        coverPhoto: coverPhotoFile!,
         featuredWorks: artworkFiles,
       });
 
+      setDraftPersistenceReady(false);
+      void clearPrijavaDraft().catch(() => undefined);
       setSubmitState({
         kind: "success",
         message: response.message,
@@ -380,71 +728,113 @@ export function PrijavaForm({ disciplines }: PrijavaFormProps) {
   }
 
   return (
-    <form className="mx-auto max-w-[1320px] space-y-8" onSubmit={handleSubmit}>
-      <div className="rounded-[2.2rem] border border-black/8 bg-white/78 p-4 shadow-[0_24px_75px_rgba(29,45,83,0.08)] backdrop-blur-sm sm:p-5 lg:p-6">
-        <div className="overflow-x-auto pb-3">
-          <div className="flex min-w-max gap-3">
-            {steps.map((step, index) => {
+    <form noValidate onSubmit={handleSubmit}>
+      <div className={styles.formShell}>
+        <div className={styles.stepsViewport}>
+          <div className={styles.steps}>
+
+
+{steps.map((step, index) => {
+  const isActive = index === currentStep;
+  const isValid = getStepValidationError(index) === null;
+
+  return (
+    <button
+      key={step.title}
+      className={`${styles.stepButton} ${
+        isActive ? styles.stepButtonActive : ""
+      } ${isValid ? styles.stepButtonDone : ""}`}
+      onClick={(event) => {
+        event.preventDefault();
+        goToStep(index);
+      }}
+      type="button"
+      aria-current={isActive ? "step" : undefined}
+    >
+      <div className={styles.stepInner}>
+        <span
+          className={`${styles.stepNumber} ${
+            isActive ? styles.stepNumberActive : ""
+          } ${isValid ? styles.stepNumberValid : ""}`}
+        >
+          {isValid ? (
+            <Check
+              aria-hidden="true"
+              size={20}
+              strokeWidth={3}
+            />
+          ) : (
+            index + 1
+          )}
+        </span>
+
+        <div>
+          <p className={styles.stepEyebrow}>
+            {step.eyebrow}
+          </p>
+          <p>{step.title}</p>
+        </div>
+      </div>
+    </button>
+  );
+})}
+
+
+
+            {/* {steps.map((step, index) => {
               const isActive = index === currentStep;
               const isDone = index < currentStep;
 
               return (
                 <button
                   key={step.title}
-                  className={`min-w-[220px] rounded-[1.5rem] border px-4 py-4 text-left transition ${
-                    isActive
-                      ? "border-[#2440d8]/20 bg-[#2440d8]/7 shadow-[0_16px_35px_rgba(36,64,216,0.10)]"
-                      : "border-black/8 bg-white hover:border-black/14"
+                  className={`${styles.stepButton} ${isActive ? styles.stepButtonActive : ""} ${
+                    isDone ? styles.stepButtonDone : ""
                   }`}
-                  onClick={() => goToStep(index)}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    goToStep(index);
+                  }}
                   type="button"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className={styles.stepInner}>
                     <span
-                      className={`flex h-9 w-9 items-center justify-center rounded-full text-[14px] font-bold ${
-                        isActive
-                          ? "bg-[#2440d8] text-white"
-                          : isDone
-                            ? "bg-[#dc1735] text-white"
-                            : "bg-[#f3f5f8] text-[#667080]"
+                      className={`${styles.stepNumber} ${
+                        isActive || isDone ? styles.stepNumberActive : ""
                       }`}
                     >
                       {index + 1}
                     </span>
                     <div>
-                      <p className="text-[12px] font-medium uppercase tracking-[0.18em] text-[#8a93a1]">
+                      <p className={styles.stepEyebrow}>
                         {step.eyebrow}
                       </p>
-                      <p className="mt-1 text-[16px] font-semibold text-[#2f3138]">{step.title}</p>
+                      <p>{step.title}</p>
                     </div>
                   </div>
                 </button>
               );
-            })}
+            })} */}
           </div>
         </div>
 
-        <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#edf1f8]">
+        <div className={styles.progressTrack}>
           <div
-            className="h-full rounded-full bg-[linear-gradient(90deg,#2440d8_0%,#dc1735_60%,#ffc41d_100%)] transition-[width] duration-300"
+            className={styles.progressBar}
             style={{ width: `${completionPercent}%` }}
           />
         </div>
 
-        <div className="mt-5 overflow-hidden rounded-[2rem] border border-black/8 bg-white">
-          <div className="border-b border-black/8 bg-[linear-gradient(135deg,rgba(248,251,255,0.96)_0%,rgba(255,255,255,0.98)_100%)] px-6 py-6 sm:px-8 lg:px-10">
-            <p className="text-[13px] font-medium uppercase tracking-[0.32em] text-[#7b8391]">
-              {activeStep.eyebrow}
+        <div className={styles.panel}>
+          <div className={styles.panelHeader}>
+            <p>
+              {activeStep.eyebrow} / {steps.length}
             </p>
-            <h2 className="mt-3 text-[36px] font-bold leading-[0.95] text-[#2f3138] sm:text-[48px]">
-              {activeStep.title}
-            </h2>
-            <p className="mt-3 max-w-[70ch] text-[18px] leading-[1.55] text-[#5a616d]">
-              {activeStep.description}
-            </p>
+            <h2>{activeStep.title}</h2>
+            <p>{activeStep.description}</p>
           </div>
 
-          <div className="px-6 py-6 sm:px-8 lg:px-10 lg:py-10">
+          <div className={styles.panelBody}>
             <div
               key={currentStep}
               className={`transition duration-300 ease-out ${
@@ -454,12 +844,14 @@ export function PrijavaForm({ disciplines }: PrijavaFormProps) {
               }`}
             >
               {currentStep === 0 ? (
-                <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+                <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                   <Field label="Ime i prezime *" htmlFor="fullName">
                     <input
+                      aria-invalid={activeStepValidationError?.fieldId === "fullName"}
                       className={fieldClassName}
                       id="fullName"
                       name="fullName"
+                      placeholder="Ime i prezime"
                       onChange={(event) => updateValue("fullName", event.target.value)}
                       required
                       type="text"
@@ -469,109 +861,272 @@ export function PrijavaForm({ disciplines }: PrijavaFormProps) {
 
                   <Field label="E-mail *" htmlFor="email">
                     <input
+                      aria-invalid={activeStepValidationError?.fieldId === "email"}
                       className={fieldClassName}
                       id="email"
                       name="email"
                       onChange={(event) => updateValue("email", event.target.value)}
                       required
+                      placeholder="ime@primjer.me"
                       type="email"
                       value={formValues.email}
                     />
                   </Field>
 
-                  <Field label="Mobilni telefon" htmlFor="phone">
+                  <Field label="Grad *" htmlFor="city">
+                    <input
+                      aria-invalid={activeStepValidationError?.fieldId === "city"}
+                      className={fieldClassName}
+                      id="city"
+                      name="city"
+                      onChange={(event) => updateValue("city", event.target.value)}
+                      placeholder="npr. Podgorica"
+                      required
+                      type="text"
+                      value={formValues.city}
+                    />
+                  </Field>
+
+                  <Field label="Mobilni telefon · ne prikazuje se javno" htmlFor="phone">
                     <input
                       className={fieldClassName}
                       id="phone"
                       name="phone"
+                      placeholder="+382 6x xxx xxx"
                       onChange={(event) => updateValue("phone", event.target.value)}
                       type="tel"
                       value={formValues.phone}
                     />
                   </Field>
 
-                  <Field label="Moto" htmlFor="motto">
+                  <Field label="Moto · opciono" htmlFor="motto">
                     <input
                       className={fieldClassName}
                       id="motto"
                       name="motto"
+                      placeholder="Rečenica koja opisuje tvoj rad"
                       onChange={(event) => updateValue("motto", event.target.value)}
                       type="text"
                       value={formValues.motto}
                     />
                   </Field>
+
+                  <Field label="Autor mota · opciono" htmlFor="mottoAuthor">
+                    <input
+                      className={fieldClassName}
+                      id="mottoAuthor"
+                      name="mottoAuthor"
+                      onChange={(event) => updateValue("mottoAuthor", event.target.value)}
+                      placeholder="Ako je moto citat, upiši autora"
+                      type="text"
+                      value={formValues.mottoAuthor}
+                    />
+                  </Field>
+
+                  <label className={styles.fullWidthChoice}>
+                    <input
+                      checked={showEmailPublic}
+                      onChange={(event) => setShowEmailPublic(event.target.checked)}
+                      type="checkbox"
+                    />
+                    <span>
+                      Prikaži e-mail na javnom profilu kao kontakt
+                      <small> · možeš promijeniti u podešavanjima</small>
+                    </span>
+                  </label>
+
+                  <fieldset className={styles.presentationFieldset}>
+                    <legend>
+                      Kako da te predstavljamo u tekstovima? <small>· opciono</small>
+                      <button
+                        aria-controls="presentation-help"
+                        aria-expanded={showPresentationHelp}
+                        aria-label="Prikaži objašnjenje"
+                        className={styles.presentationInfoButton}
+                        data-active={showPresentationHelp}
+                        onClick={() => setShowPresentationHelp((current) => !current)}
+                        type="button"
+                      >
+                        <Info aria-hidden="true" size={15} strokeWidth={2.5} />
+                      </button>
+                    </legend>
+                    <div>
+                      {["Umjetnica", "Umjetnik", "Bez rodnog oblika"].map((option) => (
+                        <label key={option}>
+                          <input
+                            checked={presentationForms.includes(option)}
+                            onChange={() => handlePresentationFormToggle(option)}
+                            type="checkbox"
+                          />
+                          <span>{option}</span>
+                        </label>
+                      ))}
+                    </div>
+                    {showPresentationHelp ? (
+                      <p className={styles.presentationHelp} id="presentation-help">
+                    Koristimo ga u tekstovima koji se prave automatski: na profilu, u PDF portfoliju, Instagram objavama i QR vizit karti (npr. „ArtBoard umjetnica”). Ako ne izabereš, koristimo neutralne formulacije (npr. „Na ArtBoardu”). Ne određujemo ga prema imenu ili fotografiji, a možeš ga promijeniti u podešavanjima profila.
+                      </p>
+                    ) : null}
+                  </fieldset>
                 </div>
               ) : null}
 
               {currentStep === 1 ? (
-                <div className="space-y-6">
-                  <Field label="Kratka biografija *" htmlFor="biography">
+                <div className={styles.biographyStep}>
+                  <CountedField
+                    count={`${biographyWordCount} / 200 riječi · min. 80`}
+                    htmlFor="biography"
+                    label="Biografija *"
+                  >
                     <textarea
-                      className={areaClassName}
+                      aria-invalid={activeStepValidationError?.fieldId === "biography"}
+                      className={`${fieldClassName} ${styles.biographyTextarea}`}
                       id="biography"
                       name="biography"
                       onChange={(event) => updateValue("biography", event.target.value)}
+                      placeholder="Ko si, odakle dolaziš, obrazovanje, iskustvo i važni trenuci u radu (80–200 riječi)…"
                       required
+                      rows={6}
                       value={formValues.biography}
                     />
-                  </Field>
+                  </CountedField>
 
-                  <div className="rounded-[1.6rem] border border-black/8 bg-[#f8fbff] p-5 sm:p-6">
-                    <div className="flex items-center justify-between gap-4">
-                      <h4 className="text-[20px] font-semibold text-[#2f3138]">Disciplina *</h4>
-                      <span className="rounded-full bg-white px-3 py-1 text-[14px] text-[#657080]">
-                        {selectedDisciplineSlugs.length}/3
+                  <CountedField
+                    count={`${statementWordCount} / 60 riječi`}
+                    htmlFor="artistStatement"
+                    label={
+                      <span className={styles.countedFieldLabelWithInfo}>
+                        Umjetnički iskaz <small>· opciono</small>
+                        <button
+                          aria-controls="statement-help"
+                          aria-expanded={showStatementHelp}
+                          aria-label="Razlika između biografije i umjetničkog iskaza"
+                          className={styles.statementInfoButton}
+                          data-active={showStatementHelp}
+                          onClick={() => setShowStatementHelp((current) => !current)}
+                          title="Razlika između biografije i iskaza"
+                          type="button"
+                        >
+                          <Info aria-hidden="true" size={14} strokeWidth={2.4} />
+                        </button>
+                      </span>
+                    }
+                  >
+                    <textarea
+                      aria-invalid={activeStepValidationError?.fieldId === "artistStatement"}
+                      className={`${fieldClassName} ${styles.statementTextarea}`}
+                      id="artistStatement"
+                      name="artistStatement"
+                      onChange={(event) => updateValue("artistStatement", event.target.value)}
+                      placeholder="Kratko o tvom radu: teme, tehnike i pristup (do 60 riječi)…"
+                      rows={3}
+                      value={formValues.artistStatement}
+                    />
+                    {showStatementHelp ? (
+                      <p className={styles.statementHelp} id="statement-help">
+                     Biografija opisuje tebe, a iskaz tvoj rad. Iskaz se prikazuje i u PDF portfoliju, na strani Profil.
+                      </p>
+                    ) : null}
+                  </CountedField>
+
+                  <section className={styles.disciplineSection}>
+                    <div className={styles.disciplineHeader}>
+                      <h4>
+                        Disciplina <span>*</span>
+                      </h4>
+                      <span className={styles.disciplineCount}>
+                        {selectedDisciplineSlugs.length} / 3
                       </span>
                     </div>
-                    <p className="mt-3 text-[15px] leading-7 text-[#5b6472]">
-                      Izaberi do tri discipline koje najbolje opisuju tvoj rad.
+                    <p className={styles.disciplineDescription}>
+                      Izaberi do tri discipline kojima se baviš. Prikazuju se na tvom profilu i u pretraživaču umjetnika.
                     </p>
 
-                    <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                      {disciplines.map((discipline) => {
+                    <div
+                      aria-invalid={activeStepValidationError?.fieldId === "discipline-options"}
+                      className={styles.disciplineOptions}
+                      id="discipline-options"
+                      tabIndex={-1}
+                    >
+                      {disciplines.map((discipline, index) => {
                         const isChecked = selectedDisciplineSlugs.includes(discipline.slug);
                         const disableUnchecked = !isChecked && selectedDisciplineSlugs.length >= 3;
+                        const tone = disciplineTones[index % disciplineTones.length];
+                        const iconColor = disciplineColors[index % disciplineColors.length];
 
                         return (
-                          <label
-                            key={discipline.id}
-                            className={`flex items-start gap-3 rounded-[1.2rem] border p-4 text-[15px] transition ${
-                              isChecked
-                                ? "border-[#2440d8]/25 bg-[#2440d8]/6 text-[#2f3138]"
-                                : "border-black/8 bg-white text-[#555e6c] hover:border-black/14"
+                          <button
+                            aria-pressed={isChecked}
+                            className={`${styles.disciplinePill} ${
+                              isChecked ? styles.disciplinePillActive : ""
                             }`}
+                            data-tone={tone}
+                            disabled={disableUnchecked}
+                            key={discipline.id}
+                            onClick={() => handleDisciplineToggle(discipline.slug)}
+                            type="button"
                           >
-                            <input
-                              checked={isChecked}
-                              disabled={disableUnchecked}
-                              name="disciplines"
-                              onChange={() => handleDisciplineToggle(discipline.slug)}
-                              type="checkbox"
-                              value={discipline.slug}
-                            />
+                            <span
+                              className={styles.disciplineIcon}
+                              style={isChecked ? undefined : { color: iconColor }}
+                            >
+                              <DisciplineIcon slug={discipline.slug} />
+                            </span>
                             <span>{discipline.name}</span>
-                          </label>
+                          </button>
                         );
                       })}
                     </div>
-                  </div>
+                  </section>
                 </div>
               ) : null}
 
               {currentStep === 2 ? (
-                <div className="space-y-6">
-                  <div className="rounded-[1.6rem] border border-black/8 bg-[#f8fbff] p-5 sm:p-6">
-                    <div className="flex items-center justify-between gap-4">
-                      <h4 className="text-[20px] font-semibold text-[#2f3138]">Portfolio linkovi</h4>
-                      <button className={ghostButtonClassName} onClick={addPortfolioLink} type="button">
+                <div className={styles.portfolioStep}>
+                  <section className={styles.portfolioLinksSection}>
+                    <div className={styles.portfolioSectionHeader}>
+                      <div className={styles.portfolioLabelWithInfo}>
+                        <h4>
+                          Portfolio linkovi <small>· opciono</small>
+                        </h4>
+                        <button
+                          aria-controls="portfolio-help"
+                          aria-expanded={showPortfolioHelp}
+                          aria-label="Šta je portfolio?"
+                          className={styles.statementInfoButton}
+                          data-active={showPortfolioHelp}
+                          onClick={() => setShowPortfolioHelp((current) => !current)}
+                          title="Šta je portfolio?"
+                          type="button"
+                        >
+                          <Info aria-hidden="true" size={14} strokeWidth={2.4} />
+                        </button>
+                      </div>
+                      <button className={styles.addFieldButton} onClick={addPortfolioLink} type="button">
+                        <span aria-hidden="true">
+                          <Plus size={16} strokeWidth={2.4} />
+                        </span>
                         Dodaj link
                       </button>
                     </div>
-                    <div className="mt-5 space-y-3">
+
+                    {showPortfolioHelp ? (
+                      <p className={styles.portfolioHelp} id="portfolio-help">
+                        Portfolio je izbor tvojih najboljih radova na jednom mjestu, npr. lični sajt,
+                        Behance, ArtStation, Dribbble ili PDF. Nije obavezan: ako ga još nemaš, preskoči
+                        ovaj dio, a radovi iz sljedećeg koraka postaju tvoj ArtBoard portfolio.
+                      </p>
+                    ) : null}
+
+                    <div className={styles.portfolioLinkList}>
                       {portfolioLinks.map((link, index) => (
-                        <div key={`portfolio-link-${index}`} className="flex flex-col gap-3 lg:flex-row">
+                        <div className={styles.portfolioLinkRow} key={`portfolio-link-${index}`}>
                           <input
+                            aria-invalid={
+                              activeStepValidationError?.fieldId === `portfolioLink-${index}`
+                            }
                             className={fieldClassName}
+                            id={`portfolioLink-${index}`}
                             name={`portfolioLinks.${index}`}
                             onChange={(event) => handlePortfolioLinkChange(index, event.target.value)}
                             placeholder="https://..."
@@ -581,39 +1136,28 @@ export function PrijavaForm({ disciplines }: PrijavaFormProps) {
 
                           {portfolioLinks.length > 1 ? (
                             <button
-                              className={ghostButtonClassName}
+                              aria-label={`Ukloni portfolio link ${index + 1}`}
+                              className={styles.removeFieldButton}
                               onClick={() => removePortfolioLink(index)}
+                              title="Ukloni link"
                               type="button"
                             >
-                              Ukloni
+                              <X aria-hidden="true" size={17} strokeWidth={2.3} />
                             </button>
                           ) : null}
                         </div>
                       ))}
                     </div>
-                  </div>
+                  </section>
 
-                  <div className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
-                    <div className="rounded-[1.6rem] border border-black/8 bg-[#f8fbff] p-5 sm:p-6">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <label className="block text-[18px] font-semibold text-[#2f3138]" htmlFor="portfolioPdf">
-                            Portfolio PDF
-                          </label>
-                          <p className="mt-2 text-[15px] leading-7 text-[#5b6472]">
-                            Mozes dodati jedan PDF dokument kao alternativu linkovima.
-                          </p>
-                        </div>
-                        {portfolioPdfFile ? (
-                          <button
-                            className={ghostButtonClassName}
-                            onClick={() => setPortfolioPdfFile(null)}
-                            type="button"
-                          >
-                            Ukloni
-                          </button>
-                        ) : null}
-                      </div>
+                  <div className={styles.portfolioDetailsGrid}>
+                    <section className={styles.portfolioPdfSection}>
+                      <label className={styles.portfolioSectionTitle} htmlFor="portfolioPdf">
+                        Portfolio PDF <small>· opciono</small>
+                      </label>
+                      <p className={styles.portfolioSectionDescription}>
+                        Imaš portfolio kao dokument? Dodaj PDF umjesto linka.
+                      </p>
 
                       <input
                         accept="application/pdf"
@@ -625,33 +1169,55 @@ export function PrijavaForm({ disciplines }: PrijavaFormProps) {
                       />
 
                       <label
-                        className="mt-4 inline-flex cursor-pointer items-center justify-center rounded-full bg-[#2440d8] px-5 py-3 text-[15px] font-semibold text-white transition hover:bg-[#1d34b7]"
+                        className={styles.addFieldButton}
                         htmlFor="portfolioPdf"
                       >
-                        Upload PDF
+                        <span aria-hidden="true">
+                          <Plus size={16} strokeWidth={2.4} />
+                        </span>
+                        Dodaj PDF
                       </label>
 
-                      <div className="mt-4 rounded-[1.2rem] border border-dashed border-black/10 bg-white px-4 py-4 text-[14px] text-[#6a7280]">
+                      <div className={styles.portfolioPdfStatus}>
+                        <span>
+                          {portfolioPdfFile
+                            ? `Odabran dokument: ${portfolioPdfFile.name}`
+                            : "Još nije odabran PDF dokument."}
+                        </span>
                         {portfolioPdfFile ? (
-                          <span>Odabran dokument: {portfolioPdfFile.name}</span>
-                        ) : (
-                          <span>Jos nije odabran PDF dokument.</span>
-                        )}
+                          <button
+                            aria-label="Ukloni portfolio PDF"
+                            onClick={() => setPortfolioPdfFile(null)}
+                            type="button"
+                          >
+                            Ukloni
+                          </button>
+                        ) : null}
                       </div>
-                    </div>
+                    </section>
 
-                    <div className="rounded-[1.6rem] border border-black/8 bg-[#f8fbff] p-5 sm:p-6">
-                      <div className="flex items-center justify-between gap-4">
-                        <h4 className="text-[20px] font-semibold text-[#2f3138]">Drustvene mreze *</h4>
-                        <button className={ghostButtonClassName} onClick={addSocialLink} type="button">
-                          Dodaj mrezu
+                    <section className={styles.socialSection}>
+                      <div className={styles.portfolioSectionHeader}>
+                        <h4 className={styles.portfolioSectionTitle}>
+                          Društvene mreže <em>*</em>
+                        </h4>
+                        <button className={styles.addFieldButton} onClick={addSocialLink} type="button">
+                          <span aria-hidden="true">
+                            <Plus size={16} strokeWidth={2.4} />
+                          </span>
+                          Dodaj mrežu
                         </button>
                       </div>
-                      <div className="mt-5 space-y-3">
+
+                      <div className={styles.portfolioLinkList}>
                         {socialLinks.map((link, index) => (
-                          <div key={`social-link-${index}`} className="flex flex-col gap-3 lg:flex-row">
+                          <div className={styles.portfolioLinkRow} key={`social-link-${index}`}>
                             <input
+                              aria-invalid={
+                                activeStepValidationError?.fieldId === `socialLink-${index}`
+                              }
                               className={fieldClassName}
+                              id={`socialLink-${index}`}
                               name={`socialLinks.${index}`}
                               onChange={(event) => handleSocialLinkChange(index, event.target.value)}
                               placeholder="https://instagram.com/..."
@@ -662,286 +1228,327 @@ export function PrijavaForm({ disciplines }: PrijavaFormProps) {
 
                             {socialLinks.length > 1 ? (
                               <button
-                                className={ghostButtonClassName}
+                                aria-label={`Ukloni društvenu mrežu ${index + 1}`}
+                                className={styles.removeFieldButton}
                                 onClick={() => removeSocialLink(index)}
+                                title="Ukloni mrežu"
                                 type="button"
                               >
-                                Ukloni
+                                <X aria-hidden="true" size={17} strokeWidth={2.3} />
                               </button>
                             ) : null}
                           </div>
                         ))}
                       </div>
 
-                      <div className="mt-5">
-                        <Field label="Blog" htmlFor="blogUrl">
-                          <input
-                            className={fieldClassName}
-                            id="blogUrl"
-                            name="blogUrl"
-                            onChange={(event) => updateValue("blogUrl", event.target.value)}
-                            placeholder="https://..."
-                            type="url"
-                            value={formValues.blogUrl}
-                          />
-                        </Field>
-                      </div>
-                    </div>
+                      <label className={styles.blogField} htmlFor="blogUrl">
+                        <span>
+                          Lični sajt ili blog <small>· opciono</small>
+                        </span>
+                        <input
+                          aria-invalid={activeStepValidationError?.fieldId === "blogUrl"}
+                          className={fieldClassName}
+                          id="blogUrl"
+                          name="blogUrl"
+                          onChange={(event) => updateValue("blogUrl", event.target.value)}
+                          placeholder="https://..."
+                          type="url"
+                          value={formValues.blogUrl}
+                        />
+                      </label>
+                    </section>
                   </div>
                 </div>
               ) : null}
 
               {currentStep === 3 ? (
-                <div className="space-y-6">
-                  <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
-                    <div className="rounded-[1.6rem] border border-black/8 bg-[#f8fbff] p-5 sm:p-6">
-                      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                        <div>
-                          <label className="block text-[20px] font-semibold text-[#2f3138]" htmlFor="featuredWorks">
-                            Izdvojeni radovi *
-                          </label>
-                          <p className="mt-2 text-[15px] leading-7 text-[#5b6472]">
-                            Posalji izmedju 6 i 25 reprezentativnih JPG ili PNG radova. Nakon odabira mozes ih
-                            pregledati, listati i ukloniti prije slanja.
-                          </p>
-                        </div>
+                <div className={styles.materialsGrid}>
+                  <section className={styles.artworkUploadSection}>
+                    <div className={styles.materialsSectionHeader}>
+                      <h4>
+                        Izdvojeni radovi <em>*</em>
+                      </h4>
+                      <span className={styles.materialsCount}>{artworkFiles.length} / 25</span>
+                    </div>
+                    <p className={styles.materialsDescription}>
+                      Dodaj od 6 do 25 radova koji najbolje predstavljaju tvoje umjetničko stvaralaštvo. Prije
+                      slanja ih možeš pregledati i ukloniti.
+                    </p>
 
-                        {artworkFiles.length > 0 ? (
-                          <button className={ghostButtonClassName} onClick={clearAllArtworks} type="button">
+                    <input
+                      accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                      className="sr-only"
+                      id="featuredWorks"
+                      multiple
+                      name="featuredWorks"
+                      onChange={handleArtworkSelection}
+                      onClick={(event) => {
+                        event.currentTarget.value = "";
+                      }}
+                      type="file"
+                    />
+                    <label
+                      aria-invalid={activeStepValidationError?.fieldId === "featuredWorksDropzone"}
+                      className={styles.artworkDropzone}
+                      htmlFor="featuredWorks"
+                      id="featuredWorksDropzone"
+                      tabIndex={-1}
+                    >
+                      <span className={styles.uploadIcon}>
+                        <Upload aria-hidden="true" size={22} strokeWidth={2} />
+                      </span>
+                      <strong>Dodaj radove</strong>
+                      <small>JPG ili PNG · više fajlova odjednom</small>
+                    </label>
+
+                    {artworkPreviews.length > 0 ? (
+                      <div className={styles.artworkSelection}>
+                        <div className={styles.artworkSelectionHeader}>
+                          <p data-valid={artworkFiles.length >= 6 && artworkFiles.length <= 25}>
+                            {artworkCountMessage}
+                          </p>
+                          <button className={styles.clearMaterialsButton} onClick={clearAllArtworks} type="button">
                             Ukloni sve
                           </button>
-                        ) : null}
-                      </div>
-
-                      <input
-                        accept=".jpg,.jpeg,.png,image/jpeg,image/png"
-                        className="sr-only"
-                        id="featuredWorks"
-                        multiple
-                        name="featuredWorks"
-                        onChange={handleArtworkSelection}
-                        type="file"
-                      />
-
-                      <div className="mt-4 flex flex-wrap items-center gap-3">
-                        <label
-                          className="inline-flex cursor-pointer items-center justify-center rounded-full bg-[#2440d8] px-5 py-3 text-[15px] font-semibold text-white transition hover:bg-[#1d34b7]"
-                          htmlFor="featuredWorks"
-                        >
-                          Upload radove
-                        </label>
-                        <span className="text-[14px] text-[#6a7280]">
-                          {artworkFiles.length > 0
-                            ? `${artworkFiles.length} fajlova je odabrano`
-                            : "Jos nijesu odabrani fajlovi"}
-                        </span>
-                      </div>
-
-                      <p className="mt-3 text-[14px] text-[#5b6472]">{artworkCountMessage}</p>
-
-                      {activeArtworkPreview ? (
-                        <div className="mt-5 space-y-4">
-                          <div className="relative overflow-hidden rounded-[1.5rem] border border-black/8 bg-white">
-                            <img
-                              alt={activeArtworkPreview.file.name}
-                              className="aspect-[1.55/1] w-full object-cover"
-                              src={activeArtworkPreview.url}
-                            />
-
-                            <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 bg-gradient-to-t from-black/60 via-black/10 to-transparent px-4 py-4 text-white">
-                              <div>
-                                <p className="text-[15px] font-medium">{activeArtworkPreview.file.name}</p>
-                                <p className="mt-1 text-[13px] text-white/80">
-                                  {activeArtworkPreviewIndex + 1} / {artworkPreviews.length}
-                                </p>
-                              </div>
-
-                              <div className="flex gap-2">
-                                <button
-                                  className="rounded-full border border-white/30 bg-white/15 px-3 py-2 text-[14px] backdrop-blur-sm transition hover:bg-white/22"
-                                  disabled={artworkPreviews.length <= 1}
-                                  onClick={() =>
-                                    setActiveArtworkPreviewIndex((current) =>
-                                      current === 0 ? artworkPreviews.length - 1 : current - 1,
-                                    )
-                                  }
-                                  type="button"
-                                >
-                                  Prethodni
-                                </button>
-                                <button
-                                  className="rounded-full border border-white/30 bg-white/15 px-3 py-2 text-[14px] backdrop-blur-sm transition hover:bg-white/22"
-                                  disabled={artworkPreviews.length <= 1}
-                                  onClick={() =>
-                                    setActiveArtworkPreviewIndex((current) =>
-                                      current === artworkPreviews.length - 1 ? 0 : current + 1,
-                                    )
-                                  }
-                                  type="button"
-                                >
-                                  Sljedeci
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
-                            {artworkPreviews.map((preview, index) => (
-                              <div
-                                key={preview.key}
-                                className={`overflow-hidden rounded-[1.2rem] border bg-white ${
-                                  index === activeArtworkPreviewIndex
-                                    ? "border-[#2440d8]/35 shadow-[0_12px_24px_rgba(36,64,216,0.12)]"
-                                    : "border-black/8"
-                                }`}
+                        </div>
+                        <div className={styles.artworkPreviewGrid}>
+                          {artworkPreviews.map((preview, index) => (
+                            <figure className={styles.artworkPreviewItem} key={preview.key}>
+                              <img alt={preview.file.name} src={preview.url} />
+                              <button
+                                aria-label={`Ukloni ${preview.file.name}`}
+                                onClick={() => removeArtwork(index)}
+                                title="Ukloni rad"
+                                type="button"
                               >
-                                <button
-                                  className="w-full"
-                                  onClick={() => setActiveArtworkPreviewIndex(index)}
-                                  type="button"
-                                >
-                                  <img
-                                    alt={preview.file.name}
-                                    className="aspect-square w-full object-cover"
-                                    src={preview.url}
-                                  />
-                                </button>
-                                <div className="flex items-center justify-between gap-3 px-3 py-3">
-                                  <span className="min-w-0 truncate text-[13px] text-[#5f6876]">
-                                    {preview.file.name}
-                                  </span>
-                                  <button
-                                    className="text-[13px] font-medium text-[#dc1735] transition hover:text-[#b9132d]"
-                                    onClick={() => removeArtwork(index)}
-                                    type="button"
-                                  >
-                                    Ukloni
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
+                                <X aria-hidden="true" size={16} strokeWidth={2.25} />
+                              </button>
+                            </figure>
+                          ))}
                         </div>
-                      ) : null}
-                    </div>
+                      </div>
+                    ) : null}
+                  </section>
 
-                    <div className="rounded-[1.6rem] border border-black/8 bg-[#f8fbff] p-5 sm:p-6">
-                      <div className="flex items-start justify-between gap-4">
+                  <section className={styles.mediaUploadSection}>
+                    <h4>
+                      Profilna fotografija <em>*</em>
+                    </h4>
+                    <p>Fotografija koja će se prikazivati na tvom profilu.</p>
+                    <input
+                      accept="image/jpeg,image/png,image/webp,image/avif"
+                      className="sr-only"
+                      id="profilePhoto"
+                      name="profilePhoto"
+                      onChange={handleProfilePhotoChange}
+                      type="file"
+                    />
+                    <div
+                      aria-invalid={activeStepValidationError?.fieldId === "profilePhotoPicker"}
+                      className={styles.mediaPickerRow}
+                      id="profilePhotoPicker"
+                      tabIndex={-1}
+                    >
+                      <div className={styles.profilePreviewFrame}>
                         <div>
-                          <label className="block text-[20px] font-semibold text-[#2f3138]" htmlFor="profilePhoto">
-                            Profilna fotografija *
-                          </label>
-                          <p className="mt-2 text-[15px] leading-7 text-[#5b6472]">
-                            Dodaj jednu jasnu profilnu fotografiju za predstavljanje na platformi.
-                          </p>
+                          {profilePreviewUrl ? <img alt="Profilna fotografija" src={profilePreviewUrl} /> : null}
                         </div>
-
-                        {profilePhotoFile ? (
-                          <button
-                            className={ghostButtonClassName}
-                            onClick={() => setProfilePhotoFile(null)}
-                            type="button"
-                          >
-                            Ukloni
-                          </button>
-                        ) : null}
                       </div>
-
-                      <input
-                        accept="image/jpeg,image/png,image/webp,image/avif"
-                        className="sr-only"
-                        id="profilePhoto"
-                        name="profilePhoto"
-                        onChange={handleProfilePhotoChange}
-                        type="file"
-                      />
-
-                      <div className="mt-4 flex flex-wrap items-center gap-3">
-                        <label
-                          className="inline-flex cursor-pointer items-center justify-center rounded-full bg-[#2440d8] px-5 py-3 text-[15px] font-semibold text-white transition hover:bg-[#1d34b7]"
-                          htmlFor="profilePhoto"
-                        >
-                          Upload fotografiju
-                        </label>
-                        <span className="text-[14px] text-[#6a7280]">
-                          {profilePhotoFile ? "Fajl je odabran" : "Jos nije odabran fajl"}
+                      <label className={styles.addFieldButton} htmlFor="profilePhoto">
+                        <span>
+                          <Plus aria-hidden="true" size={20} strokeWidth={1.8} />
                         </span>
-                      </div>
-
-                      {profilePreviewUrl ? (
-                        <div className="mt-5 overflow-hidden rounded-[1.5rem] border border-black/8 bg-white">
-                          <img
-                            alt="Profilna fotografija"
-                            className="aspect-[1/1.02] w-full object-cover"
-                            src={profilePreviewUrl}
-                          />
-                        </div>
+                        {profilePhotoFile ? "Promijeni profilnu" : "Dodaj profilnu"}
+                      </label>
+                      {profilePhotoFile ? (
+                        <button
+                          className={styles.mediaRemoveButton}
+                          onClick={() => setProfilePhotoFile(null)}
+                          type="button"
+                        >
+                          Ukloni
+                        </button>
                       ) : null}
-
-                      <p className="mt-3 text-[14px] text-[#7a8391]">
-                        {profilePhotoFile?.name || "Jos nije odabrana profilna fotografija."}
-                      </p>
                     </div>
-                  </div>
+                    <p className={styles.mediaFileStatus} title={profilePhotoFile?.name}>
+                      {profilePhotoFile?.name || "Još nije odabrana profilna fotografija."}
+                    </p>
+                  </section>
+
+                  <section className={styles.mediaUploadSection}>
+                    <h4>
+                      Naslovna slika <em>*</em>
+                    </h4>
+                    <p>Široka slika na vrhu profila.</p>
+                    <input
+                      accept="image/jpeg,image/png,image/webp,image/avif"
+                      className="sr-only"
+                      id="coverPhoto"
+                      name="coverPhoto"
+                      onChange={handleCoverPhotoChange}
+                      type="file"
+                    />
+                    <div
+                      aria-invalid={activeStepValidationError?.fieldId === "coverPhotoPicker"}
+                      className={styles.mediaPickerRow}
+                      id="coverPhotoPicker"
+                      tabIndex={-1}
+                    >
+                      <div className={styles.coverPreviewFrame}>
+                        {coverPreviewUrl ? <img alt="Naslovna slika" src={coverPreviewUrl} /> : null}
+                      </div>
+                      <label className={styles.addFieldButton} htmlFor="coverPhoto">
+                        <span>
+                          <Plus aria-hidden="true" size={20} strokeWidth={1.8} />
+                        </span>
+                        {coverPhotoFile ? "Promijeni naslovnu" : "Dodaj naslovnu"}
+                      </label>
+                      {coverPhotoFile ? (
+                        <button
+                          className={styles.mediaRemoveButton}
+                          onClick={() => setCoverPhotoFile(null)}
+                          type="button"
+                        >
+                          Ukloni
+                        </button>
+                      ) : null}
+                    </div>
+                    <p className={styles.mediaFileStatus} title={coverPhotoFile?.name}>
+                      {coverPhotoFile?.name || "Još nije odabrana naslovna slika."}
+                    </p>
+                  </section>
+
+                  <label className={styles.nsfwChoice}>
+                    <input
+                      checked={containsNsfw}
+                      onChange={(event) => setContainsNsfw(event.target.checked)}
+                      type="checkbox"
+                    />
+                    <span>
+                      <strong>Profil sadrži radove sa sadržajem 18+</strong>
+                      <small>Posjetioci će prije otvaranja profila potvrditi da imaju 18 ili više godina.</small>
+                    </span>
+                  </label>
                 </div>
               ) : null}
 
               {currentStep === 4 ? (
-                <div className="space-y-6">
-                  <Field label="Dodatne napomene ili pitanja" htmlFor="notes">
+                <div className={styles.confirmationStep}>
+                  <label className={styles.confirmationNotes} htmlFor="notes">
+                    <span>Napomene ili pitanja</span>
                     <textarea
-                      className={areaClassName}
+                      className={styles.confirmationTextarea}
                       id="notes"
                       name="notes"
                       onChange={(event) => updateValue("notes", event.target.value)}
+                      placeholder="Ako želiš nešto da dodaš, napiši ovdje."
+                      rows={5}
                       value={formValues.notes}
                     />
-                  </Field>
+                  </label>
 
-                  <div className="rounded-[1.6rem] border border-black/8 bg-[#f8fbff] p-5 text-[15px] leading-7 text-[#555e6c] sm:p-6">
-                    <h4 className="text-[20px] font-semibold text-[#2f3138]">Potvrda prijave *</h4>
-                    <p className="mt-4">Prijava ce biti razmatrana samo ako ispunjava sljedece kriterijume:</p>
-                    <ul className="mt-3 space-y-1">
-                      <li>Popunjena sva obavezna polja</li>
-                      <li>Portfolio u jednom od sljedecih formata: LINK ili PDF</li>
-                      <li>Izmedju 6 i 25 reprezentativnih radova u JPG ili PNG formatu</li>
-                      <li>Profilna fotografija</li>
-                    </ul>
-                    <p className="mt-4">
-                      Napomena: Prijave koje ne sadrze cjelovit i reprezentativan portfolio nece biti
-                      prihvacene. To znaci da skice iz sveske, nedovrseni radovi ili premali broj djela ne
-                      ispunjavaju kriterijume.
-                    </p>
-                    <p className="mt-4">
-                      Podnosenjem prijave pristajes da radovi budu javno objavljeni na web stranici Art
-                      Studio 360 i promovisani putem Instagram stranice Art Studio 360.
-                    </p>
-                    <p className="mt-4">
-                      WeTransfer linkovi nijesu prihvatljivi zbog kratkog roka trajanja. Predlazemo Swiss
-                      Transfer kao alternativu.
+                  <section className={styles.confirmationSection}>
+                    <h4>
+                      Potvrda prijave <em>*</em>
+                    </h4>
+                    <p className={styles.confirmationIntro}>Prije objave provjeravamo da li prijava sadrži:</p>
+                    <div className={styles.confirmationGrid}>
+                      {confirmationItems.map((item) => (
+                        <div className={styles.confirmationItem} data-complete={item.complete} key={item.label}>
+                          <span aria-hidden="true">
+                            <Check size={13} strokeWidth={3.4} />
+                          </span>
+                          <strong>{item.label}</strong>
+                        </div>
+                      ))}
+                    </div>
+
+                    <p className={styles.confirmationImportant}>
+                      <strong>Važno:</strong> Svaku prijavu na ArtBoardu pregledamo kako bi profili bili
+                      cjeloviti i kvalitetni, a umjetnice, umjetnici, institucije i saradnici mogli da
+                      vjeruju onome što vide. Zato izaberi kompletne radove ili kolekcije koji najbolje
+                      pokazuju tvoj izraz. Skice, nedovršeni radovi ili premali broj radova nijesu dovoljni
+                      za objavu profila, ali prijavu uvijek možeš poslati ponovo kad dopuniš portfolio.
                     </p>
 
-                    <label className="mt-5 flex items-start gap-3 rounded-[1.2rem] border border-black/8 bg-white p-4">
+                    <div className={styles.rulesDisclosure}>
+                      <span>
+                        Izjave iz Pravila
+                        <button
+                          aria-controls="rules-help"
+                          aria-expanded={showRulesHelp}
+                          aria-label={showRulesHelp ? "Sakrij izjave iz Pravila" : "Prikaži izjave iz Pravila"}
+                          className={styles.rulesInfoButton}
+                          data-active={showRulesHelp}
+                          onClick={() => setShowRulesHelp((current) => !current)}
+                          title={showRulesHelp ? "Sakrij izjave iz Pravila" : "Prikaži izjave iz Pravila"}
+                          type="button"
+                        >
+                          <Info aria-hidden="true" size={14} strokeWidth={2.2} />
+                        </button>
+                      </span>
+                      {showRulesHelp ? (
+                        <p id="rules-help">
+                          Prijavu može poslati samo punoljetna osoba (18+). Slanjem prijave potvrđuješ da
+                          imaš 18 ili više godina, da su poslati radovi tvoje autorsko djelo ili da imaš
+                          pisanu saglasnost svih nosilaca prava, i da radovi ne krše prava trećih lica. Ako
+                          profil sadrži radove sa sadržajem 18+, označavaš ga oznakom 18+ na profilu.
+                          Pristaješ i da tvoji radovi budu prikazani na ArtBoard platformi i korišćeni za
+                          promociju, uvijek uz tvoje ime, kako je opisano u članu 4 Pravila. Autorska prava
+                          ostaju tvoja.
+                        </p>
+                      ) : null}
+                    </div>
+
+                    <label className={styles.rulesConsent}>
                       <input
+                        aria-invalid={activeStepValidationError?.fieldId === "confirmedRules"}
                         checked={confirmedRules}
+                        id="confirmedRules"
                         name="confirmedRules"
                         onChange={(event) => setConfirmedRules(event.target.checked)}
                         required
                         type="checkbox"
                       />
-                      <span>Procitao/la sam uslove prijave.</span>
+                      <span aria-hidden="true" className={styles.rulesCheck}>
+                        <Check size={13} strokeWidth={3.4} />
+                      </span>
+                      <span className={styles.rulesConsentText}>
+                        Imam 18 ili više godina i prihvatam{" "}
+                        <a
+                          className={styles.rulesLink}
+                          href="/uslovi-koriscenja#uslovi"
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          Uslove korišćenja
+                        </a>
+                        {" i "}
+                        <a
+                          className={styles.rulesLink}
+                          href="/uslovi-koriscenja#privatnost"
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          Politiku privatnosti
+                        </a>
+                        .
+                      </span>
                     </label>
-                  </div>
+                  </section>
                 </div>
               ) : null}
             </div>
 
-            <div className="mt-8 flex flex-col gap-4 border-t border-black/8 pt-6 xl:flex-row xl:items-center xl:justify-between">
-              <div className="flex flex-wrap gap-3">
+            <div className={styles.formNav}>
+              <div className={styles.formNavActions}>
                 <button
                   className={ghostButtonClassName}
                   disabled={currentStep === 0 || submitState.kind === "submitting"}
-                  onClick={() => goToStep(currentStep - 1)}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    goToStep(currentStep - 1);
+                  }}
                   type="button"
                 >
                   Nazad
@@ -951,28 +1558,39 @@ export function PrijavaForm({ disciplines }: PrijavaFormProps) {
                   <button
                     className={primaryButtonClassName}
                     disabled={submitState.kind === "submitting"}
-                    onClick={() => goToStep(currentStep + 1)}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      goToStep(currentStep + 1);
+                    }}
                     type="button"
                   >
-                    Nastavi
+                    Nastavi →
                   </button>
+                ) : (
+                  <button
+                    className={styles.submitButton}
+                    disabled={submitState.kind === "submitting"}
+                    type="submit"
+                  >
+                    {submitState.kind === "submitting" ? "Slanje..." : "Pošalji prijavu"}
+                  </button>
+                )}
+
+                {activeStepValidationError ? (
+                  <p
+                    aria-live="polite"
+                    className={styles.stepValidationError}
+                    id="step-validation-error"
+                    role="status"
+                  >
+                    <span aria-hidden="true" />
+                    {activeStepValidationError.message}
+                  </p>
                 ) : null}
               </div>
-
-              {currentStep === steps.length - 1 ? (
-                <button
-                  className="inline-flex items-center justify-center rounded-full bg-[#dc1735] px-6 py-3 text-[15px] font-semibold text-white transition hover:bg-[#c41430] disabled:cursor-not-allowed disabled:opacity-60"
-                  disabled={submitState.kind === "submitting"}
-                  type="submit"
-                >
-                  {submitState.kind === "submitting" ? "Slanje..." : "Posalji prijavu"}
-                </button>
-              ) : (
-                <p className="max-w-2xl text-[14px] leading-6 text-[#7a8391]">
-                  Forma i dalje salje podatke direktno API-ju, uz upload fajlova i email obavjestenje
-                  administratoru. Sada samo imas mnogo bolji pregled prije slanja.
-                </p>
-              )}
+              <p>
+                Podaci ostaju sačuvani dok prelaziš sa koraka na korak. Prijavu šalješ tek na kraju.
+              </p>
             </div>
           </div>
         </div>
@@ -996,6 +1614,50 @@ function Field(props: {
   );
 }
 
+function CountedField(props: {
+  label: React.ReactNode;
+  count: string;
+  htmlFor: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={styles.countedField}>
+      <div className={styles.countedFieldHeader}>
+        <label htmlFor={props.htmlFor}>
+          {props.label}
+        </label>
+        <span>{props.count}</span>
+      </div>
+      {props.children}
+    </div>
+  );
+}
+
+function countWords(value: string) {
+  return value.trim().split(/\s+/).filter(Boolean).length;
+}
+
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
+function isValidHttpUrl(value: string) {
+  try {
+    const url = new URL(value.trim());
+    return (url.protocol === "http:" || url.protocol === "https:") && Boolean(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
 function buildFileKey(file: File) {
   return `${file.name}-${file.size}-${file.lastModified}`;
+}
+
+function normalizeFileName(fileName: string) {
+  return fileName.trim().toLowerCase();
+}
+
+function isStoredFile(value: unknown): value is File {
+  return typeof File !== "undefined" && value instanceof File;
 }

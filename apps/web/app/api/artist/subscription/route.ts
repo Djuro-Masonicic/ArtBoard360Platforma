@@ -8,6 +8,7 @@ export function GET() {
 }
 
 export async function POST(request: Request) {
+  if (invalidOrigin(request)) return NextResponse.json({ message: "Invalid request origin." }, { status: 403 });
   const body = await request.text();
   return proxySubscriptionRequest(
     "POST",
@@ -16,8 +17,14 @@ export async function POST(request: Request) {
   );
 }
 
-export function DELETE() {
+export function DELETE(request: Request) {
+  if (invalidOrigin(request)) return NextResponse.json({ message: "Invalid request origin." }, { status: 403 });
   return proxySubscriptionRequest("DELETE", "/artist-subscriptions/platinum-request");
+}
+
+function invalidOrigin(request: Request) {
+  const origin = request.headers.get("origin");
+  return (origin && origin !== new URL(request.url).origin) || request.headers.get("sec-fetch-site") === "cross-site";
 }
 
 async function proxySubscriptionRequest(

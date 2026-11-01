@@ -1,0 +1,27 @@
+.workspace { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.heading { margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -.03em; color: #111318; }
+.helper { margin: 6px 0 0; color: #596274; line-height: 1.6; }
+.card { min-width: 0; padding: clamp(18px, 2.2vw, 26px); border-radius: 22px; background: white; border: 1px solid #e1e6ef; }
+.card h3 { margin: 0; font-size: 20px; font-weight: 800; color: #111318; }
+.form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(100px, .35fr); gap: 14px; margin-top: 16px; }
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; color: #434958; font-size: 13px; font-weight: 700; }
+.field input[type="file"] { max-width: 100%; min-width: 0; font-size: 12px; }
+.wide { grid-column: 1 / -1; }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 16px; }
+.button, .secondary, .danger { min-height: 38px; border-radius: 999px; padding: 8px 16px; cursor: pointer; font-size: 12px; font-weight: 800; border: 1px solid #111318; background: #111318; color: white; }
+.secondary { background: white; color: #111318; }
+.danger { color: #c11b36; background: white; border-color: #e6bcc4; }
+.workspace button:disabled { opacity: .45; cursor: not-allowed; }
+.topline { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.topline h3 { flex: 1 1 180px; min-width: 0; overflow-wrap: anywhere; }
+.arrows { display: flex; gap: 6px; }
+.cover { width: 90px; height: 112px; border-radius: 12px; object-fit: cover; margin-top: 16px; }
+.works { display: flex; flex-direction: column; gap: 10px; margin-top: 18px; padding: 0; list-style: none; }
+.work { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; border-top: 1px solid #e6e9f0; padding-top: 10px; }
+.work img { width: 42px; height: 52px; border-radius: 7px; object-fit: cover; }
+.workTitle { flex: 1 1 120px; overflow-wrap: anywhere; font-size: 13px; font-weight: 700; }
+.picker { flex: 1 1 200px; min-width: 0; }
+.error { color: #a81732; background: #fff0f2; border-radius: 14px; padding: 14px; overflow-wrap: anywhere; }
+.notice { padding: 14px; background: #f3f5fa; border-radius: 14px; color: #434958; line-height: 1.6; }
+.fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+@media (max-width: 480px) { .form { grid-template-columns: minmax(0, 1fr); } .wide { grid-column: auto; } .actions { align-items: stretch; } .picker { flex-basis: 100%; } }

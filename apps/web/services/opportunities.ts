@@ -3,24 +3,83 @@ import { apiFetch, buildQueryString } from "./api";
 export type OpportunityType =
   | "OPEN_CALL"
   | "JOB"
+  | "FREELANCE"
   | "RESIDENCY"
   | "EXHIBITION"
   | "COLLABORATION"
   | "GRANT"
+  | "SCHOLARSHIP"
+  | "WORKSHOP"
   | "OTHER";
 
+export type OpportunityApplicationMethod = "EMAIL" | "LINK";
+export type OpportunityOrganizerType =
+  | "INDIVIDUAL"
+  | "INFORMAL_GROUP"
+  | "NGO"
+  | "ENTREPRENEUR"
+  | "COMPANY"
+  | "INSTITUTION"
+  | "EDUCATIONAL_INSTITUTION";
+export type OpportunitySubmissionStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+export type OpportunityWorkMode = "ONSITE" | "REMOTE" | "HYBRID";
+export type OpportunityCompensationKind = "PRIZE" | "STIPEND" | "FEE" | "SALARY" | "NONE" | "OTHER";
+export type OpportunityDetailsPayload = {
+  workMode?: OpportunityWorkMode | null;
+  disciplines?: string[];
+  compensationKind?: OpportunityCompensationKind | null;
+  compensationAmount?: number | null;
+  compensationCurrency?: string;
+  applicationFee?: number | null;
+  maxAge?: number | null;
+  eligibleCountries?: string[];
+  applicationLanguages?: string[];
+  requiredDocuments?: string[];
+  coveredCosts?: string[];
+};
+
 export type Opportunity = {
+  workMode: OpportunityWorkMode | null;
+  disciplines: string[];
+  compensationKind: OpportunityCompensationKind | null;
+  compensationAmount: string | null;
+  compensationCurrency: string;
+  applicationFee: string | null;
+  maxAge: number | null;
+  eligibleCountries: string[];
+  applicationLanguages: string[];
+  requiredDocuments: string[];
+  coveredCosts: string[];
+  viewCount: number;
+  isDemo: boolean;
+  hasArtboardApplication?: boolean;
   id: string;
   title: string;
   slug: string;
   type: OpportunityType;
   organization: string | null;
+  organizerType: OpportunityOrganizerType | null;
   location: string | null;
+  countryCode: string | null;
+  city: string | null;
   summary: string | null;
   description: string;
+  conditions: string | null;
+  compensation: string | null;
+  additionalInformation: string | null;
+  applicationMethod: OpportunityApplicationMethod | null;
   applyUrl: string | null;
-  contactEmail: string | null;
+  applyEmail: string | null;
+  contactEmail?: string | null;
   deadlineAt: string | null;
+  isOpenEnded: boolean;
+  coverImageUrl: string | null;
+  coverImageStoragePath?: string | null;
+  consentAcceptedAt?: string | null;
+  submissionStatus: OpportunitySubmissionStatus;
+  reviewedAt?: string | null;
+  reviewNotes?: string | null;
   isPaid: boolean;
   isFeatured: boolean;
   isArchived: boolean;
@@ -44,10 +103,11 @@ type GetOpportunitiesQuery = {
   pageSize?: number;
   search?: string;
   type?: OpportunityType;
+  status?: OpportunitySubmissionStatus;
   includeDrafts?: boolean;
 };
 
-export type OpportunityMutationPayload = {
+export type OpportunityMutationPayload = OpportunityDetailsPayload & {
   title: string;
   slug?: string;
   type?: OpportunityType;
@@ -58,6 +118,17 @@ export type OpportunityMutationPayload = {
   applyUrl?: string;
   contactEmail?: string;
   deadlineAt?: string;
+  conditions?: string;
+  compensation?: string;
+  countryCode?: string;
+  city?: string;
+  isOpenEnded?: boolean;
+  applicationMethod?: OpportunityApplicationMethod;
+  applyEmail?: string;
+  additionalInformation?: string;
+  organizerType?: OpportunityOrganizerType;
+  submissionStatus?: OpportunitySubmissionStatus;
+  reviewNotes?: string;
   isPaid?: boolean;
   isFeatured?: boolean;
   isArchived?: boolean;
@@ -72,6 +143,27 @@ export type OpportunityMutationPayload = {
  */
 export function getOpportunities(query?: GetOpportunitiesQuery) {
   return apiFetch<PaginatedOpportunities>(`/opportunities${buildQueryString(query)}`);
+}
+
+export async function submitPublicOpportunity(formData: FormData) {
+  const response = await fetch("/api/opportunities/submit", {
+    method: "POST",
+    body: formData,
+  });
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    const message = Array.isArray(payload?.message) ? payload.message.join(" ") : payload?.message;
+    throw new Error(message || "Oglas nije mogao biti poslat.");
+  }
+
+  return payload as {
+    success: true;
+    submissionId: string;
+    status: OpportunitySubmissionStatus;
+    emailNotificationSent: boolean;
+    message: string;
+  };
 }
 
 /**
@@ -171,4 +263,8 @@ export async function applyToOpportunity(id: string) {
   }
 
   return payload as { message: string };
+}
+
+export function getPublicOpportunity(identifier: string) {
+  return apiFetch<Opportunity>(`/opportunities/public/${encodeURIComponent(identifier)}`);
 }

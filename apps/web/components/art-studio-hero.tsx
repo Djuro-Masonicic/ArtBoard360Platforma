@@ -70,6 +70,7 @@ export function ArtStudioHero({ artists }: { artists: Artist[] }) {
             className="art-studio-hero__button art-studio-hero__button--primary"
             href="/artboard"
             withArtBoardTransition
+            
           >
             <span>Istraži ArtBoard</span>
             <span aria-hidden="true">↗</span>

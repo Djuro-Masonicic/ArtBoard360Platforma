@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { ApiError } from "@/services/api";
 
 import { generatePublicPortfolioPdf } from "@/services/portfolio-projects";
 
@@ -26,6 +27,7 @@ export function PortfolioGeneratePdfButton({
   const router = useRouter();
   const [isGenerating, setIsGenerating] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const attempt = useRef<string | null>(null);
 
   async function handleGenerate() {
     setIsGenerating(true);
@@ -43,12 +45,14 @@ export function PortfolioGeneratePdfButton({
           throw new Error(payload?.message ?? "PDF nije mogao biti generisan.");
         }
       } else {
-        await generatePublicPortfolioPdf(portfolioId);
+        attempt.current ??= crypto.randomUUID();
+        await generatePublicPortfolioPdf(portfolioId, attempt.current); attempt.current = null;
       }
 
       setMessage("PDF je generisan i sacuvan.");
       router.refresh();
     } catch (error) {
+      if (error instanceof ApiError && error.status < 500) attempt.current = null;
       setMessage(error instanceof Error ? error.message : "PDF nije mogao biti generisan.");
     } finally {
       setIsGenerating(false);

@@ -16,8 +16,9 @@ import {
 import type { UploadEntityType } from "../../storage/storage.types";
 
 export class RequestUploadUrlDto {
+  @IsOptional()
   @IsUUID()
-  artistId!: string;
+  artistId?: string;
 
   @IsString()
   fileName!: string;
@@ -35,8 +36,9 @@ export class RequestUploadUrlDto {
 }
 
 export class CreateArtworkDto {
+  @IsOptional()
   @IsUUID()
-  artistId!: string;
+  artistId?: string;
 
   @IsUrl()
   imageUrl!: string;
@@ -102,8 +104,9 @@ export class CreateArtworkDto {
  * artwork creation metadata but is tailored to the backend-managed file flow.
  */
 export class UploadArtworkFileDto {
+  @IsOptional()
   @IsUUID()
-  artistId!: string;
+  artistId?: string;
 
   @IsOptional()
   @IsString()
@@ -136,8 +139,10 @@ export class UploadArtworkFileDto {
 }
 
 export class UpdateArtworkDto {
+  // Accepted for existing clients, but never used to determine ownership.
+  @IsOptional()
   @IsUUID()
-  artistId!: string;
+  artistId?: string;
 
   @IsOptional()
   @IsString()
@@ -173,8 +178,9 @@ export class ReorderArtworkItemDto {
 }
 
 export class ReorderArtworksDto {
+  @IsOptional()
   @IsUUID()
-  artistId!: string;
+  artistId?: string;
 
   @IsArray()
   @ValidateNested({ each: true })
@@ -183,8 +189,9 @@ export class ReorderArtworksDto {
 }
 
 export class DeleteArtworkDto {
+  @IsOptional()
   @IsUUID()
-  artistId!: string;
+  artistId?: string;
 
   @IsOptional()
   @Type(() => Boolean)

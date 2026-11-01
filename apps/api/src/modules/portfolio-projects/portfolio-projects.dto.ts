@@ -8,6 +8,7 @@ import {
   IsString,
   MaxLength,
   Min,
+  ValidateIf,
 } from "class-validator";
 import {
   PortfolioArtworkAvailability,
@@ -18,6 +19,8 @@ import {
 } from "@prisma/client";
 
 import { PaginationQueryDto } from "../../common/dto/pagination-query.dto";
+import { IsBirthDate, IsBehanceProfile } from "../../common/validators/portfolio-profile-fields";
+export class GeneratePortfolioPdfDto {}
 
 export class CreateGuestPortfolioProjectDto {
   @IsString()
@@ -46,6 +49,34 @@ export class ListPortfolioProjectsQueryDto extends PaginationQueryDto {
 }
 
 export class UpdatePortfolioProjectDto {
+  @ValidateIf((_object, value) => value !== undefined)
+  @IsObject()
+  documentSelection?: Record<string, unknown>;
+  @ValidateIf((_object, value) => value !== undefined)
+  @IsObject()
+  cvSections?: Record<string, unknown>;
+
+  @IsOptional() @IsInt() @Min(0)
+  expectedRevision?: number;
+  @ValidateIf((_object, value) => value !== undefined)
+  @IsBirthDate()
+  dateOfBirth?: string;
+
+  @ValidateIf((_object, value) => value !== undefined)
+  @IsString()
+  @MaxLength(500)
+  @IsBehanceProfile()
+  behanceUrl?: string;
+
+  @ValidateIf((_object, value) => value !== undefined)
+  @IsString()
+  @MaxLength(1000)
+  motto?: string;
+
+  @ValidateIf((_object, value) => value !== undefined)
+  @IsString()
+  @MaxLength(160)
+  mottoAuthor?: string;
   @IsOptional()
   @IsString()
   @MaxLength(180)
@@ -165,6 +196,8 @@ export class UpdatePortfolioProjectDto {
 }
 
 export class UpdatePortfolioArtworkDto {
+  @IsOptional() @IsInt() @Min(0)
+  expectedRevision?: number;
   @IsOptional()
   @IsString()
   @MaxLength(180)

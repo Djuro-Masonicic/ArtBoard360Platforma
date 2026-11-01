@@ -5,7 +5,10 @@
   "description": "Monorepo for the ArtBoard artist gallery platform.",
   "workspaces": [
     "apps/api",
-    "apps/web"
+    "apps/web",
+    "packages/portfolio-document-plan",
+    "packages/qr-card-renderer",
+    "packages/promotion-renderer"
   ],
   "engines": {
     "node": ">=22.0.0"

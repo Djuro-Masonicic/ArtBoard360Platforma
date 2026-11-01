@@ -1,5 +1,5 @@
 import { PortfolioBuilderEditorShell } from "@/components/portfolio-builder-editor-shell";
-import { getPublicPortfolioProject } from "@/services/portfolio-projects";
+import { getPortfolioForPage } from "@/lib/portfolio-project-access";
 
 type PortfolioBuilderDraftPageProps = {
   params: Promise<{
@@ -11,7 +11,7 @@ export default async function PortfolioBuilderDraftPage({
   params,
 }: PortfolioBuilderDraftPageProps) {
   const { id } = await params;
-  const project = await getPublicPortfolioProject(id);
+  const project = await getPortfolioForPage(id);
 
   return <PortfolioBuilderEditorShell project={project} />;
 }

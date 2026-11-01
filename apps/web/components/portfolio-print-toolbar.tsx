@@ -3,18 +3,21 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { ApiError } from "@/services/api";
 
 import { generatePublicPortfolioPdf } from "@/services/portfolio-projects";
 import { PortfolioGeneratePdfButton } from "./portfolio-generate-pdf-button";
 
 export function PortfolioPrintToolbar({
   canDownload,
+  canGenerate = canDownload,
   latestPdfUrl,
   mode,
   projectId,
 }: {
   canDownload: boolean;
+  canGenerate?: boolean;
   latestPdfUrl?: string | null;
   mode: "preview" | "download";
   projectId: string;
@@ -22,16 +25,22 @@ export function PortfolioPrintToolbar({
   const router = useRouter();
   const [isGeneratingCleanPdf, setIsGeneratingCleanPdf] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const attempt = useRef<string | null>(null);
 
   async function openCleanPdf() {
     setIsGeneratingCleanPdf(true);
     setGenerateError(null);
 
     try {
-      await generatePublicPortfolioPdf(projectId);
+      if (!latestPdfUrl) {
+        if (!canGenerate) { router.push(`/portfolio-builder/${projectId}`); return; }
+        attempt.current ??= crypto.randomUUID();
+        await generatePublicPortfolioPdf(projectId, attempt.current); attempt.current = null;
+      }
       router.push(`/portfolio-builder/${projectId}/download`);
       router.refresh();
     } catch (error) {
+      if (error instanceof ApiError && error.status < 500) attempt.current = null;
       setGenerateError(error instanceof Error ? error.message : "PDF nije mogao biti generisan.");
     } finally {
       setIsGeneratingCleanPdf(false);
@@ -73,13 +82,13 @@ export function PortfolioPrintToolbar({
                 >
                   Preuzmi PDF
                 </button>
-              ) : (
+              ) : canGenerate ? (
                 <PortfolioGeneratePdfButton
                   className="inline-flex h-[34px] items-center justify-center rounded-full bg-[linear-gradient(120deg,#1a7cff,#1a7cff_30%,#ff2d55)] px-[18px] text-[12.5px] font-extrabold uppercase text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
                   mode="public"
                   portfolioId={projectId}
                 />
-              )}
+              ) : <Link href={`/portfolio-builder/${projectId}`}>Sačuvane verzije u editoru</Link>}
             </>
           ) : (
             <>
@@ -87,7 +96,7 @@ export function PortfolioPrintToolbar({
                 Pregled ima ArtBoard vodeni žig i nije za preuzimanje.
               </p>
               <ToolbarBackButton projectId={projectId} />
-              {canDownload ? (
+              {canDownload && (latestPdfUrl || canGenerate) ? (
                 <div className="flex flex-col items-end gap-1">
                   <button
                     className="inline-flex h-[34px] items-center justify-center rounded-full bg-[linear-gradient(120deg,#1a7cff,#1a7cff_30%,#ff2d55)] px-[18px] text-[12.5px] font-extrabold uppercase text-white transition hover:brightness-110 disabled:cursor-wait disabled:opacity-60"

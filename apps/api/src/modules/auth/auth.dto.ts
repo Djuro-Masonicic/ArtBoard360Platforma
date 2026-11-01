@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength } from "class-validator";
+import { IsEmail, IsString, MinLength, Matches, MaxLength, IsOptional } from "class-validator";
 
 /**
  * The admin login contract stays intentionally small:
@@ -35,7 +35,12 @@ export class ChangeArtistPasswordDto {
 
   @IsString()
   @MinLength(8)
+  @MaxLength(128)
+  @Matches(/^(?=.*\p{L})(?=.*\p{N})[\s\S]+$/u, { message: "Nova lozinka mora sadržati slovo i broj." })
   newPassword!: string;
+
+  @IsOptional() @IsString() @MaxLength(128)
+  confirmNewPassword?: string;
 }
 
 export class ForgotArtistPasswordDto {

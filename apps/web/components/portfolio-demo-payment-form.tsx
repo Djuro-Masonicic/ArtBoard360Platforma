@@ -16,6 +16,12 @@ export function PortfolioDemoPaymentForm({ project }: { project: PortfolioProjec
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  if (process.env.NODE_ENV === "production") return <section className="mx-auto max-w-xl rounded-3xl bg-white p-8 text-[#111318] shadow-lg">
+    <h1 className="text-2xl font-bold">Plaćanje još nije dostupno</h1>
+    <p className="mt-4 leading-7">Plaćanje karticom će biti dostupno nakon povezivanja sa bankom. Portfolio nije označen kao plaćen; PDF pregled sa vodenim žigom ostaje dostupan.</p>
+    <a className="mt-6 inline-block font-bold underline" href={`/portfolio-builder/${project.id}`}>Nazad na portfolio</a>
+  </section>;
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setErrorMessage(null);

@@ -1,4 +1,6 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, Injectable, ServiceUnavailableException } from "@nestjs/common";
+import { canManageLocalSubscription, hasPremiumAccess } from "./subscription-access";
+import { env } from "../../config/env";
 import { SubscriptionPlan, SubscriptionStatus } from "@prisma/client";
 
 import { PrismaService } from "../../prisma/prisma.service";
@@ -16,10 +18,7 @@ export class ArtistSubscriptionsService {
   async requestPlatinum(artistAccountId: string) {
     const currentSubscription = await this.ensureSubscription(artistAccountId);
 
-    if (
-      currentSubscription.plan === SubscriptionPlan.PLATINUM &&
-      currentSubscription.status === SubscriptionStatus.ACTIVE
-    ) {
+    if (hasPremiumAccess(currentSubscription)) {
       throw new BadRequestException("Platinum pretplata je vec aktivna.");
     }
 
@@ -37,50 +36,38 @@ export class ArtistSubscriptionsService {
   }
 
   async cancelPlatinumRequest(artistAccountId: string) {
-    const currentSubscription = await this.ensureSubscription(artistAccountId);
+    return this.setRenewal(artistAccountId, false, true);
+  }
 
-    if (
-      currentSubscription.plan === SubscriptionPlan.PLATINUM &&
-      currentSubscription.status === SubscriptionStatus.ACTIVE
-    ) {
-      const subscription = await this.prisma.artistSubscription.update({
-        where: {
-          artistAccountId,
-        },
-        data: {
-          cancelAtPeriodEnd: true,
-          canceledAt: new Date(),
-          requestedPlan: null,
-          requestedAt: null,
-        },
-      });
-
-      return this.serialize(subscription);
-    }
-
-    const subscription = await this.prisma.artistSubscription.update({
-      where: {
-        artistAccountId,
-      },
-      data: {
-        requestedPlan: null,
-        requestedAt: null,
-      },
+  async setRenewal(artistAccountId: string, renew: boolean, allowRequestOnly = false) {
+    return this.prisma.$transaction(async tx => {
+      // Serialize against exports as well as other membership operations.
+      await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(hashtextextended(${`portfolio-quota:${artistAccountId}`},0))`;
+      const current = await tx.artistSubscription.findUnique({ where: { artistAccountId } });
+      if (!current || !hasPremiumAccess(current)) {
+        if (allowRequestOnly && current) return this.serialize(await tx.artistSubscription.update({ where: { artistAccountId }, data: { requestedPlan: null, requestedAt: null } }));
+        throw new BadRequestException("Nema aktivnog Premium perioda.");
+      }
+      // A local flag cannot cancel a remote recurring charge. Fail closed until
+      // a verified provider adapter can confirm the operation.
+      if (!canManageLocalSubscription(current)) throw new ServiceUnavailableException("Upravljanje naplatom još nije povezano. Obnavljanje nije promijenjeno.");
+      const canceled = current.cancelAtPeriodEnd || current.status === SubscriptionStatus.CANCELED;
+      if (canceled === !renew) return this.serialize(current);
+      return this.serialize(await tx.artistSubscription.update({ where: { artistAccountId }, data: {
+        cancelAtPeriodEnd: !renew, canceledAt: renew ? null : new Date(), requestedPlan: null, requestedAt: null,
+        ...(renew && current.status === SubscriptionStatus.CANCELED ? { status: SubscriptionStatus.ACTIVE } : {}),
+      } }));
     });
-
-    return this.serialize(subscription);
   }
 
   async completeDemoCheckout(
     artistAccountId: string,
     dto: CompleteDemoCheckoutDto,
   ) {
+    if (env.nodeEnv === "production") throw new ForbiddenException("Demo pretplata nije dostupna u produkciji.");
     const currentSubscription = await this.ensureSubscription(artistAccountId);
 
-    if (
-      currentSubscription.plan === SubscriptionPlan.PLATINUM &&
-      currentSubscription.status === SubscriptionStatus.ACTIVE
-    ) {
+    if (hasPremiumAccess(currentSubscription)) {
       throw new BadRequestException("Platinum pretplata je vec aktivna.");
     }
 
@@ -129,28 +116,7 @@ export class ArtistSubscriptionsService {
       update: {},
     });
 
-    if (
-      subscription.cancelAtPeriodEnd &&
-      subscription.currentPeriodEnd &&
-      subscription.currentPeriodEnd <= new Date()
-    ) {
-      return this.prisma.artistSubscription.update({
-        where: {
-          artistAccountId,
-        },
-        data: {
-          plan: SubscriptionPlan.BASIC,
-          status: SubscriptionStatus.ACTIVE,
-          currentPeriodStart: new Date(),
-          currentPeriodEnd: null,
-          cancelAtPeriodEnd: false,
-          provider: null,
-          providerCustomerId: null,
-          providerSubscriptionId: null,
-        },
-      });
-    }
-
+    // Expiry changes effective access, not the historical billing record.
     return subscription;
   }
 

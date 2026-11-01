@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
+import { Check } from "lucide-react";
 import { FormEvent, useState, useTransition } from "react";
 
+import { authStyles as styles } from "@/components/auth-page-shell";
 import { NavigationButton } from "@/components/navigation-button";
 import { PasswordInput } from "@/components/password-input";
 import { useUiFeedback, useUiLoadingState } from "@/components/ui-feedback-provider";
@@ -12,29 +13,27 @@ export function ResetPasswordForm({ token }: { token: string }) {
   const { showAlert } = useUiFeedback();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [isComplete, setIsComplete] = useState(false);
   const [isPending, startTransition] = useTransition();
+
+  const hasMinLength = password.length >= 8;
+  const hasLetterAndNumber = /[A-Za-z]/.test(password) && /\d/.test(password);
+  const passwordsMatch = confirmPassword.length > 0 && password === confirmPassword;
 
   useUiLoadingState(isPending);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setError(null);
 
-    if (password.length < 8) {
-      showAlert({
-        kind: "error",
-        title: "Lozinka je prekratka",
-        message: "Nova lozinka mora imati najmanje 8 karaktera.",
-      });
+    if (!hasMinLength || !hasLetterAndNumber) {
+      setError("Lozinka mora imati najmanje 8 znakova, bar jedno slovo i jedan broj.");
       return;
     }
 
-    if (password !== confirmPassword) {
-      showAlert({
-        kind: "error",
-        title: "Lozinke se ne podudaraju",
-        message: "Unesi istu lozinku u oba polja.",
-      });
+    if (!passwordsMatch) {
+      setError("Lozinke se ne poklapaju.");
       return;
     }
 
@@ -47,11 +46,13 @@ export function ResetPasswordForm({ token }: { token: string }) {
           title: "Lozinka je promijenjena",
           message: response.message,
         });
-      } catch (error) {
+      } catch (requestError) {
+        const message = requestError instanceof Error ? requestError.message : "Pokušaj ponovo.";
+        setError(message);
         showAlert({
           kind: "error",
           title: "Lozinka nije promijenjena",
-          message: error instanceof Error ? error.message : "Pokusaj ponovo.",
+          message,
         });
       }
     });
@@ -59,54 +60,102 @@ export function ResetPasswordForm({ token }: { token: string }) {
 
   if (isComplete) {
     return (
-      <div>
-        <h2 className="text-[28px] font-bold text-[#2f3138]">Nova lozinka je sacuvana</h2>
-        <p className="mt-4 text-[16px] leading-[1.6] text-[#5f6772]">
-          Sada se mozes prijaviti novom lozinkom.
+      <div className={styles.stateContent}>
+        <span className={styles.stateIcon} aria-hidden="true"><Check /></span>
+        <h2 className={styles.stateTitle}>Lozinka je sačuvana</h2>
+        <p className={styles.stateCopy}>
+          Sada se možeš ulogovati e-mailom i novom lozinkom i nastaviti rad na svom profilu.
         </p>
-        <NavigationButton
-          className="mt-7 inline-flex h-12 w-full items-center justify-center rounded-full bg-[#182fc7] px-6 text-[16px] font-medium text-white transition hover:bg-[#1326a8]"
-          href="/artist/login"
-        >
-          Idi na prijavu
-        </NavigationButton>
+        <div className={styles.stateActions}>
+          <NavigationButton className={styles.primaryButton} href="/artist/login">
+            Uloguj se
+          </NavigationButton>
+        </div>
       </div>
     );
   }
 
+  const mismatch = Boolean(error) && !passwordsMatch && confirmPassword.length > 0;
+
   return (
-    <form className="space-y-5" onSubmit={handleSubmit}>
-      <label className="block space-y-2">
-        <span className="text-[15px] font-semibold text-[#2f3138]">Nova lozinka</span>
-        <PasswordInput
-          autoComplete="new-password"
-          className="h-12 w-full rounded-full border border-[#d8dfeb] bg-white px-5 text-[16px] text-[#2f3138] outline-none transition focus:border-[#182fc7]"
-          onChange={(event) => setPassword(event.target.value)}
-          placeholder="Najmanje 8 karaktera"
-          required
-          value={password}
-        />
-      </label>
+    <>
+      <div className={styles.cardHeader}>
+        <h2 className={styles.cardTitle}>Nova lozinka</h2>
+        <p className={styles.cardCopy}>
+          Izaberi lozinku za svoj ArtBoard nalog. Nakon toga se loguješ e-mailom i novom lozinkom.
+        </p>
+      </div>
 
-      <label className="block space-y-2">
-        <span className="text-[15px] font-semibold text-[#2f3138]">Potvrdi novu lozinku</span>
-        <PasswordInput
-          autoComplete="new-password"
-          className="h-12 w-full rounded-full border border-[#d8dfeb] bg-white px-5 text-[16px] text-[#2f3138] outline-none transition focus:border-[#182fc7]"
-          onChange={(event) => setConfirmPassword(event.target.value)}
-          placeholder="Ponovi lozinku"
-          required
-          value={confirmPassword}
-        />
-      </label>
+      <form className={styles.form} onSubmit={handleSubmit}>
+        <label className={styles.field} htmlFor="reset-password">
+          <span className={styles.label}>Nova lozinka</span>
+          <PasswordInput
+            ariaDescribedBy="password-rules"
+            ariaInvalid={Boolean(error) && (!hasMinLength || !hasLetterAndNumber)}
+            autoComplete="new-password"
+            className={`${styles.input} ${error && (!hasMinLength || !hasLetterAndNumber) ? styles.inputError : ""}`}
+            id="reset-password"
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder="••••••••"
+            required
+            value={password}
+          />
+        </label>
 
-      <button
-        className="inline-flex h-12 w-full items-center justify-center rounded-full bg-[#182fc7] px-6 text-[16px] font-medium text-white transition hover:bg-[#1326a8] disabled:cursor-not-allowed disabled:bg-[#9aa6dd]"
-        disabled={isPending}
-        type="submit"
-      >
-        {isPending ? "Cuvanje..." : "Sacuvaj novu lozinku"}
-      </button>
-    </form>
+        <label className={styles.field} htmlFor="reset-confirm-password">
+          <span className={styles.label}>Ponovi lozinku</span>
+          <PasswordInput
+            ariaDescribedBy={mismatch ? "reset-password-error" : undefined}
+            ariaInvalid={mismatch}
+            autoComplete="new-password"
+            className={`${styles.input} ${mismatch ? styles.inputError : ""}`}
+            id="reset-confirm-password"
+            onChange={(event) => setConfirmPassword(event.target.value)}
+            placeholder="••••••••"
+            required
+            value={confirmPassword}
+          />
+        </label>
+
+        {error ? <p className={styles.fieldError} id="reset-password-error" role="alert">{error}</p> : null}
+
+        <PasswordRules
+          hasLetterAndNumber={hasLetterAndNumber}
+          hasMinLength={hasMinLength}
+          passwordsMatch={passwordsMatch}
+        />
+
+        <button className={styles.primaryButton} disabled={isPending} type="submit">
+          {isPending ? "Čuvanje..." : "Sačuvaj lozinku"}
+        </button>
+      </form>
+    </>
+  );
+}
+
+export function PasswordRules({
+  hasLetterAndNumber,
+  hasMinLength,
+  passwordsMatch,
+}: {
+  hasLetterAndNumber: boolean;
+  hasMinLength: boolean;
+  passwordsMatch: boolean;
+}) {
+  return (
+    <ul className={styles.rules} id="password-rules">
+      <PasswordRule isValid={hasMinLength}>Najmanje 8 znakova</PasswordRule>
+      <PasswordRule isValid={hasLetterAndNumber}>Bar jedno slovo i jedan broj</PasswordRule>
+      <PasswordRule isValid={passwordsMatch}>Lozinke se poklapaju</PasswordRule>
+    </ul>
+  );
+}
+
+function PasswordRule({ children, isValid }: { children: React.ReactNode; isValid: boolean }) {
+  return (
+    <li className={`${styles.rule} ${isValid ? styles.ruleValid : ""}`}>
+      <span className={styles.ruleIcon} aria-hidden="true"><Check /></span>
+      {children}
+    </li>
   );
 }

@@ -8,19 +8,37 @@ import {
   createOpportunity,
   deleteOpportunity,
   Opportunity,
+  OpportunityApplicationMethod,
   OpportunityMutationPayload,
+  OpportunityOrganizerType,
+  OpportunitySubmissionStatus,
   OpportunityType,
   updateOpportunity,
 } from "@/services/opportunities";
 
+import { OpportunityDetailsFields, initialOpportunityDetails, opportunityDetailsPayload } from "./opportunity-details-fields";
+
 const opportunityTypes: Array<{ value: OpportunityType; label: string }> = [
   { value: "OPEN_CALL", label: "Open call" },
   { value: "JOB", label: "Posao" },
+  { value: "FREELANCE", label: "Honorarni angažman" },
   { value: "RESIDENCY", label: "Rezidencija" },
   { value: "EXHIBITION", label: "Izlozba" },
   { value: "COLLABORATION", label: "Saradnja" },
   { value: "GRANT", label: "Grant" },
+  { value: "SCHOLARSHIP", label: "Stipendija" },
+  { value: "WORKSHOP", label: "Radionica / edukacija" },
   { value: "OTHER", label: "Ostalo" },
+];
+
+const organizerTypes: Array<{ value: OpportunityOrganizerType; label: string }> = [
+  { value: "INDIVIDUAL", label: "Fizičko lice" },
+  { value: "INFORMAL_GROUP", label: "Neformalna grupa" },
+  { value: "NGO", label: "NVO / udruženje" },
+  { value: "ENTREPRENEUR", label: "Preduzetnik" },
+  { value: "COMPANY", label: "Kompanija" },
+  { value: "INSTITUTION", label: "Institucija" },
+  { value: "EDUCATIONAL_INSTITUTION", label: "Obrazovna ustanova" },
 ];
 
 type AdminOpportunityEditorProps = {
@@ -39,6 +57,7 @@ export function AdminOpportunityEditor({ initialOpportunity }: AdminOpportunityE
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const [details, setDetails] = useState(() => initialOpportunityDetails(initialOpportunity));
   const [title, setTitle] = useState(initialOpportunity?.title ?? "");
   const [slug, setSlug] = useState(initialOpportunity?.slug ?? "");
   const [type, setType] = useState<OpportunityType>(initialOpportunity?.type ?? "OPEN_CALL");
@@ -49,6 +68,17 @@ export function AdminOpportunityEditor({ initialOpportunity }: AdminOpportunityE
   const [applyUrl, setApplyUrl] = useState(initialOpportunity?.applyUrl ?? "");
   const [contactEmail, setContactEmail] = useState(initialOpportunity?.contactEmail ?? "");
   const [deadlineAt, setDeadlineAt] = useState(toDateInputValue(initialOpportunity?.deadlineAt));
+  const [conditions, setConditions] = useState(initialOpportunity?.conditions ?? "");
+  const [compensation, setCompensation] = useState(initialOpportunity?.compensation ?? "");
+  const [countryCode, setCountryCode] = useState(initialOpportunity?.countryCode ?? "");
+  const [city, setCity] = useState(initialOpportunity?.city ?? "");
+  const [isOpenEnded, setIsOpenEnded] = useState(initialOpportunity?.isOpenEnded ?? false);
+  const [applicationMethod, setApplicationMethod] = useState<OpportunityApplicationMethod | "">(initialOpportunity?.applicationMethod ?? "");
+  const [applyEmail, setApplyEmail] = useState(initialOpportunity?.applyEmail ?? "");
+  const [additionalInformation, setAdditionalInformation] = useState(initialOpportunity?.additionalInformation ?? "");
+  const [organizerType, setOrganizerType] = useState<OpportunityOrganizerType | "">(initialOpportunity?.organizerType ?? "");
+  const [submissionStatus, setSubmissionStatus] = useState<OpportunitySubmissionStatus>(initialOpportunity?.submissionStatus ?? "APPROVED");
+  const [reviewNotes, setReviewNotes] = useState(initialOpportunity?.reviewNotes ?? "");
   const [isPaid, setIsPaid] = useState(initialOpportunity?.isPaid ?? false);
   const [isFeatured, setIsFeatured] = useState(initialOpportunity?.isFeatured ?? false);
   const [isArchived, setIsArchived] = useState(initialOpportunity?.isArchived ?? false);
@@ -56,6 +86,7 @@ export function AdminOpportunityEditor({ initialOpportunity }: AdminOpportunityE
 
   function buildPayload(): OpportunityMutationPayload {
     return {
+      ...opportunityDetailsPayload(details),
       title,
       slug,
       type,
@@ -66,6 +97,17 @@ export function AdminOpportunityEditor({ initialOpportunity }: AdminOpportunityE
       applyUrl,
       contactEmail,
       deadlineAt,
+      conditions,
+      compensation,
+      countryCode,
+      city,
+      isOpenEnded,
+      applicationMethod: applicationMethod || undefined,
+      applyEmail,
+      additionalInformation,
+      organizerType: organizerType || undefined,
+      submissionStatus,
+      reviewNotes,
       isPaid,
       isFeatured,
       isArchived,
@@ -196,6 +238,25 @@ export function AdminOpportunityEditor({ initialOpportunity }: AdminOpportunityE
               value={location}
             />
           </Field>
+          <Field label="Država (kod)">
+            <input className={inputClassName} onChange={(event) => setCountryCode(event.target.value)} type="text" value={countryCode} />
+          </Field>
+          <Field label="Grad">
+            <input className={inputClassName} onChange={(event) => setCity(event.target.value)} type="text" value={city} />
+          </Field>
+          <Field label="Tip organizatora">
+            <select className={inputClassName} onChange={(event) => setOrganizerType(event.target.value as OpportunityOrganizerType | "")} value={organizerType}>
+              <option value="">Nije navedeno</option>
+              {organizerTypes.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+            </select>
+          </Field>
+          <Field label="Način prijave">
+            <select className={inputClassName} onChange={(event) => setApplicationMethod(event.target.value as OpportunityApplicationMethod | "")} value={applicationMethod}>
+              <option value="">Nije navedeno</option>
+              <option value="EMAIL">E-mail</option>
+              <option value="LINK">Link</option>
+            </select>
+          </Field>
           <Field label="Link za prijavu">
             <input
               className={inputClassName}
@@ -205,6 +266,9 @@ export function AdminOpportunityEditor({ initialOpportunity }: AdminOpportunityE
               value={applyUrl}
             />
           </Field>
+          <Field label="E-mail za prijavu">
+            <input className={inputClassName} onChange={(event) => setApplyEmail(event.target.value)} type="email" value={applyEmail} />
+          </Field>
           <Field label="Kontakt email">
             <input
               className={inputClassName}
@@ -213,7 +277,13 @@ export function AdminOpportunityEditor({ initialOpportunity }: AdminOpportunityE
               value={contactEmail}
             />
           </Field>
+          <Toggle label="Otvoreno do popunjavanja" value={isOpenEnded} onChange={setIsOpenEnded} />
         </div>
+        {initialOpportunity?.coverImageUrl ? (
+          <div className="mt-5 overflow-hidden rounded-[20px] border border-[#dde4ef] bg-[#f8fbff]">
+            <img alt="Naslovna slika oglasa" className="max-h-[360px] w-full object-cover" src={initialOpportunity.coverImageUrl} />
+          </div>
+        ) : null}
       </section>
 
       <section className="rounded-[28px] border border-[#dde4ef] bg-white/95 p-6 shadow-[0_16px_44px_rgba(31,46,86,0.05)]">
@@ -238,6 +308,16 @@ export function AdminOpportunityEditor({ initialOpportunity }: AdminOpportunityE
               value={description}
             />
           </Field>
+          <Field label="Uslovi i kriterijumi">
+            <textarea className={`${inputClassName} min-h-[160px] rounded-[24px] py-4`} onChange={(event) => setConditions(event.target.value)} value={conditions} />
+          </Field>
+          <Field label="Naknada / honorar">
+            <input className={inputClassName} onChange={(event) => setCompensation(event.target.value)} value={compensation} />
+          </Field>
+          <OpportunityDetailsFields value={details} onChange={setDetails} />
+          <Field label="Dodatne informacije">
+            <textarea className={`${inputClassName} min-h-[130px] rounded-[24px] py-4`} onChange={(event) => setAdditionalInformation(event.target.value)} value={additionalInformation} />
+          </Field>
         </div>
       </section>
 
@@ -245,6 +325,27 @@ export function AdminOpportunityEditor({ initialOpportunity }: AdminOpportunityE
         <p className="text-[13px] font-bold uppercase tracking-[0.24em] text-[#7f8794]">
           Status
         </p>
+        <div className="mt-5 grid gap-5 md:grid-cols-2">
+          <Field label="Status prijave">
+            <select className={inputClassName} onChange={(event) => {
+              const nextStatus = event.target.value as OpportunitySubmissionStatus;
+              setSubmissionStatus(nextStatus);
+              setIsDraft(nextStatus !== "APPROVED");
+            }} value={submissionStatus}>
+              <option value="PENDING">Čeka provjeru</option>
+              <option value="APPROVED">Odobreno</option>
+              <option value="REJECTED">Odbijeno</option>
+            </select>
+          </Field>
+          <Field label="Napomena administratora">
+            <textarea className={`${inputClassName} min-h-[96px] rounded-[20px] py-3`} onChange={(event) => setReviewNotes(event.target.value)} value={reviewNotes} />
+          </Field>
+        </div>
+        {initialOpportunity?.consentAcceptedAt ? (
+          <p className="mt-4 text-[14px] text-[#5f6772]">
+            Uslovi i politika privatnosti prihvaćeni: {new Intl.DateTimeFormat("sr-Latn-ME", { dateStyle: "medium", timeStyle: "short" }).format(new Date(initialOpportunity.consentAcceptedAt))}
+          </p>
+        ) : null}
         <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Toggle label="Placeno" value={isPaid} onChange={setIsPaid} />
           <Toggle label="Istaknuto" value={isFeatured} onChange={setIsFeatured} />

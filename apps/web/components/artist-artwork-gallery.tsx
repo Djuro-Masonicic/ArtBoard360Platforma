@@ -15,7 +15,7 @@ interface ArtistArtworkGalleryProps {
  * then upgrades it with a fullscreen lightbox when a visitor opens a work.
  */
 export function ArtistArtworkGallery({ artistName, artworks }: ArtistArtworkGalleryProps) {
-  const sortedArtworks = [...artworks].sort((left, right) => left.orderIndex - right.orderIndex);
+  const sortedArtworks = artworks;
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const thumbnailRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const activeArtwork = activeIndex !== null ? sortedArtworks[activeIndex] : null;
@@ -107,7 +107,7 @@ export function ArtistArtworkGallery({ artistName, artworks }: ArtistArtworkGall
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 xl:gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 lg:gap-4 xl:gap-5">
         {sortedArtworks.map((artwork, index) => (
           <article
             className="overflow-hidden rounded-[12px] bg-[#e7e8ec]"
@@ -121,7 +121,7 @@ export function ArtistArtworkGallery({ artistName, artworks }: ArtistArtworkGall
             >
               <img
                 alt={artwork.altText || artwork.title || `${artistName} artwork`}
-                className="aspect-square w-full object-cover transition duration-500 hover:scale-[1.035]"
+                className="aspect-[0.93] w-full object-cover transition duration-500 hover:scale-[1.035]"
                 src={artwork.imageUrl}
               />
             </button>

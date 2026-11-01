@@ -26,6 +26,7 @@ import { ArtistSubmissionsService } from "./artist-submissions.service";
 interface ArtistSubmissionFiles {
   portfolioPdf?: Express.Multer.File[];
   profilePhoto?: Express.Multer.File[];
+  coverPhoto?: Express.Multer.File[];
   featuredWorks?: Express.Multer.File[];
 }
 
@@ -51,6 +52,7 @@ export class ArtistSubmissionsController {
       [
         { name: "portfolioPdf", maxCount: 1 },
         { name: "profilePhoto", maxCount: 1 },
+        { name: "coverPhoto", maxCount: 1 },
         { name: "featuredWorks", maxCount: 25 },
       ],
       {

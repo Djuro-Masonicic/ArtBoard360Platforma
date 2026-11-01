@@ -61,11 +61,32 @@ export class CreateArtistSubmissionDto {
   phone?: string;
 
   @IsString()
+  city!: string;
+
+  @IsString()
   biography!: string;
 
   @IsOptional()
   @IsString()
+  artistStatement?: string;
+
+  @IsOptional()
+  @IsString()
   motto?: string;
+
+  @IsOptional()
+  @IsString()
+  mottoAuthor?: string;
+
+  @Transform(({ value }) => parseBoolean(value))
+  @IsBoolean()
+  showEmailPublic!: boolean;
+
+  @Transform(({ value }) => parseStringArray(value))
+  @IsArray()
+  @ArrayMaxSize(1)
+  @IsString({ each: true })
+  presentationForms!: string[];
 
   @IsOptional()
   @IsUrl()
@@ -78,6 +99,10 @@ export class CreateArtistSubmissionDto {
   @Transform(({ value }) => parseBoolean(value))
   @IsBoolean()
   confirmedRules!: boolean;
+
+  @Transform(({ value }) => parseBoolean(value))
+  @IsBoolean()
+  containsNsfw!: boolean;
 
   @Transform(({ value }) => parseStringArray(value))
   @IsArray()
@@ -120,12 +145,36 @@ export class UpdateArtistSubmissionDto {
   @IsString()
   phone?: string;
 
+  @IsOptional()
+  @IsString()
+  city?: string;
+
   @IsString()
   biography!: string;
 
   @IsOptional()
   @IsString()
+  artistStatement?: string;
+
+  @IsOptional()
+  @IsString()
   motto?: string;
+
+  @IsOptional()
+  @IsString()
+  mottoAuthor?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => parseBoolean(value))
+  @IsBoolean()
+  showEmailPublic?: boolean;
+
+  @IsOptional()
+  @Transform(({ value }) => parseStringArray(value))
+  @IsArray()
+  @ArrayMaxSize(1)
+  @IsString({ each: true })
+  presentationForms?: string[];
 
   @IsOptional()
   @IsUrl()
@@ -142,6 +191,11 @@ export class UpdateArtistSubmissionDto {
   @Transform(({ value }) => parseBoolean(value))
   @IsBoolean()
   confirmedRules!: boolean;
+
+  @IsOptional()
+  @Transform(({ value }) => parseBoolean(value))
+  @IsBoolean()
+  containsNsfw?: boolean;
 
   @IsEnum(ArtistSubmissionStatus)
   status!: ArtistSubmissionStatus;

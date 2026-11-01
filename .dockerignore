@@ -17,3 +17,8 @@ apps/web/.next
 .gitignore
 .DS_Store
 Thumbs.db
+
+# Private local backups and isolated test artifacts never enter an image.
+.backups
+.tmp
+.data

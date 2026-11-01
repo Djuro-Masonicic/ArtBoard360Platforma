@@ -1,8 +1,11 @@
 import PDFDocument from "pdfkit";
 import sharp from "sharp";
+import { MinimalPdfPages, registerMinimalFonts } from "./portfolio-minimal.pages";
+import { buildPortfolioDocumentPlan, portfolioCvBlocks } from "@artboard/portfolio-document-plan";
 
 import type {
   PortfolioArtwork,
+  PortfolioCollection,
   PortfolioFontStyle,
   PortfolioProject,
   PortfolioTemplate,
@@ -10,6 +13,7 @@ import type {
 
 type PortfolioProjectForPdf = PortfolioProject & {
   artworks: PortfolioArtwork[];
+  collections?: PortfolioCollection[];
   designConfig?: unknown;
 };
 
@@ -20,6 +24,7 @@ type PortfolioPdfGenerationOptions = {
    * makes it unusable as a clean portfolio export.
    */
   watermark?: boolean;
+  onPageCount?: (count: number) => void;
 };
 
 type CvBlock = {
@@ -191,6 +196,7 @@ async function generatePortfolioPdfWithTemplate(
     document.on("error", reject);
   });
 
+  context.watermarkAllPages();
   document.end();
   await finished;
 
@@ -249,12 +255,13 @@ async function generatePortfolioDocumentMapWithTemplate(
   },
 ) {
   const document = createPortfolioDocument(project);
+  let actualPageCount = 0;
+  document.on("pageAdded", () => { actualPageCount++; });
   const chunks: Buffer[] = [];
   document.on("data", (chunk: Buffer) => chunks.push(chunk));
 
-  const selectedArtworks = project.artworks
-    .filter((artwork) => artwork.isSelected)
-    .sort((first, second) => first.orderIndex - second.orderIndex);
+  const plan = buildPortfolioDocumentPlan(project);
+  const selectedArtworks = plan.selectedArtworks;
 
   const context = new PortfolioTemplateContext(
     document,
@@ -263,24 +270,38 @@ async function generatePortfolioDocumentMapWithTemplate(
     options,
     resolvePortfolioDesignConfig(project, template),
   );
-  await context.coverPageForDesign(selectedArtworks[0]);
-
-  await context.profilePageForDesign(selectedArtworks);
-  await context.collectionPageForDesign(selectedArtworks);
-
-  for (const [index, selectedArtwork] of selectedArtworks.entries()) {
-    await context.artworkPageForDesign(selectedArtwork, index + 1);
+  const design = resolvePortfolioDesignConfig(project, template);
+  const minimal = new MinimalPdfPages(document, project, () => context.addMinimalPage(), fetchImageBuffer);
+  let artworkIndex = 0;
+  if (!plan.pages.length) throw new Error("Izabrane PDF sekcije nemaju sadržaj.");
+  for (const page of plan.pages) {
+    const kind = page.kind === "featured" || page.kind === "cv" ? null : page.kind === "artwork" ? "artwork" : page.kind === "collection" ? "collection" : page.kind;
+    if ((kind ? design.pages[kind] : template).visualTone === "institutional") {
+      await minimal.render(page, plan); continue;
+    }
+    if (page.kind === "cover") await context.coverPageForDesign(selectedArtworks[0]);
+    else if (page.kind === "profile") await context.profilePageForDesign(selectedArtworks);
+    else if (page.kind === "featured") await context.featuredPages(selectedArtworks);
+    else if (page.kind === "collection") {
+      const group = plan.groups.find(group => (group.collection?.id ?? null) === page.collectionId);
+      if (group) await context.collectionPageForDesign(group.artworks, group.collection ?? undefined);
+    } else if (page.kind === "artwork") {
+      const artwork = selectedArtworks.find(artwork => artwork.id === page.artworkId);
+      if (artwork) await context.artworkPageForDesign(artwork, ++artworkIndex);
+    } else if (page.kind === "cv") context.cvPages(true);
+    else if (page.kind === "contact") await context.contactPageForDesign(selectedArtworks);
   }
-
-  await context.contactPageForDesign(selectedArtworks);
 
   const finished = new Promise<void>((resolve, reject) => {
     document.on("end", resolve);
     document.on("error", reject);
   });
 
+  context.watermarkAllPages();
   document.end();
   await finished;
+
+  options.onPageCount?.(actualPageCount);
 
   return Buffer.concat(chunks);
 }
@@ -358,7 +379,7 @@ function resolveFooterTemplate(
 function createPortfolioDocument(project: PortfolioProjectForPdf) {
   const document = new PDFDocument({
     autoFirstPage: false,
-    bufferPages: false,
+    bufferPages: true,
     margin: 0,
     size: project.pageFormat === "US_LETTER" ? "LETTER" : "A4",
   });
@@ -369,6 +390,7 @@ function createPortfolioDocument(project: PortfolioProjectForPdf) {
 }
 
 function registerPortfolioFonts(document: PDFKit.PDFDocument) {
+  registerMinimalFonts(document);
   // PDFKit's built-in Helvetica/Times fonts do not reliably support Montenegrin/
   // Serbian Latin characters such as č, ć, š, ž and especially đ. These embedded
   // latin-ext web fonts keep generated PDFs portable on local machines and Railway.
@@ -392,10 +414,11 @@ function registerPortfolioFonts(document: PDFKit.PDFDocument) {
 
 class PortfolioTemplateContext {
   private pageNumber = 0;
+  addMinimalPage() { this.addPage(); }
 
   constructor(
     private readonly document: PDFKit.PDFDocument,
-    private readonly project: PortfolioProjectForPdf,
+    private project: PortfolioProjectForPdf,
     private template: PortfolioPdfTemplateConfig,
     private readonly options: PortfolioPdfGenerationOptions = {},
     private readonly designConfig: ResolvedPortfolioDesignConfig,
@@ -430,10 +453,14 @@ class PortfolioTemplateContext {
     );
   }
 
-  async collectionPageForDesign(selectedArtworks: PortfolioArtwork[]) {
-    return this.withPageTemplate(this.designConfig.pages.collection, () =>
-      this.collectionPageForTemplate(selectedArtworks),
-    );
+  async collectionPageForDesign(selectedArtworks: PortfolioArtwork[], collection?: PortfolioCollection) {
+    const previous = this.project;
+    if (collection) this.project = { ...previous, collectionName: collection.title, collectionYear: collection.year ?? "",
+      collectionDescription: collection.description ?? "", collectionCoverUrl: collection.coverImageUrl,
+      coverImageUrl: collection.coverImageUrl || selectedArtworks[0]?.imageUrl || previous.coverImageUrl };
+    try {
+      return await this.withPageTemplate(this.designConfig.pages.collection, () => this.collectionPageForTemplate(selectedArtworks));
+    } finally { this.project = previous; }
   }
 
   async artworkPageForDesign(artwork: PortfolioArtwork, index: number) {
@@ -1640,17 +1667,67 @@ class PortfolioTemplateContext {
         lineGap: 1,
       });
   }
-  cvPages() {
-    const blocks = this.safeCvBlocks();
-    const firstPageBlocks = blocks.slice(0, 4);
-    const secondPageBlocks = blocks.slice(4, 9);
+  async featuredPages(artworks: PortfolioArtwork[]) {
+    const gap = 14;
+    for (let offset = 0; offset < artworks.length; offset += 9) {
+      this.addPage(); this.sectionTitle(this.project.language === "EN" ? "SELECTED WORKS" : "IZDVOJENI RADOVI");
+      const size = (this.pageWidth() - 108 - gap * 2) / 3;
+      for (const [index, artwork] of artworks.slice(offset, offset + 9).entries()) {
+        const x = 54 + (index % 3) * (size + gap), y = 115 + Math.floor(index / 3) * (size + 38);
+        const image = await fetchImageBuffer(artwork.imageUrl);
+        if (image) this.safeImage(image, x, y, size, size, "RAD", "contain", LIGHT_PANEL);
+        else this.placeholder(x, y, size, size, "RAD");
+        this.document.font(this.bodyFont()).fontSize(8).fillColor(INK).text(artwork.title || "", x, y + size + 7, { width: size, height: 22, ellipsis: true });
+      }
+      this.footer();
+    }
+  }
 
-    this.cvPage("CV — 1", firstPageBlocks, "first");
-    this.cvPage(
-      "CV — 2",
-      secondPageBlocks.length > 0 ? secondPageBlocks : blocks.slice(0, 3),
-      "second",
-    );
+  cvPages(force = false) {
+    const blocks = (force || this.project.includeCv) ? portfolioCvBlocks(this.project.cvSections, this.project.language) : [];
+    if (!blocks.length) return;
+    let column = 0, y = 115, page = 0;
+    const newPage = () => {
+      if (page) this.footer();
+      this.addPage(); page++; column = 0; y = 115;
+      this.sectionTitle(`CV — ${page}`);
+    };
+    const nextColumn = () => { if (column === 0) { column = 1; y = 115; } else newPage(); };
+    const heading = (title: string) => {
+      if (y + 45 > bottom) nextColumn();
+      const x = 54 + column * (width + 32);
+      this.document.font(this.headingFont()).fontSize(8.5).fillColor(INK).text(title.toUpperCase(), x, y, { width, lineBreak: false });
+      this.document.moveTo(x, y + 15).lineTo(x + width, y + 15).strokeColor(LINE).lineWidth(0.6).stroke();
+      y += 27;
+    };
+    newPage();
+    const width = (this.pageWidth() - 108 - 32) / 2;
+    const bottom = this.pageHeight() - 90;
+    for (const block of blocks) {
+      heading(block.title);
+      for (const item of block.items) {
+        this.document.font(this.bodyFont()).fontSize(8);
+        // Measure with the actual PDF font. Split long words too, so URLs and
+        // descriptions cannot escape the column or disappear below the footer.
+        const lines: string[] = []; let line = "";
+        for (const token of item.replace(/\s+/gu, " ").split(/( +)/u)) {
+          if (line && this.document.widthOfString(line + token) > width - 10) { lines.push(line.trimEnd()); line = ""; }
+          for (const character of token) {
+            if (line && this.document.widthOfString(line + character) > width - 10) { lines.push(line.trimEnd()); line = ""; }
+            line += character;
+          }
+        }
+        if (line.trim()) lines.push(line.trimEnd());
+        for (const text of lines) {
+          if (y + 12 > bottom) { nextColumn(); heading(block.title); }
+          this.document.font(this.bodyFont()).fontSize(8).fillColor(INK).text(text, 64 + column * (width + 32), y, { width: width - 10, lineBreak: false });
+          y += 12;
+        }
+        y += 8;
+      }
+      y += 12;
+    }
+    this.footer();
   }
 
   private contactPageLegacy() {
@@ -2949,7 +3026,18 @@ class PortfolioTemplateContext {
     return "PORTFOLIO";
   }
 
-  private previewWatermark() {
+  // Apply after layout so PDFKit's automatic overflow pages are covered too.
+  watermarkAllPages() {
+    if (!this.options.watermark) return;
+    const range = this.document.bufferedPageRange();
+    for (let index = range.start; index < range.start + range.count; index++) {
+      this.document.switchToPage(index);
+      this.previewWatermark(true);
+    }
+  }
+
+  private previewWatermark(finalPass = false) {
+    if (!finalPass) return;
     if (!this.options.watermark) {
       return;
     }
@@ -3031,6 +3119,8 @@ async function fetchImageBuffer(url: string | null | undefined) {
   if (!url) {
     return null;
   }
+  // Anonymous snapshots contain server-normalized JPEG bytes, never remote URLs.
+  if (url.startsWith("data:image/jpeg;base64,") && url.length < 15_000_000) return Buffer.from(url.slice(23), "base64");
 
   try {
     const response = await fetch(url);

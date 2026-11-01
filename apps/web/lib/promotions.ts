@@ -1,0 +1,3 @@
+import type { PromotionConfig,PromotionSource,PromotionUsage } from '@artboard/promotion-renderer';
+export type PromotionVersion={id:string;status:'QUEUED'|'PROCESSING'|'READY'|'FAILED';versionNumber:number;config:PromotionConfig;contentKey:string;design:{template:string;version:string;color:string;slides:number};createdAt:string;completedAt:string|null;errorCode:string|null;downloadCount:number};
+export type PromotionData={source:PromotionSource;theme:'light'|'dark';draft:{config:PromotionConfig;revision:number;savedAt:string|null};usage:PromotionUsage;available:boolean;history:{items:PromotionVersion[];total:number;page:number;totalPages:number}};

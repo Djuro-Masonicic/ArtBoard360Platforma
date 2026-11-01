@@ -2,15 +2,18 @@ import type { ReactNode } from "react";
 
 import { NavigationButton } from "@/components/navigation-button";
 import { requireAdminSession } from "@/lib/admin-session";
-import { getAdminOpportunities, OpportunityType } from "@/services/opportunities";
+import { getAdminOpportunities, OpportunitySubmissionStatus, OpportunityType } from "@/services/opportunities";
 
 const opportunityTypeLabels: Record<OpportunityType, string> = {
   OPEN_CALL: "Open call",
   JOB: "Posao",
+  FREELANCE: "Honorarni angažman",
   RESIDENCY: "Rezidencija",
   EXHIBITION: "Izlozba",
   COLLABORATION: "Saradnja",
   GRANT: "Grant",
+  SCHOLARSHIP: "Stipendija",
+  WORKSHOP: "Radionica / edukacija",
   OTHER: "Ostalo",
 };
 
@@ -19,6 +22,7 @@ type AdminOpportunitiesPageProps = {
     page?: string;
     search?: string;
     type?: OpportunityType;
+    status?: OpportunitySubmissionStatus;
   }>;
 };
 
@@ -30,12 +34,14 @@ export default async function AdminOpportunitiesPage({ searchParams }: AdminOppo
   const safePage = Number.isFinite(page) && page > 0 ? page : 1;
   const search = resolvedSearchParams.search?.trim() ?? "";
   const type = resolvedSearchParams.type || undefined;
+  const status = resolvedSearchParams.status || undefined;
 
   const response = await getAdminOpportunities(token, {
     page: safePage,
     pageSize: 24,
     search: search || undefined,
     type,
+    status,
     includeDrafts: true,
   });
 
@@ -65,7 +71,7 @@ export default async function AdminOpportunitiesPage({ searchParams }: AdminOppo
       </section>
 
       <section className="rounded-[28px] border border-[#dde4ef] bg-white/95 px-6 py-6 shadow-[0_16px_44px_rgba(31,46,86,0.05)]">
-        <form className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px_160px]" method="GET">
+        <form className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_190px_190px_140px]" method="GET">
           <input
             className="h-12 rounded-full border border-[#d7dee9] bg-white px-5 text-[16px] text-[#2f3138] outline-none transition focus:border-[#182fc7]"
             defaultValue={search}
@@ -84,6 +90,16 @@ export default async function AdminOpportunitiesPage({ searchParams }: AdminOppo
                 {label}
               </option>
             ))}
+          </select>
+          <select
+            className="h-12 rounded-full border border-[#d7dee9] bg-white px-5 text-[16px] text-[#2f3138] outline-none transition focus:border-[#182fc7]"
+            defaultValue={status ?? ""}
+            name="status"
+          >
+            <option value="">Svi statusi</option>
+            <option value="PENDING">Čeka provjeru</option>
+            <option value="APPROVED">Odobreno</option>
+            <option value="REJECTED">Odbijeno</option>
           </select>
           <button
             className="inline-flex h-12 items-center justify-center rounded-full bg-[#182fc7] px-6 text-[16px] font-bold text-white transition hover:bg-[#1326a8]"
@@ -142,10 +158,12 @@ export default async function AdminOpportunitiesPage({ searchParams }: AdminOppo
                     </td>
                     <td className="px-6 py-4 align-middle">
                       <div className="flex flex-wrap gap-2">
-                        {opportunity.isDraft ? <AdminBadge tone="yellow">Draft</AdminBadge> : null}
+                        {opportunity.submissionStatus === "PENDING" ? <AdminBadge tone="yellow">Čeka provjeru</AdminBadge> : null}
+                        {opportunity.submissionStatus === "REJECTED" ? <AdminBadge tone="red">Odbijeno</AdminBadge> : null}
+                        {opportunity.isDraft && opportunity.submissionStatus === "APPROVED" ? <AdminBadge tone="yellow">Draft</AdminBadge> : null}
                         {opportunity.isArchived ? <AdminBadge tone="neutral">Arhiva</AdminBadge> : null}
                         {opportunity.isFeatured ? <AdminBadge tone="green">Istaknuto</AdminBadge> : null}
-                        {!opportunity.isDraft && !opportunity.isArchived ? (
+                        {!opportunity.isDraft && !opportunity.isArchived && opportunity.submissionStatus === "APPROVED" ? (
                           <AdminBadge tone="green">Objavljeno</AdminBadge>
                         ) : null}
                       </div>
@@ -182,12 +200,13 @@ function AdminBadge({
   tone,
 }: {
   children: ReactNode;
-  tone: "blue" | "green" | "neutral" | "yellow";
+  tone: "blue" | "green" | "neutral" | "red" | "yellow";
 }) {
   const toneClassName = {
     blue: "border-[#cbd6ff] bg-[#eef2ff] text-[#182fc7]",
     green: "border-[#bfe7ce] bg-[#f0fff5] text-[#137a3a]",
     neutral: "border-[#d7dee9] bg-[#f8fbff] text-[#5f6772]",
+    red: "border-[#ffc5cf] bg-[#fff1f4] text-[#b10f28]",
     yellow: "border-[#ffe4a3] bg-[#fff8e6] text-[#9a6a00]",
   }[tone];
 

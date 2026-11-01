@@ -1,389 +1,280 @@
-"use client";
+﻿"use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import {
-  ArrowRight,
-  BadgeCheck,
-  Bookmark,
-  Clock3,
-  Grid2X2,
-  List,
-  MapPin,
-  Search,
-} from "lucide-react";
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-
+import { ArrowRight, Bookmark, CalendarDays, Check, Clock3, Copy, Globe2, Grid2X2, Languages, List, MapPin, Search, SlidersHorizontal, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { OpportunityApplyButton } from "@/components/opportunity-apply-button";
-import type { Opportunity, OpportunityType } from "@/services/opportunities";
-
+import { ARTBOARD_DISCIPLINES } from "@/lib/artboard-disciplines";
+import { OPPORTUNITY_COUNTRIES } from "@/lib/opportunity-countries";
+import { compensationLabel, compensationValue, countryLabel, daysRemaining, deadlineLabel, documentLabels, feeLabel, isOpenOpportunity, languageLabels, locationLabel, normalizeOpportunityText, opportunityTypeLabels as typeLabels, opportunityTypeOrder as typeOrder, organizerTypeLabels, publishedLabel, workModeLabels } from "@/lib/opportunity-presentation";
+import type { Opportunity, OpportunityType, OpportunityWorkMode } from "@/services/opportunities";
 import styles from "./opportunities-page.module.css";
 
-const typeLabels: Record<OpportunityType, string> = {
-  OPEN_CALL: "Konkurs",
-  JOB: "Posao",
-  RESIDENCY: "Rezidencija",
-  EXHIBITION: "Izlozba",
-  COLLABORATION: "Saradnja",
-  GRANT: "Grant i stipendija",
-  OTHER: "Drugo",
-};
-
-const typeOrder: OpportunityType[] = [
-  "OPEN_CALL",
-  "RESIDENCY",
-  "JOB",
-  "COLLABORATION",
-  "EXHIBITION",
-  "GRANT",
-  "OTHER",
-];
-
-const covers = [
-  "/artboard-ad/pexels-bertellifotografia-33714927.jpg",
-  "/artboard-opportunities-optimized.webp",
-  "/artboard-opportunities-studio.png",
-  "/artboard-why/opportunities.webp",
-];
-
-type Tab = "all" | "matched" | "saved";
 type View = "list" | "grid";
+const storageKey = "artboard:saved-opportunities";
 
-function normalize(value: string) {
-  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-}
-
-function countryFrom(location: string | null) {
-  if (!location) return "Lokacija nije navedena";
-  const parts = location.split(",").map((part) => part.trim()).filter(Boolean);
-  return parts.at(-1) ?? location;
-}
-
-function formatDeadline(deadlineAt: string | null) {
-  if (!deadlineAt) return "Rok nije naveden";
-  const deadline = new Date(deadlineAt);
-  const days = Math.ceil((deadline.getTime() - Date.now()) / 86_400_000);
-  if (days >= 0 && days <= 7) return `Ističe za ${days === 1 ? "1 dan" : `${days} dana`}`;
-  return `Rok: ${new Intl.DateTimeFormat("sr-Latn-ME", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(deadline)}`;
-}
-
-function OpportunityAction({ opportunity }: { opportunity: Opportunity }) {
-  if (opportunity.contactEmail) {
-    return (
-      <OpportunityApplyButton
-        className={styles.primaryAction}
-        label="Prijavi se"
-        opportunityId={opportunity.id}
-      />
-    );
-  }
-  if (opportunity.applyUrl) {
-    return (
-      <a className={styles.primaryAction} href={opportunity.applyUrl} rel="noreferrer" target="_blank">
-        Pogledaj oglas <ArrowRight size={16} />
-      </a>
-    );
-  }
-  return (
-    <Link className={styles.primaryAction} href="/artboard/kontakt">
-      Pitaj za detalje <ArrowRight size={16} />
-    </Link>
-  );
-}
-
-export function OpportunitiesPage({
-  couldLoad,
-  opportunities,
-}: {
-  couldLoad: boolean;
-  opportunities: Opportunity[];
-}) {
+export function OpportunitiesPage({ couldLoad, opportunities, initialSelected = null, now }: { couldLoad: boolean; opportunities: Opportunity[]; initialSelected?: Opportunity | null; now: number }) {
   const boardRef = useRef<HTMLElement>(null);
-  const featuredRef = useRef<HTMLElement>(null);
   const [query, setQuery] = useState("");
-  const [heroCountry, setHeroCountry] = useState("");
-  const [type, setType] = useState<OpportunityType | "">("");
   const [country, setCountry] = useState("");
-  const [deadline, setDeadline] = useState<"all" | "7" | "30">("all");
+  const [types, setTypes] = useState<OpportunityType[]>([]);
+  const [discipline, setDiscipline] = useState("");
+  const [workMode, setWorkMode] = useState<OpportunityWorkMode | "">("");
+  const [deadline, setDeadline] = useState("all");
+  const [minAmount, setMinAmount] = useState(0);
   const [onlyPaid, setOnlyPaid] = useState(false);
-  const [tab, setTab] = useState<Tab>("all");
+  const [onlyYoung, setOnlyYoung] = useState(false);
+  const [tab, setTab] = useState<"all" | "saved">("all");
   const [sort, setSort] = useState("deadline");
   const [view, setView] = useState<View>("list");
   const [saved, setSaved] = useState<string[]>([]);
+  const [mobileFilters, setMobileFilters] = useState(false);
+  const [selected, setSelected] = useState<Opportunity | null>(null);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem("artboard:saved-opportunities");
-    if (stored) setSaved(JSON.parse(stored) as string[]);
+    function readSaved() {
+      try {
+        const value: unknown = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
+        setSaved(Array.isArray(value) ? value.filter((id): id is string => typeof id === "string") : []);
+      } catch { setSaved([]); }
+    }
+    readSaved();
+    window.addEventListener("storage", readSaved);
+    return () => window.removeEventListener("storage", readSaved);
   }, []);
+  useEffect(() => {
+    function readSelection() {
+      const identifier = new URL(window.location.href).searchParams.get("oglas");
+      setSelected(opportunities.find((item) => item.slug === identifier || item.id === identifier) ?? (initialSelected?.slug === identifier || initialSelected?.id === identifier ? initialSelected : null));
+    }
+    readSelection();
+    window.addEventListener("popstate", readSelection);
+    return () => window.removeEventListener("popstate", readSelection);
+  }, [opportunities, initialSelected]);
 
-  const countries = useMemo(
-    () => Array.from(new Set(opportunities.map((item) => countryFrom(item.location)))).sort(),
-    [opportunities],
-  );
-
-  const typeCounts = useMemo(
-    () => Object.fromEntries(typeOrder.map((itemType) => [itemType, opportunities.filter((item) => item.type === itemType).length])) as Record<OpportunityType, number>,
-    [opportunities],
-  );
-
-  const matchedIds = useMemo(
-    () => opportunities.filter((item) => item.isFeatured || item.isPaid).map((item) => item.id),
-    [opportunities],
-  );
+  const active = useMemo(() => opportunities.filter((item) => isOpenOpportunity(item, now)), [opportunities, now]);
+  const featured = useMemo(() => active.filter((item) => item.isFeatured).slice(0, 2), [active]);
+  const savedItems = opportunities.filter((item) => saved.includes(item.id));
+  const typeCounts = Object.fromEntries(typeOrder.map((type) => [type, active.filter((item) => item.type === type).length]));
+  const newThisWeek = active.filter((item) => now - new Date(item.createdAt).getTime() >= 0 && now - new Date(item.createdAt).getTime() <= 7 * 86400000).length;
 
   const filtered = useMemo(() => {
-    const now = Date.now();
-    return opportunities
-      .filter((item) => {
-        const haystack = normalize([item.title, item.organization, item.location, item.summary, item.description].filter(Boolean).join(" "));
-        if (query && !haystack.includes(normalize(query))) return false;
-        if (country && countryFrom(item.location) !== country) return false;
-        if (type && item.type !== type) return false;
-        if (onlyPaid && !item.isPaid) return false;
-        if (tab === "matched" && !matchedIds.includes(item.id)) return false;
-        if (tab === "saved" && !saved.includes(item.id)) return false;
-        if (deadline !== "all") {
-          if (!item.deadlineAt) return false;
-          const remaining = (new Date(item.deadlineAt).getTime() - now) / 86_400_000;
-          if (remaining < 0 || remaining > Number(deadline)) return false;
-        }
-        return true;
-      })
-      .sort((a, b) => {
-        if (sort === "new") return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        if (sort === "paid") return Number(b.isPaid) - Number(a.isPaid);
-        if (sort === "match") return Number(b.isFeatured) - Number(a.isFeatured);
-        const aDate = a.deadlineAt ? new Date(a.deadlineAt).getTime() : Number.MAX_SAFE_INTEGER;
-        const bDate = b.deadlineAt ? new Date(b.deadlineAt).getTime() : Number.MAX_SAFE_INTEGER;
-        return aDate - bDate;
-      });
-  }, [country, deadline, matchedIds, onlyPaid, opportunities, query, saved, sort, tab, type]);
+    const base = tab === "saved" ? opportunities.filter((item) => saved.includes(item.id)) : active;
+    return base.filter((item) => {
+      const text = normalizeOpportunityText([item.title, item.organization, item.location, item.city, item.summary, item.description, ...item.disciplines].filter(Boolean).join(" "));
+      if (query && !text.includes(normalizeOpportunityText(query.trim()))) return false;
+      if (country === "REG" && item.workMode !== "REMOTE" && item.countryCode !== "REG") return false;
+      if (country && country !== "REG" && (item.countryCode ? item.countryCode !== country : !normalizeOpportunityText(item.location ?? "").includes(normalizeOpportunityText(countryLabel(country))))) return false;
+      if (types.length && !types.includes(item.type)) return false;
+      if (discipline && !item.disciplines.includes(discipline)) return false;
+      if (workMode && item.workMode !== workMode) return false;
+      if (onlyPaid && (item.compensationKind === "NONE" || (!item.isPaid && Number(item.compensationAmount ?? 0) <= 0))) return false;
+      if (onlyYoung && (item.maxAge === null || item.maxAge > 35)) return false;
+      if (minAmount > 0 && (item.compensationCurrency !== "EUR" || Number(item.compensationAmount ?? 0) < minAmount || item.compensationKind === "NONE")) return false;
+      const days = daysRemaining(item, now);
+      return deadline === "all" || (days !== null && days >= 0 && days <= Number(deadline));
+    }).sort((a, b) => {
+      if (sort === "new") return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      if (sort === "amount") return (b.compensationCurrency === "EUR" ? Number(b.compensationAmount ?? 0) : 0) - (a.compensationCurrency === "EUR" ? Number(a.compensationAmount ?? 0) : 0);
+      return (daysRemaining(a, now) ?? Infinity) - (daysRemaining(b, now) ?? Infinity) || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  }, [active, country, deadline, discipline, minAmount, now, onlyPaid, onlyYoung, opportunities, query, saved, sort, tab, types, workMode]);
 
-  const featured = useMemo(() => {
-    const prioritized = [...opportunities].sort((a, b) => Number(b.isFeatured) - Number(a.isFeatured));
-    return prioritized.slice(0, 2);
-  }, [opportunities]);
-
-  const newThisWeek = opportunities.filter(
-    (item) => Date.now() - new Date(item.createdAt).getTime() <= 7 * 86_400_000,
-  ).length;
-
-  function submitSearch(event: FormEvent) {
-    event.preventDefault();
-    setCountry(heroCountry);
-    boardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-
+  const filters: { label: string; clear: () => void }[] = [
+    ...(query ? [{ label: query, clear: () => setQuery("") }] : []),
+    ...(country ? [{ label: countryLabel(country), clear: () => setCountry("") }] : []),
+    ...types.map((type) => ({ label: typeLabels[type], clear: () => setTypes((current) => current.filter((value) => value !== type)) })),
+    ...(discipline ? [{ label: discipline, clear: () => setDiscipline("") }] : []),
+    ...(workMode ? [{ label: workModeLabels[workMode], clear: () => setWorkMode("") }] : []),
+    ...(deadline !== "all" ? [{ label: `U narednih ${deadline} dana`, clear: () => setDeadline("all") }] : []),
+    ...(minAmount ? [{ label: `Od ${minAmount} €`, clear: () => setMinAmount(0) }] : []),
+    ...(onlyPaid ? [{ label: "Plaćene prilike", clear: () => setOnlyPaid(false) }] : []),
+    ...(onlyYoung ? [{ label: "Za mlade", clear: () => setOnlyYoung(false) }] : []),
+  ];
+  function clearFilters() { setQuery(""); setCountry(""); setTypes([]); setDiscipline(""); setWorkMode(""); setDeadline("all"); setMinAmount(0); setOnlyPaid(false); setOnlyYoung(false); }
   function toggleSaved(id: string) {
     setSaved((current) => {
-      const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id];
-      window.localStorage.setItem("artboard:saved-opportunities", JSON.stringify(next));
+      const next = current.includes(id) ? current.filter((value) => value !== id) : [...current, id];
+      try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch { /* Storage may be unavailable. */ }
       return next;
     });
   }
+  function openOpportunity(item: Opportunity | null) {
+    setSelected(item);
+    const url = new URL(window.location.href);
+    if (item) url.searchParams.set("oglas", item.slug); else url.searchParams.delete("oglas");
+    window.history.replaceState(window.history.state, "", url);
+  }
+  function submitSearch(event: FormEvent) { event.preventDefault(); boardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }
 
-  return (
-    <main className={styles.page}>
-      <section className={styles.hero}>
-        <div className={`${styles.wrap} ${styles.heroGrid}`}>
-          <div className={styles.heroCopy}>
-            <p className={styles.eyebrow}><i />ArtBoard oglasi</p>
-            <h1>Prilike za umjetnike <span>u cijelom regionu.</span></h1>
-            <p className={styles.lead}>Konkursi, rezidencije, poslovi i saradnje na jednom mjestu. Provjereni, filtrirani i usklađeni sa tvojim profilom.</p>
-            <form className={styles.searchBar} onSubmit={submitSearch}>
-              <label>
-                <Search aria-hidden="true" size={20} />
-                <input aria-label="Pretraži oglase" onChange={(event) => setQuery(event.target.value)} placeholder="Pretraži: ilustracija, mural, rezidencija..." value={query} />
-              </label>
-              <select aria-label="Izaberi zemlju" onChange={(event) => setHeroCountry(event.target.value)} value={heroCountry}>
-                <option value="">Sve zemlje</option>
-                {countries.map((item) => <option key={item}>{item}</option>)}
-              </select>
-              <button type="submit">Pretraži</button>
-            </form>
-            <p className={styles.searchHint}>Pretraga radi i bez kvačica: "cetinje", "crtez", "skolska".</p>
-          </div>
-          <div className={styles.liveStats}>
-            <p className={styles.liveLabel}><i />Uživo na tabli</p>
-            <div><strong>{opportunities.length}</strong><span>Aktivnih prilika</span></div>
-            <div><strong>{newThisWeek}</strong><span>Novo ove sedmice</span></div>
-          </div>
+  return <div className={styles.page}>
+    <section className={styles.hero}>
+      <div className={styles.heroGrid}>
+        <div className={styles.heroCopy}>
+          <h1>Prilike za umjetnike <span>u cijelom regionu.</span></h1>
+          <p className={styles.lead}>Pronađi konkurse, poslove i saradnje na jednom mjestu. Izaberi prilike koje odgovaraju tvom radu i prijavi se direktno organizatoru, bez komplikovanih procedura.</p>
+          <form className={styles.searchBar} onSubmit={submitSearch} role="search">
+            <label className={styles.searchField}><Search size={18} aria-hidden="true" /><input aria-label="Pretraga oglasa" placeholder="Ilustracija, izložba, Podgorica" value={query} onChange={(event) => setQuery(event.target.value)} /></label>
+            <label className={styles.countryField}><MapPin size={17} aria-hidden="true" /><CountrySelect label="Pretraži po državi" value={country} onChange={setCountry} /></label>
+            <button type="submit"><Search size={15} aria-hidden="true" />Pretraži</button>
+          </form>
         </div>
-      </section>
-
-      {featured.length > 0 ? (
-        <section className={styles.featuredSection} ref={featuredRef}>
-          <div className={styles.wrap}>
-            <p className={styles.eyebrow}><i />Istaknute prilike</p>
-            <h2 className={styles.sectionTitle}>Izdvojeno <span>ove sedmice.</span></h2>
-            <div className={styles.featuredGrid}>
-              {featured.map((item, index) => (
-                <article className={styles.featuredCard} key={item.id}>
-                  <div className={styles.featuredMedia}>
-                    <Image alt="" fill priority={index === 0} sizes="(max-width: 800px) 100vw, 50vw" src={covers[index % covers.length] ?? covers[0]!} />
-                    <div className={styles.mediaBadges}>
-                      <span className={styles.darkBadge}><i />{typeLabels[item.type]}</span>
-                      <span className={styles.whiteBadge}>{formatDeadline(item.deadlineAt)}</span>
-                    </div>
-                  </div>
-                  <div className={styles.featuredBody}>
-                    <h3>{item.title}</h3>
-                    <p className={styles.organization}>{item.organization ?? "ArtBoard partner"} · {item.location ?? "Online"}</p>
-                    <p>{item.summary ?? item.description}</p>
-                    <div className={styles.featuredBottom}>
-                      <div><small>{item.isPaid ? "Plaćena prilika" : "Uslovi prijave"}</small><strong>{item.isPaid ? "Naknada uključena" : "Detalji u oglasu"}</strong></div>
-                      <OpportunityAction opportunity={item} />
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-      ) : null}
-
-      <section className={styles.boardSection} id="tabla" ref={boardRef}>
-        <div className={`${styles.wrap} ${styles.boardLayout}`}>
-          <aside className={styles.filters}>
-            <h2>Filteri</h2>
-            <FilterLabel>Država</FilterLabel>
-            <select onChange={(event) => setCountry(event.target.value)} value={country}>
-              <option value="">Sve zemlje</option>
-              {countries.map((item) => <option key={item}>{item}</option>)}
-            </select>
-
-            <FilterLabel>Vrsta prilike</FilterLabel>
-            <div className={styles.typePills}>
-              {typeOrder.map((itemType) => (
-                <button className={type === itemType ? styles.activeFilter : ""} key={itemType} onClick={() => setType(type === itemType ? "" : itemType)} type="button">
-                  <i data-type={itemType} />{typeLabels[itemType]} <span>{typeCounts[itemType]}</span>
-                </button>
-              ))}
-            </div>
-
-            <FilterLabel>Rok za prijavu</FilterLabel>
-            <div className={styles.segmented}>
-              {(["all", "7", "30"] as const).map((value) => (
-                <button className={deadline === value ? styles.selectedSegment : ""} key={value} onClick={() => setDeadline(value)} type="button">
-                  {value === "all" ? "Svi" : `${value} dana`}
-                </button>
-              ))}
-            </div>
-
-            <button className={styles.toggleRow} onClick={() => setOnlyPaid((value) => !value)} type="button">
-              <span><strong>Samo plaćene prilike</strong><small>Honorar, nagrada ili stipendija</small></span>
-              <i className={onlyPaid ? styles.toggleOn : ""}><b /></i>
-            </button>
-          </aside>
-
-          <div className={styles.results}>
-            <div className={styles.tabs}>
-              <TabButton active={tab === "all"} count={opportunities.length} label="Sve prilike" onClick={() => setTab("all")} />
-              <TabButton active={tab === "matched"} count={matchedIds.length} label="Za tebe" onClick={() => setTab("matched")} />
-              <TabButton active={tab === "saved"} count={saved.length} label="Sačuvano" onClick={() => setTab("saved")} />
-            </div>
-            <div className={styles.resultsToolbar}>
-              <strong>{filtered.length} {filtered.length === 1 ? "prilika" : "prilike"}</strong>
-              <div>
-                <select aria-label="Sortiraj oglase" onChange={(event) => setSort(event.target.value)} value={sort}>
-                  <option value="deadline">Rok: najbliži prvo</option>
-                  <option value="new">Najnovije objavljeno</option>
-                  <option value="paid">Plaćene prvo</option>
-                  <option value="match">Najbolje poklapanje</option>
-                </select>
-                <span className={styles.viewToggle}>
-                  <button aria-label="Prikaži kao listu" className={view === "list" ? styles.activeView : ""} onClick={() => setView("list")} type="button"><List size={18} /></button>
-                  <button aria-label="Prikaži kao mrežu" className={view === "grid" ? styles.activeView : ""} onClick={() => setView("grid")} type="button"><Grid2X2 size={17} /></button>
-                </span>
-              </div>
-            </div>
-
-            {!couldLoad ? <p className={styles.notice}>Oglasi trenutno nijesu dostupni. Pokušaj ponovo za nekoliko minuta.</p> : null}
-            <div className={`${styles.cards} ${view === "grid" ? styles.cardGrid : ""}`}>
-              {filtered.map((item, index) => (
-                <OpportunityCard
-                  index={index}
-                  isSaved={saved.includes(item.id)}
-                  key={item.id}
-                  opportunity={item}
-                  toggleSaved={toggleSaved}
-                  view={view}
-                />
-              ))}
-            </div>
-            {couldLoad && filtered.length === 0 ? (
-              <div className={styles.empty}><Search size={26} /><h3>Nema oglasa za ove filtere.</h3><p>Promijeni kriterijum ili pogledaj sve aktivne prilike.</p><button onClick={() => { setQuery(""); setCountry(""); setType(""); setDeadline("all"); setOnlyPaid(false); setTab("all"); }} type="button">Očisti filtere</button></div>
-            ) : null}
-          </div>
-        </div>
-      </section>
-
-      <section className={styles.organizers} id="organizatori">
-        <div className={styles.stars} />
-        <div className={styles.wrap}>
-          <p className={styles.darkEyebrow}><i />Za organizatore</p>
-          <h2>Tražiš umjetnike? <span>Objavi oglas besplatno.</span></h2>
-          <p className={styles.organizerLead}>Galerije, festivali, institucije, agencije i kompanije iz cijelog regiona objavljuju poziv za nekoliko minuta. Svaki oglas prolazi kratku provjeru prije objave.</p>
-          <div className={styles.steps}>
-            <OrganizerStep number="01" title="Strukturisan obrazac">Vrsta, rok, naknada i uslovi, sve u poljima po kojima umjetnici filtriraju.</OrganizerStep>
-            <OrganizerStep number="02" title="Provjera za 24 sata">Tim ArtBoarda provjerava organizatora i uslove prije nego što oglas postane javan.</OrganizerStep>
-            <OrganizerStep number="03" title="Uredne prijave">Prijave stižu u istom formatu, sa pregledom kandidata i njihovih portfolija.</OrganizerStep>
-          </div>
-          <div className={styles.organizerActions}>
-            <a href="mailto:info@artstudio360.me?subject=Objava oglasa na ArtBoardu">Objavi oglas besplatno</a>
-            <button onClick={() => featuredRef.current?.scrollIntoView({ behavior: "smooth" })} type="button">Pogledaj primjer oglasa</button>
-          </div>
-        </div>
-      </section>
-    </main>
-  );
-}
-
-function FilterLabel({ children }: { children: React.ReactNode }) {
-  return <p className={styles.filterLabel}>{children}</p>;
-}
-
-function TabButton({ active, count, label, onClick }: { active: boolean; count: number; label: string; onClick: () => void }) {
-  return <button className={active ? styles.activeTab : ""} onClick={onClick} type="button">{label}<span>{count}</span></button>;
-}
-
-function OrganizerStep({ children, number, title }: { children: React.ReactNode; number: string; title: string }) {
-  return <article><strong>{number}</strong><h3>{title}</h3><p>{children}</p></article>;
-}
-
-function OpportunityCard({ index, isSaved, opportunity, toggleSaved, view }: { index: number; isSaved: boolean; opportunity: Opportunity; toggleSaved: (id: string) => void; view: View }) {
-  return (
-    <article className={`${styles.opportunityCard} ${view === "grid" ? styles.gridCard : ""}`}>
-      {(opportunity.isFeatured || view === "grid") ? (
-        <div className={styles.cardMedia}>
-          <Image alt="" fill sizes={view === "grid" ? "(max-width: 800px) 100vw, 40vw" : "70vw"} src={covers[(index + 1) % covers.length] ?? covers[0]!} />
-          {opportunity.isFeatured ? <span><i />Istaknuto</span> : null}
-        </div>
-      ) : null}
-      <div className={styles.cardContent}>
-        <div className={styles.cardBadges}>
-          <span className={styles.typeBadge}><i />{typeLabels[opportunity.type]}</span>
-          <span className={styles.deadlineBadge}><Clock3 size={14} />{formatDeadline(opportunity.deadlineAt)}</span>
-          <button aria-label={isSaved ? "Ukloni iz sačuvanih" : "Sačuvaj oglas"} className={isSaved ? styles.savedButton : ""} onClick={() => toggleSaved(opportunity.id)} title={isSaved ? "Ukloni iz sačuvanih" : "Sačuvaj"} type="button"><Bookmark fill={isSaved ? "currentColor" : "none"} size={19} /></button>
-        </div>
-        <div className={styles.cardDetails}>
-          <div className={styles.cardMain}>
-            <h3>{opportunity.title}</h3>
-            <p className={styles.cardOrganization}>{opportunity.organization ?? "Organizator nije naveden"} {opportunity.organization ? <BadgeCheck aria-label="Verifikovan organizator" size={17} /> : null}</p>
-            <p className={styles.cardLocation}><MapPin size={16} />{opportunity.location ?? "Online / lokacija nije navedena"}</p>
-            <p className={styles.cardSummary}>{opportunity.summary ?? opportunity.description}</p>
-          </div>
-          <div className={styles.cardSide}>
-            <small>{opportunity.isPaid ? "Plaćena prilika" : "Uslovi prijave"}</small>
-            <strong>{opportunity.isPaid ? "Naknada uključena" : "Detalji u oglasu"}</strong>
-            <OpportunityAction opportunity={opportunity} />
-          </div>
+        <div className={styles.liveStats}>
+          <p className={styles.liveLabel}><i />Uživo na tabli</p>
+          <div><strong>{couldLoad ? active.length : "—"}</strong><span>Aktivnih prilika</span></div>
+          <div><strong>{couldLoad ? newThisWeek : "—"}</strong><span>Novo ove sedmice</span></div>
         </div>
       </div>
-    </article>
-  );
+    </section>
+    {featured.length > 0 && <section className={styles.featuredSection} aria-labelledby="featured-title"><div className={styles.wrap}>
+      <h2 className={styles.sectionTitle} id="featured-title">Izdvojeno <span>ove sedmice.</span></h2>
+      <div className={styles.featuredGrid}>{featured.map((item) => <article className={styles.featuredCard} key={item.id}>
+        <OpportunityCover item={item} className={styles.featuredMedia}><div className={styles.mediaBadges}><span className={styles.darkBadge}><i data-type={item.type} />{typeLabels[item.type]}</span><span className={styles.whiteBadge}>{deadlineLabel(item, now)}</span></div></OpportunityCover>
+        <div className={styles.featuredBody}>
+          <h3><button className={styles.cardTitle} onClick={() => openOpportunity(item)} type="button">{item.title}</button></h3>
+          <p className={styles.organization}>{item.organization || "Organizator nije naveden"} · {locationLabel(item)}</p>
+          <p className={styles.featuredSummary}>{item.summary || item.description}</p>
+          <div className={styles.featuredBottom}><div><small>{compensationLabel(item)}</small><strong>{compensationValue(item)}</strong></div><span className={styles.featuredOpenButton}>Pogledaj oglas <ArrowRight size={15} /></span></div>
+        </div>
+      </article>)}</div>
+    </div></section>}
+
+    <section className={styles.boardSection} id="tabla" ref={boardRef} aria-label="Oglasna tabla"><div className={`${styles.wrap} ${styles.boardLayout}`}>
+      <button aria-expanded={mobileFilters} aria-controls="opportunity-filters" className={styles.mobileFilterButton} onClick={() => setMobileFilters((current) => !current)} type="button"><SlidersHorizontal size={18} />Filteri {filters.length > 0 && <span>{filters.length}</span>}{mobileFilters ? <X size={18} /> : null}</button>
+      <aside className={`${styles.filters} ${mobileFilters ? styles.filtersOpen : ""}`} id="opportunity-filters" aria-label="Filteri oglasa" data-lenis-prevent>
+        <div className={styles.filterHeader}><h2>Filteri</h2><button disabled={!filters.length} onClick={clearFilters} type="button">Očisti sve</button></div>
+        <FilterGroup label="Država"><CountrySelect label="Filtriraj po državi" value={country} onChange={setCountry} /></FilterGroup>
+        <FilterGroup label="Vrsta prilike"><div className={styles.typePills}>{typeOrder.map((type) => <button aria-pressed={types.includes(type)} className={types.includes(type) ? styles.activeFilter : ""} key={type} onClick={() => setTypes((current) => current.includes(type) ? current.filter((value) => value !== type) : [...current, type])} type="button">{typeLabels[type]}<span>{typeCounts[type]}</span></button>)}</div></FilterGroup>
+        <FilterGroup label="Disciplina"><select aria-label="Disciplina" value={discipline} onChange={(event) => setDiscipline(event.target.value)}><option value="">Sve discipline</option>{ARTBOARD_DISCIPLINES.map(({ name }) => <option key={name}>{name}</option>)}</select></FilterGroup>
+        <FilterGroup label="Način rada"><div className={`${styles.segmented} ${styles.workModes}`}>{(["", "ONSITE", "REMOTE", "HYBRID"] as const).map((value) => <button aria-pressed={workMode === value} className={workMode === value ? styles.selectedSegment : ""} key={value} onClick={() => setWorkMode(value)} type="button">{value ? workModeLabels[value] : "Sve"}</button>)}</div></FilterGroup>
+        <FilterGroup label="Rok za prijavu"><div className={styles.segmented}>{["all", "7", "30"].map((value) => <button aria-pressed={deadline === value} className={deadline === value ? styles.selectedSegment : ""} key={value} onClick={() => setDeadline(value)} type="button">{value === "all" ? "Svi" : `${value} dana`}</button>)}</div></FilterGroup>
+        <FilterGroup label="Minimalna naknada (EUR)"><div className={styles.rangeLabel}><output htmlFor="minimum-compensation">{minAmount ? `${minAmount.toLocaleString("sr-Latn-ME")} €` : "Bilo koja"}</output></div><input aria-label="Minimalna naknada u eurima" id="minimum-compensation" type="range" min="0" max="5000" step="100" value={minAmount} onChange={(event) => setMinAmount(Number(event.target.value))} /></FilterGroup>
+        <Toggle checked={onlyPaid} onChange={setOnlyPaid} title="Samo plaćene prilike" description="Honorar, nagrada ili stipendija" />
+        <Toggle checked={onlyYoung} onChange={setOnlyYoung} title="Za mlade umjetnike" description="Pozivi sa granicom do 35 godina" />
+      </aside>
+      <div className={styles.results}>
+        <div className={styles.tabs} role="group" aria-label="Prikaz prilika"><button aria-pressed={tab === "all"} className={tab === "all" ? styles.activeTab : ""} onClick={() => setTab("all")} type="button">Sve prilike <span>{active.length}</span></button><button aria-pressed={tab === "saved"} className={tab === "saved" ? styles.activeTab : ""} onClick={() => setTab("saved")} type="button"><Bookmark size={14} />Sačuvano <span>{savedItems.length}</span></button></div>
+        <div className={styles.resultsToolbar}>
+          <strong className={styles.resultCount} aria-live="polite">{filtered.length} {filtered.length === 1 ? "prilika" : filtered.length > 1 && filtered.length < 5 ? "prilike" : "prilika"}</strong>
+          <div className={styles.resultControls}><select aria-label="Sortiraj oglase" value={sort} onChange={(event) => setSort(event.target.value)}><option value="deadline">Rok: najbliži prvo</option><option value="new">Najnovije objavljeno</option><option value="amount">Najveća naknada (EUR)</option></select><div className={styles.viewToggle}><button type="button" aria-label="Prikaži kao listu" aria-pressed={view === "list"} className={view === "list" ? styles.activeView : ""} onClick={() => setView("list")}><List size={18} /></button><button type="button" aria-label="Prikaži kao mrežu" aria-pressed={view === "grid"} className={view === "grid" ? styles.activeView : ""} onClick={() => setView("grid")}><Grid2X2 size={17} /></button></div></div>
+        </div>
+        {filters.length > 0 && <div className={styles.filterChips}>{filters.map(({ label, clear }, index) => <button key={`${index}-${label}`} type="button" onClick={clear}>{label}<X size={12} /></button>)}</div>}
+        {!couldLoad && <div className={styles.empty} role="status"><h3>Oglasi trenutno nijesu dostupni.</h3><p>Pokušaj ponovo za nekoliko minuta.</p><button type="button" onClick={() => window.location.reload()}>Pokušaj ponovo</button></div>}
+        <div className={`${styles.cards} ${view === "grid" ? styles.cardGrid : ""}`}>{filtered.map((item) => <OpportunityCard key={item.id} item={item} now={now} view={view} isSaved={saved.includes(item.id)} onOpen={openOpportunity} onSave={toggleSaved} />)}</div>
+        {couldLoad && filtered.length === 0 && <div className={styles.empty}><Search size={28} /><h3>{tab === "saved" && !savedItems.length ? "Tvoje sačuvane prilike su ovdje." : "Trenutno nema prilika za ove filtere."}</h3><p>{tab === "saved" && !savedItems.length ? "Sačuvaj zanimljiv oglas klikom na oznaku u njegovom uglu." : "Promijeni filtere ili pogledaj sve dostupne prilike."}</p><button onClick={() => { clearFilters(); setTab("all"); }} type="button">Pogledaj sve prilike</button></div>}
+      </div>
+    </div></section>
+
+    <section className={styles.organizers} id="organizatori"><div className={styles.wrap}>
+      <p className={styles.darkEyebrow}><i />Za organizatore</p><h2>Tražiš umjetnike?<span>Objavi oglas besplatno.</span></h2>
+      <p className={styles.organizerLead}>Bilo da si pojedinac, neformalna grupa ili organizacija, predstavi svoju priliku umjetnicima besplatno. Popuni kratku formu, a nakon provjere oglas postaje dostupan ArtBoard zajednici.</p>
+      <div className={styles.steps}>{[{ title: "Popuni formu", text: "Unesi podatke o prilici, uslovima i prijavi." }, { title: "Pošalji na provjeru", text: "ArtBoard tim provjerava oglas prije objave." }, { title: "Poveži se sa umjetnicima", text: "Umjetnici vide odobren oglas i javljaju se tebi." }].map(({ title, text }, index) => <article key={title}><h3><span>0{index + 1}</span>{title}</h3><p>{text}</p></article>)}</div>
+      <Link className={styles.organizerButton} href="/oglasi/objavi">Objavi oglas besplatno <ArrowRight size={16} /></Link>
+    </div></section>
+    {selected && createPortal(<OpportunityDrawer key={selected.id} item={selected} now={now} isSaved={saved.includes(selected.id)} onSave={toggleSaved} onClose={() => openOpportunity(null)} />, document.body)}
+  </div>;
+}
+
+function CountrySelect({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  return <select aria-label={label} value={value} onChange={(event) => onChange(event.target.value)}>{OPPORTUNITY_COUNTRIES.map(({ code, name }) => <option key={code} value={code}>{name}</option>)}</select>;
+}
+function FilterGroup({ label, children }: { label: string; children: ReactNode }) { return <div className={styles.filterGroup}><p className={styles.filterLabel}>{label}</p>{children}</div>; }
+function Toggle({ checked, description, onChange, title }: { checked: boolean; description: string; onChange: (value: boolean) => void; title: string }) {
+  return <button className={styles.toggleRow} role="switch" aria-checked={checked} onClick={() => onChange(!checked)} type="button"><span><strong>{title}</strong><small>{description}</small></span><i className={checked ? styles.toggleOn : ""}><b /></i></button>;
+}
+function OpportunityCover({ item, className, children }: { item: Opportunity; className?: string; children?: ReactNode }) {
+  const [failed, setFailed] = useState(false);
+  const src = item.coverImageUrl && !failed ? item.coverImageUrl : item.type === "RESIDENCY" ? "/opportunities/ribbons-ocean.svg" : "/opportunities/ribbons-rose.svg";
+  return <div className={className}><img alt="" src={src} loading="lazy" onError={() => setFailed(true)} />{children}</div>;
+}
+function Badges({ item, now }: { item: Opportunity; now: number }) {
+  const days = daysRemaining(item, now);
+  const isNew = now - new Date(item.createdAt).getTime() >= 0 && now - new Date(item.createdAt).getTime() <= 7 * 86400000;
+  return <><span className={styles.typeBadge} data-type={item.type}><i />{typeLabels[item.type]}</span><span className={`${styles.deadlineBadge} ${days !== null && days >= 0 && days <= 7 ? styles.urgent : ""}`}><Clock3 size={13} />{deadlineLabel(item, now)}</span>{item.isDemo ? <span className={styles.demoBadge}>Primjer oglasa</span> : isNew ? <span className={styles.newBadge}>Novo</span> : null}</>;
+}
+function OpportunityCard({ item, now, view, isSaved, onOpen, onSave }: { item: Opportunity; now: number; view: View; isSaved: boolean; onOpen: (item: Opportunity) => void; onSave: (id: string) => void }) {
+  return <article className={`${styles.opportunityCard} ${item.isFeatured ? styles.featuredOpportunity : ""}`} data-opportunity-id={item.id}>
+    {(item.isFeatured || (view === "grid" && item.coverImageUrl)) && <OpportunityCover item={item} className={styles.cardMedia}>{item.isFeatured && <span className={styles.featuredBadge}><i />Istaknuto</span>}</OpportunityCover>}
+    <div className={styles.cardContent}><div className={styles.cardBadges}><Badges item={item} now={now} /><button className={`${styles.saveButton} ${isSaved ? styles.savedButton : ""}`} aria-label={isSaved ? "Ukloni iz sačuvanih" : "Sačuvaj oglas"} aria-pressed={isSaved} onClick={() => onSave(item.id)} type="button"><Bookmark size={18} fill={isSaved ? "currentColor" : "none"} /></button></div>
+      <div className={styles.cardDetails}><div className={styles.cardMain}>
+        <h3><button className={styles.cardTitle} onClick={() => onOpen(item)} type="button">{item.title}</button></h3>
+        <p className={styles.cardOrganization}>{item.organization || "Organizator nije naveden"}{item.organizerType && <span> · {organizerTypeLabels[item.organizerType]}</span>}</p>
+        <div className={styles.cardFacts}><span><MapPin size={15} />{locationLabel(item)}</span>{item.workMode && <span><Globe2 size={15} />{workModeLabels[item.workMode]}</span>}{item.applicationLanguages.length > 0 && <span><Languages size={15} />{item.applicationLanguages.map((code) => languageLabels[code] || code).join(", ")}</span>}</div>
+        {item.disciplines.length > 0 && <div className={styles.disciplineTags}>{item.disciplines.slice(0, 3).map((name) => <span key={name}>{name}</span>)}{item.disciplines.length > 3 && <span title={item.disciplines.slice(3).join(", ")}>+{item.disciplines.length - 3}</span>}</div>}
+      </div><div className={styles.cardSide}><small>{compensationLabel(item)}</small><strong>{compensationValue(item)}</strong>{feeLabel(item) && <span>{feeLabel(item)}</span>}</div></div>
+    </div>
+  </article>;
+}
+function Meta({ label, children }: { label: string; children: ReactNode }) { return <div className={styles.drawerMetaCard}><small>{label}</small><strong>{children}</strong></div>; }
+function ApplicationAction({ item, now }: { item: Opportunity; now: number }) {
+  if (item.isDemo) return <span className={styles.disabledAction} aria-disabled="true">Demonstracioni oglas</span>;
+  if (!isOpenOpportunity(item, now)) return <span className={styles.disabledAction}>Prijave su završene</span>;
+  if (item.applyUrl && (item.applicationMethod === "LINK" || !item.applicationMethod)) return <a className={styles.primaryAction} href={item.applyUrl} target="_blank" rel="noopener noreferrer">Prijavi se putem linka <ArrowRight size={16} /></a>;
+  if (item.applyEmail) return <a className={styles.primaryAction} href={`mailto:${item.applyEmail}?subject=${encodeURIComponent(`Prijava: ${item.title}`)}`}>Prijavi se e-mailom <ArrowRight size={16} /></a>;
+  if (item.hasArtboardApplication) return <OpportunityApplyButton className={styles.primaryAction} label="Prijavi se" opportunityId={item.id} />;
+  return <Link className={styles.primaryAction} href="/artboard/kontakt">Pitaj za detalje <ArrowRight size={16} /></Link>;
+}
+function calendarDownload(item: Opportunity) {
+  if (!item.deadlineAt || item.isOpenEnded) return null;
+  const start = new Date(item.deadlineAt);
+  const end = new Date(start.getTime() + 86400000);
+  const date = (value: Date) => value.toISOString().slice(0, 10).replaceAll("-", "");
+  const escape = (value: string) => value.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;").replace(/\r/g, "");
+  const content = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//ArtBoard//Oglasi//ME", "BEGIN:VEVENT", `UID:${item.id}@artboard`, `DTSTAMP:${new Date(item.createdAt).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "")}`, `DTSTART;VALUE=DATE:${date(start)}`, `DTEND;VALUE=DATE:${date(end)}`, `SUMMARY:${escape(`Rok za prijavu: ${item.title}`)}`, "END:VEVENT", "END:VCALENDAR"].join("\r\n");
+  return `data:text/calendar;charset=utf-8,${encodeURIComponent(content)}`;
+}
+function OpportunityDrawer({ item, now, isSaved, onSave, onClose }: { item: Opportunity; now: number; isSaved: boolean; onSave: (id: string) => void; onClose: () => void }) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState(false);
+  const [views, setViews] = useState(item.viewCount);
+  const calendar = calendarDownload(item);
+  const age = item.maxAge ? `Do ${item.maxAge} godina` : "Bez navedene starosne granice";
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    const focused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previous = document.body.style.overflow;
+    const htmlOverflow = document.documentElement.style.overflow;
+    dialog?.showModal();
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    return () => { dialog?.close(); document.body.style.overflow = previous; document.documentElement.style.overflow = htmlOverflow; focused?.focus({ preventScroll: true }); };
+  }, []);
+  useEffect(() => {
+    if (item.isDemo) return;
+    const key = `artboard:opportunity-view:${item.id}`;
+    try { if (sessionStorage.getItem(key)) return; sessionStorage.setItem(key, "1"); } catch { return; }
+    fetch(`/api/opportunities/${item.id}/view`, { method: "POST" }).then((response) => {
+      if (response.ok) setViews((value) => value + 1); else sessionStorage.removeItem(key);
+    }).catch(() => { try { sessionStorage.removeItem(key); } catch {} });
+  }, [item.id, item.isDemo]);
+  async function copyLink() {
+    try { await navigator.clipboard.writeText(`${window.location.origin}/oglasi?oglas=${encodeURIComponent(item.slug)}`); setCopied(true); setCopyError(false); } catch { setCopyError(true); }
+  }
+  return <dialog ref={dialogRef} className={styles.drawer} aria-labelledby="opportunity-title" data-lenis-prevent onCancel={(event) => { event.preventDefault(); onClose(); }} onClick={(event) => { if (event.target === event.currentTarget && event.clientX < event.currentTarget.getBoundingClientRect().left) onClose(); }}>
+    <header className={styles.drawerHeader}><div className={styles.drawerHeaderBadges}><Badges item={item} now={now} /></div><button type="button" aria-label="Zatvori oglas" onClick={onClose} className={styles.drawerClose} autoFocus><X size={21} /></button></header>
+    <div className={styles.drawerContent}>
+      <h2 id="opportunity-title">{item.title}</h2><p className={styles.drawerOrganization}>{item.organization || "Organizator nije naveden"}{item.organizerType && <span> · {organizerTypeLabels[item.organizerType]}</span>}</p><p className={styles.drawerPublished}>{publishedLabel(item, now)}{views > 0 && ` · ${views.toLocaleString("sr-Latn-ME")} pregleda`}</p>
+      {item.isDemo && <p className={styles.demoNotice}>Ovo je primjer oglasa za pregled platforme. Prijave nijesu otvorene.</p>}
+      <div className={styles.drawerMetaGrid}>
+        <Meta label={compensationLabel(item)}>{compensationValue(item)}{feeLabel(item) && ` (${feeLabel(item)})`}</Meta>
+        <Meta label="Rok za prijavu">{deadlineLabel(item, now, true)}</Meta><Meta label="Lokacija">{locationLabel(item)}</Meta>
+        {item.workMode && <Meta label="Način rada">{workModeLabels[item.workMode]}</Meta>}
+        <Meta label="Uslovi">{age}{item.eligibleCountries.length > 0 && ` · ${item.eligibleCountries.map(countryLabel).join(", ")}`}</Meta>
+        {item.applicationLanguages.length > 0 && <Meta label="Jezik prijave">{item.applicationLanguages.map((code) => languageLabels[code] || code).join(", ")}</Meta>}
+        {feeLabel(item) && <Meta label="Kotizacija">{feeLabel(item)}</Meta>}
+        {item.compensation && item.compensationAmount !== null && <Meta label="Napomena">{item.compensation}</Meta>}
+      </div>
+      {item.disciplines.length > 0 && <div className={styles.disciplineTags}>{item.disciplines.map((name) => <span key={name}>{name}</span>)}</div>}
+      <section className={styles.drawerSection}><h3>O prilici</h3><p>{item.description}</p></section>
+      {item.conditions && <section className={styles.drawerSection}><h3>Uslovi i kriterijumi</h3><p>{item.conditions}</p></section>}
+      {item.coveredCosts.length > 0 && <div className={styles.coveredCosts}>{item.coveredCosts.map((label) => <span key={label}><Check size={15} />{label}</span>)}</div>}
+      {item.requiredDocuments.length > 0 && <section className={styles.documents}><div><h3>Šta treba poslati</h3><span>Šalješ direktno organizatoru</span></div><ol>{item.requiredDocuments.map((label) => <li key={label}>{documentLabels[label] || label}</li>)}</ol></section>}
+      {item.additionalInformation && <section className={styles.drawerSection}><h3>Dodatne informacije</h3><p>{item.additionalInformation}</p></section>}
+      <div className={styles.drawerActions}><ApplicationAction item={item} now={now} /><button className={styles.outlineAction} onClick={() => onSave(item.id)} type="button">{isSaved ? "Sačuvano" : "Sačuvaj"}<Bookmark size={15} fill={isSaved ? "currentColor" : "none"} /></button></div>
+      <div className={styles.drawerTools}>{calendar && <a href={calendar} download={`artboard-${item.slug}.ics`}><CalendarDays size={16} />Dodaj rok u kalendar</a>}<button onClick={copyLink} type="button">{copied ? <Check size={16} /> : <Copy size={16} />}{copied ? "Link kopiran" : "Kopiraj link"}</button><a className={styles.reportLink} href={`mailto:info@artstudio360.me?subject=${encodeURIComponent(`Prijava netačnog oglasa: ${item.title}`)}&body=${encodeURIComponent(`Oglas: ${item.slug}\n\nRazlog prijave: `)}`}>Prijavi netačan oglas</a></div>
+      {copyError && <p className={styles.copyError}>Kopiraj adresu iz preglednika da podijeliš ovaj oglas.</p>}
+    </div>
+  </dialog>;
 }

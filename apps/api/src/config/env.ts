@@ -82,6 +82,10 @@ function readAuthSecretEnv(): string {
 }
 
 export const env = {
+  mockPaymentsEnabled: process.env.MOCK_PAYMENTS_ENABLED === "true",
+  // Explicit opt-in only after the separately approved collection migration.
+  artistCollectionsEnabled: process.env.ARTIST_COLLECTIONS_ENABLED === "true",
+  portfolioCollectionsEnabled: process.env.PORTFOLIO_COLLECTIONS_ENABLED === "true",
   nodeEnv: process.env.NODE_ENV ?? "development",
   apiPort: readFirstNumberEnv(["PORT", "API_PORT"], 4000),
   webOrigins: readCsvList("WEB_ORIGIN", ["http://localhost:3000"]),
@@ -91,6 +95,7 @@ export const env = {
   r2AccessKeyId: requireEnv("R2_ACCESS_KEY_ID"),
   r2SecretAccessKey: requireEnv("R2_SECRET_ACCESS_KEY"),
   r2BucketName: requireEnv("R2_BUCKET_NAME"),
+  r2PrivatePdfBucketName: readOptionalEnv("R2_PRIVATE_PDF_BUCKET_NAME"),
   r2PublicUrl: requireEnv("R2_PUBLIC_URL"),
   resendApiKey: readOptionalEnv("RESEND_API_KEY"),
   resendFromEmail: readOptionalEnv("RESEND_FROM_EMAIL"),

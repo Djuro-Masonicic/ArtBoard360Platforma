@@ -3,6 +3,8 @@ export type SiteSurface = "artboard" | "studio";
 export const SITE_SURFACE_STORAGE_KEY = "artboard:last-site-surface";
 
 const artBoardPrefixes = [
+  "/generator",
+  "/qr-vizit-karta",
   "/artboard",
   "/umjetnici",
   "/umjetnik",
@@ -17,12 +19,15 @@ const artBoardPrefixes = [
   "/login",
   "/nalog",
   "/pretplata",
+  "/placanje",
+  "/portfolio-purchase",
   "/admin",
   "/upload",
   "/uredi-profil",
+  "/uslovi-koriscenja",
 ] as const;
 
-const artStudioPrefixes = ["/usluge", "/kontakt", "/uslovi-koriscenja"] as const;
+const artStudioPrefixes = ["/usluge", "/kontakt"] as const;
 
 export function getSiteSurface(pathname: string): SiteSurface | null {
   if (pathname === "/") {

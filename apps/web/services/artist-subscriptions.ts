@@ -1,6 +1,17 @@
 import type { ArtistSubscription } from "@/types/api";
+import type { SubscriptionOverview } from "@/lib/subscription-overview";
 
 import { ApiError, apiFetch } from "./api";
+
+export function getSubscriptionOverview(token: string) {
+  return apiFetch<SubscriptionOverview>("/artist-subscriptions/overview", { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
+}
+export async function updateSubscriptionRenewal(action: "cancel" | "reactivate") {
+  const response = await fetch(`/api/artist/subscription/${action}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}", cache: "no-store" });
+  const payload = await response.json();
+  if (!response.ok) throw new ApiError(payload.message ?? "Pretplata nije mogla biti ažurirana.", response.status, payload);
+  return payload as SubscriptionOverview;
+}
 
 export function getArtistSubscription(token: string) {
   return apiFetch<ArtistSubscription>("/artist-subscriptions/me", {

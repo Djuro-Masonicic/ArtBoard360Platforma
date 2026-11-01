@@ -17,6 +17,7 @@ import {
 interface ArtistSubmissionFiles {
   portfolioPdf?: Express.Multer.File[];
   profilePhoto?: Express.Multer.File[];
+  coverPhoto?: Express.Multer.File[];
   featuredWorks?: Express.Multer.File[];
 }
 
@@ -126,7 +127,7 @@ export class ArtistSubmissionsService {
     const trimmedSocialLinks = normalizeUniqueStrings(dto.socialLinks);
     const disciplineSlugs = normalizeUniqueStrings(dto.disciplines);
 
-    this.validateDtoState(dto, trimmedPortfolioLinks, trimmedSocialLinks, disciplineSlugs, files);
+    this.validateDtoState(dto, trimmedSocialLinks, disciplineSlugs, files);
 
     const disciplines = await this.prisma.discipline.findMany({
       where: {
@@ -158,6 +159,11 @@ export class ArtistSubmissionsService {
         files.profilePhoto?.[0],
         uploadedFiles,
       );
+      const uploadedCoverPhoto = await this.uploadRequiredCoverPhoto(
+        submissionId,
+        files.coverPhoto?.[0],
+        uploadedFiles,
+      );
       const uploadedArtworks = await this.uploadArtworkFiles(
         submissionId,
         files.featuredWorks ?? [],
@@ -172,15 +178,23 @@ export class ArtistSubmissionsService {
             fullName: dto.fullName.trim(),
             email: dto.email.trim(),
             phone: dto.phone?.trim() || null,
+            city: dto.city.trim(),
             biography: dto.biography.trim(),
+            artistStatement: dto.artistStatement?.trim() || null,
             motto: dto.motto?.trim() || null,
+            mottoAuthor: dto.mottoAuthor?.trim() || null,
+            showEmailPublic: dto.showEmailPublic,
+            presentationForms: dto.presentationForms,
             blogUrl: dto.blogUrl?.trim() || null,
             notes: dto.notes?.trim() || null,
             confirmedRules: dto.confirmedRules,
+            containsNsfw: dto.containsNsfw,
             portfolioPdfUrl: uploadedPortfolioPdf?.publicUrl ?? null,
             portfolioPdfStoragePath: uploadedPortfolioPdf?.path ?? null,
             profilePhotoUrl: uploadedProfilePhoto.publicUrl,
             profilePhotoStoragePath: uploadedProfilePhoto.path,
+            coverPhotoUrl: uploadedCoverPhoto.publicUrl,
+            coverPhotoStoragePath: uploadedCoverPhoto.path,
           },
         });
 
@@ -310,10 +324,6 @@ export class ArtistSubmissionsService {
       throw new BadRequestException("Select between 1 and 3 disciplines.");
     }
 
-    if (!existingSubmission.portfolioPdfUrl && trimmedPortfolioLinks.length === 0) {
-      throw new BadRequestException("Provide at least one portfolio link or keep a PDF portfolio on the submission.");
-    }
-
     if (trimmedSocialLinks.length === 0) {
       throw new BadRequestException("At least one social link is required.");
     }
@@ -367,12 +377,18 @@ export class ArtistSubmissionsService {
           fullName: dto.fullName.trim(),
           email: dto.email.trim(),
           phone: dto.phone?.trim() || null,
+          city: dto.city?.trim() || existingSubmission.city,
           biography: dto.biography.trim(),
+          artistStatement: dto.artistStatement?.trim() || existingSubmission.artistStatement,
           motto: dto.motto?.trim() || null,
+          mottoAuthor: dto.mottoAuthor?.trim() || existingSubmission.mottoAuthor,
+          showEmailPublic: dto.showEmailPublic ?? existingSubmission.showEmailPublic,
+          presentationForms: dto.presentationForms ?? existingSubmission.presentationForms,
           blogUrl: dto.blogUrl?.trim() || null,
           notes: dto.notes?.trim() || null,
           adminNotes: dto.adminNotes?.trim() || null,
           confirmedRules: dto.confirmedRules,
+          containsNsfw: dto.containsNsfw ?? existingSubmission.containsNsfw,
           status: dto.status,
         },
       });
@@ -479,7 +495,6 @@ export class ArtistSubmissionsService {
 
   private validateDtoState(
     dto: CreateArtistSubmissionDto,
-    portfolioLinks: string[],
     socialLinks: string[],
     disciplines: string[],
     files: ArtistSubmissionFiles,
@@ -488,16 +503,29 @@ export class ArtistSubmissionsService {
       throw new BadRequestException("You must accept the submission rules before sending the form.");
     }
 
+    if (!dto.city.trim()) {
+      throw new BadRequestException("City is required.");
+    }
+
+    const biographyWordCount = countWords(dto.biography);
+    if (biographyWordCount < 80 || biographyWordCount > 200) {
+      throw new BadRequestException("Biography must contain between 80 and 200 words.");
+    }
+
+    if (dto.artistStatement && countWords(dto.artistStatement) > 60) {
+      throw new BadRequestException("Artist statement can contain up to 60 words.");
+    }
+
     if (disciplines.length === 0 || disciplines.length > 3) {
       throw new BadRequestException("Select between 1 and 3 disciplines.");
     }
 
-    if (!files.portfolioPdf?.[0] && portfolioLinks.length === 0) {
-      throw new BadRequestException("Provide at least one portfolio link or upload a PDF portfolio.");
-    }
-
     if (socialLinks.length === 0) {
       throw new BadRequestException("At least one social link is required.");
+    }
+
+    if (!files.coverPhoto?.[0]) {
+      throw new BadRequestException("A cover photo is required.");
     }
   }
 
@@ -535,6 +563,28 @@ export class ArtistSubmissionsService {
     const uploadedFile = await this.storageService.uploadFile({
       recordId: submissionId,
       entityType: "submission-profile",
+      fileName: file.originalname,
+      mimeType: file.mimetype,
+      fileSizeBytes: file.size,
+      body: file.buffer,
+    });
+
+    uploadedFiles.push(uploadedFile);
+    return uploadedFile;
+  }
+
+  private async uploadRequiredCoverPhoto(
+    submissionId: string,
+    file: Express.Multer.File | undefined,
+    uploadedFiles: UploadedSubmissionFile[],
+  ): Promise<UploadedSubmissionFile> {
+    if (!file) {
+      throw new BadRequestException("A cover photo is required.");
+    }
+
+    const uploadedFile = await this.storageService.uploadFile({
+      recordId: submissionId,
+      entityType: "submission-cover",
       fileName: file.originalname,
       mimeType: file.mimetype,
       fileSizeBytes: file.size,
@@ -675,13 +725,20 @@ export class ArtistSubmissionsService {
       fullName: submission.fullName,
       email: submission.email,
       phone: submission.phone,
+      city: submission.city,
       biography: submission.biography,
+      artistStatement: submission.artistStatement,
       motto: submission.motto,
+      mottoAuthor: submission.mottoAuthor,
+      showEmailPublic: submission.showEmailPublic,
+      presentationForms: submission.presentationForms,
       blogUrl: submission.blogUrl,
       notes: submission.notes,
       confirmedRules: submission.confirmedRules,
+      containsNsfw: submission.containsNsfw,
       portfolioPdfUrl: submission.portfolioPdfUrl,
       profilePhotoUrl: submission.profilePhotoUrl,
+      coverPhotoUrl: submission.coverPhotoUrl,
       status: submission.status,
       createdAt: submission.createdAt,
       updatedAt: submission.updatedAt,
@@ -756,8 +813,11 @@ export class ArtistSubmissionsService {
         slug: artistSlug,
         bio: input.dto.biography.trim(),
         quote: input.dto.motto?.trim() || null,
-        email: normalizedEmail,
+        email:
+          (input.dto.showEmailPublic ?? input.submission.showEmailPublic) ? normalizedEmail : null,
         profileImageUrl: input.submission.profilePhotoUrl ?? null,
+        coverImageUrl: input.submission.coverPhotoUrl ?? null,
+        isNsfw: input.dto.containsNsfw ?? input.submission.containsNsfw,
         isDraft: false,
         isArchived: false,
       },
@@ -841,6 +901,10 @@ export class ArtistSubmissionsService {
 
 function normalizeUniqueStrings(values: string[]) {
   return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)));
+}
+
+function countWords(value: string) {
+  return value.trim().split(/\s+/).filter(Boolean).length;
 }
 
 function inferArtistSocialLinks(urls: string[]) {

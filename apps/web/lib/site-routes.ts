@@ -15,6 +15,7 @@ export const siteRoutes = {
   portfolioBuilder: "/portfolio-builder",
   services: "/usluge",
   opportunities: "/oglasi",
+  opportunitySubmit: "/oglasi/objavi",
   pricing: "/paketi",
   contact: "/kontakt",
   application: "/prijava",

@@ -1,19 +1,24 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException, Optional, UnauthorizedException } from "@nestjs/common";
+import { randomBytes, randomUUID } from "node:crypto";
+import { PortfolioCommerceService, contentHash, frozenPortfolio } from "./portfolio-commerce.service";
+import { hasPremiumAccess } from "../artist-subscriptions/subscription-access";
 import {
   PortfolioPaymentStatus,
   PortfolioProjectStatus,
   PortfolioProjectSource,
   PortfolioTemplate,
-  SubscriptionPlan,
-  SubscriptionStatus,
   Prisma,
 } from "@prisma/client";
 
 import { PaginatedResponse } from "../../common/dto/pagination-query.dto";
+import { PaginationQueryDto } from "../../common/dto/pagination-query.dto";
 import { env } from "../../config/env";
 import { PrismaService } from "../../prisma/prisma.service";
 import { R2StorageService } from "../../storage/r2-storage.service";
 import type { UploadEntityType } from "../../storage/storage.types";
+import { normalizeBehanceUrl } from "../../common/validators/portfolio-profile-fields";
+import { PortfolioCollectionsService } from "./portfolio-collections.service";
+import { buildPortfolioDocumentPlan, parsePortfolioCv, parseDocumentSelection, getDocumentSelection, parseMinimalDesign } from "@artboard/portfolio-document-plan";
 import {
   CreateGuestPortfolioProjectDto,
   ListPortfolioProjectsQueryDto,
@@ -26,6 +31,8 @@ import {
 } from "./portfolio-pdf.generator";
 
 const portfolioProjectInclude = Prisma.validator<Prisma.PortfolioProjectInclude>()({
+  _count: { select: { versions: true } },
+  collections: { orderBy: [{ orderIndex: "asc" }, { id: "asc" }] },
   artworks: {
     orderBy: {
       orderIndex: "asc",
@@ -76,9 +83,15 @@ export class PortfolioProjectsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storageService: R2StorageService,
+    @Optional() private readonly collections?: PortfolioCollectionsService,
+    @Optional() private readonly commerce?: PortfolioCommerceService,
   ) {}
 
   async createFromArtistProfile(artistAccountId: string) {
+    if (env.portfolioCollectionsEnabled && this.collections) {
+      const id = await this.collections.createFromProfile(artistAccountId);
+      return this.getForArtist(artistAccountId, id);
+    }
     const artistAccount = await this.prisma.artistAccount.findUnique({
       where: {
         id: artistAccountId,
@@ -122,9 +135,7 @@ export class PortfolioProjectsService {
     const featuredArtwork = artist.artworks.find((artwork) => artwork.isFeatured) ?? artist.artworks[0];
     const defaultCoverImageUrl =
       artist.coverImageUrl ?? featuredArtwork?.imageUrl ?? artist.thumbnailUrl;
-    const hasActivePlatinum =
-      artistAccount.subscription?.plan === SubscriptionPlan.PLATINUM &&
-      artistAccount.subscription.status === SubscriptionStatus.ACTIVE;
+    const hasActivePlatinum = hasPremiumAccess(artistAccount.subscription);
 
     const portfolioProject = await this.prisma.portfolioProject.create({
       data: {
@@ -138,6 +149,8 @@ export class PortfolioProjectsService {
         artistName: artist.name,
         discipline,
         email: artist.email ?? artistAccount.email,
+        dateOfBirth: artist.dateOfBirth,
+        behanceUrl: normalizeBehanceUrl(artist.socialLinks.find((link) => link.platform === "BEHANCE")?.url ?? "") || null,
         websiteUrl: websiteLink,
         instagramUrl: instagramLink,
         artboardProfileUrl: `${env.siteBaseUrl}/artists/${artist.slug}`,
@@ -147,7 +160,8 @@ export class PortfolioProjectsService {
         collectionYear: String(new Date().getFullYear()),
         collectionCoverUrl: defaultCoverImageUrl,
         biography: artist.bio,
-        artistStatement: artist.quote,
+        artistStatement: artist.artistStatement,
+        motto: artist.quote,
         artworks: {
           create: artist.artworks.map((artwork, index) => ({
             sourceArtworkId: artwork.id,
@@ -166,68 +180,14 @@ export class PortfolioProjectsService {
     return this.serialize(portfolioProject);
   }
 
-  async completeDemoPayment(id: string) {
-    const portfolioProject = await this.prisma.portfolioProject.findUnique({
-      where: {
-        id,
-      },
-      include: portfolioProjectInclude,
-    });
-
-    if (!portfolioProject) {
-      throw new NotFoundException("Portfolio project was not found.");
-    }
-
-    if (this.canDownloadCleanPdf(portfolioProject)) {
-      return this.serialize(portfolioProject);
-    }
-
-    const paidProject = await this.prisma.$transaction(async (tx) => {
-      await tx.portfolioPayment.create({
-        data: {
-          portfolioId: id,
-          status: PortfolioPaymentStatus.PAID,
-          amountCents: 1900,
-          currency: "EUR",
-          provider: "demo-card",
-          providerRef: `demo-portfolio-${Date.now()}`,
-          paidAt: new Date(),
-        },
-      });
-
-      return tx.portfolioProject.update({
-        where: {
-          id,
-        },
-        data: {
-          status: PortfolioProjectStatus.PAID,
-          paymentStatus: PortfolioPaymentStatus.PAID,
-        },
-        include: portfolioProjectInclude,
-      });
-    });
-
-    return this.serialize(paidProject);
+  async completeDemoPayment(id: string, artistAccountId?: string) {
+    const project = await this.readProject(id);
+    if (!project) throw new NotFoundException();
+    this.assertDraftAccess(project, artistAccountId);
+    throw new ForbiddenException("Demo payments cannot confirm a purchase.");
   }
 
-  async createGuestProject(dto: CreateGuestPortfolioProjectDto) {
-    const portfolioProject = await this.prisma.portfolioProject.create({
-      data: {
-        source: PortfolioProjectSource.GUEST,
-        paymentStatus: PortfolioPaymentStatus.REQUIRED,
-        title: `${dto.artistName} Portfolio`,
-        artistName: dto.artistName,
-        discipline: dto.discipline ?? null,
-        location: dto.location ?? null,
-        email: dto.email,
-        collectionName: `${dto.artistName} - izabrani radovi`,
-        collectionYear: String(new Date().getFullYear()),
-      },
-      include: portfolioProjectInclude,
-    });
-
-    return this.serialize(portfolioProject);
-  }
+  async createGuestProject(dto: CreateGuestPortfolioProjectDto) { throw new ForbiddenException("Guest drafts are disabled. Use the temporary editor."); }
 
   async listForArtist(artistAccountId: string, query: ListPortfolioProjectsQueryDto) {
     return this.listProjects(
@@ -243,46 +203,38 @@ export class PortfolioProjectsService {
   }
 
   async getForArtist(artistAccountId: string, id: string) {
-    const portfolioProject = await this.prisma.portfolioProject.findUnique({
-      where: {
-        id,
-      },
-      include: portfolioProjectInclude,
-    });
+    const portfolioProject = await this.readProject(id);
 
     if (!portfolioProject) {
       throw new NotFoundException("Portfolio project was not found.");
     }
 
     if (portfolioProject.artistAccountId !== artistAccountId) {
-      throw new ForbiddenException("You can only open your own portfolio projects.");
+      throw new NotFoundException("Portfolio project was not found.");
     }
 
     return this.serialize(portfolioProject);
   }
 
   async deleteDraftForArtist(artistAccountId: string, id: string) {
-    const portfolioProject = await this.prisma.portfolioProject.findUnique({
-      where: {
-        id,
-      },
-      include: portfolioProjectInclude,
-    });
+    const portfolioProject = await this.readProject(id);
 
     if (!portfolioProject) {
       throw new NotFoundException("Portfolio project was not found.");
     }
 
     if (portfolioProject.artistAccountId !== artistAccountId) {
-      throw new ForbiddenException("You can only delete your own portfolio drafts.");
+      throw new NotFoundException("Portfolio project was not found.");
     }
 
     if (portfolioProject.status !== PortfolioProjectStatus.DRAFT) {
       throw new BadRequestException("Only draft portfolios can be deleted.");
     }
+    if (await this.prisma.portfolioExportUsage.count({ where: { portfolioId: id } })) throw new ConflictException("Portfolio sa evidencijom izvoza se zadržava radi istorije i obračuna.");
 
     const storagePaths = [
       portfolioProject.profileImageStoragePath,
+      portfolioProject.coverImageStoragePath,
       portfolioProject.collectionCoverStoragePath,
       portfolioProject.latestPdfStoragePath,
       ...portfolioProject.artworks.map((artwork) => artwork.storagePath),
@@ -292,6 +244,7 @@ export class PortfolioProjectsService {
     await this.prisma.portfolioProject.delete({
       where: {
         id,
+        artistAccountId,
       },
     });
 
@@ -306,12 +259,7 @@ export class PortfolioProjectsService {
   }
 
   async getForAdmin(id: string) {
-    const portfolioProject = await this.prisma.portfolioProject.findUnique({
-      where: {
-        id,
-      },
-      include: portfolioProjectInclude,
-    });
+    const portfolioProject = await this.readProject(id);
 
     if (!portfolioProject) {
       throw new NotFoundException("Portfolio project was not found.");
@@ -320,38 +268,101 @@ export class PortfolioProjectsService {
     return this.serialize(portfolioProject);
   }
 
-  async getPublic(id: string) {
-    const portfolioProject = await this.prisma.portfolioProject.findUnique({
-      where: {
-        id,
-      },
-      include: portfolioProjectInclude,
-    });
+  async getPublic(id: string, artistAccountId?: string) {
+    const portfolioProject = await this.readProject(id);
 
     if (!portfolioProject) {
       throw new NotFoundException("Portfolio project was not found.");
     }
 
+    this.assertDraftAccess(portfolioProject, artistAccountId);
     return this.serialize(portfolioProject);
   }
 
-  async updatePublicProject(id: string, dto: UpdatePortfolioProjectDto) {
-    const existingPortfolioProject = await this.prisma.portfolioProject.findUnique({
-      where: {
-        id,
-      },
-      include: portfolioProjectInclude,
+  async createShareLink(artistAccountId: string, id: string) {
+    await this.getForArtist(artistAccountId, id);
+    await this.prisma.portfolioProject.updateMany({
+      where: { id, artistAccountId, publicShareToken: null },
+      data: { publicShareToken: randomBytes(32).toString("hex") },
     });
+    const project = await this.prisma.portfolioProject.findUnique({
+      where: { id, artistAccountId },
+      select: { publicShareToken: true },
+    });
+    if (!project?.publicShareToken) throw new NotFoundException("Portfolio project was not found.");
+    return { token: project.publicShareToken };
+  }
+
+  async revokeShareLink(artistAccountId: string, id: string) {
+    await this.getForArtist(artistAccountId, id);
+    await this.prisma.portfolioProject.updateMany({ where: { id, artistAccountId }, data: { publicShareToken: null } });
+    return { revoked: true };
+  }
+
+  private versionUrl(portfolioId: string, versionId?: string) {
+    return `/api/portfolio-projects/${portfolioId}/actions/${versionId ? `versions/${versionId}/pdf` : "download-pdf"}`;
+  }
+
+  async listVersions(artistAccountId: string, id: string, query: PaginationQueryDto) {
+    await this.getForArtist(artistAccountId, id);
+    const where = { portfolioId: id };
+    const [rows, total] = await this.prisma.$transaction([
+      this.prisma.portfolioVersion.findMany({ where, orderBy: [{ versionNumber: "desc" }, { id: "desc" }], skip: (query.page - 1) * query.pageSize, take: query.pageSize }),
+      this.prisma.portfolioVersion.count({ where }),
+    ]);
+    return { items: rows.map(version => ({ ...version, pdfUrl: this.versionUrl(id, version.id) })),
+      meta: { page: query.page, pageSize: query.pageSize, total, totalPages: Math.ceil(total / query.pageSize) } };
+  }
+
+  async downloadVersion(artistAccountId: string, id: string, versionId?: string) {
+    const project = await this.readProject(id);
+    if (!project || project.artistAccountId !== artistAccountId) throw new NotFoundException("Portfolio nije pronađen.");
+    if (versionId && !/^[a-f0-9-]{36}$/i.test(versionId)) throw new NotFoundException("PDF verzija nije pronađena.");
+    const version = versionId ? await this.prisma.portfolioVersion.findFirst({ where: { id: versionId, portfolioId: id } }) : null;
+    if (versionId && !version) throw new NotFoundException("PDF verzija nije pronađena.");
+    const path = version?.storagePath ?? (!versionId ? project.latestPdfStoragePath : null);
+    const url = version?.pdfUrl ?? (!versionId ? project.latestPdfUrl : null);
+    if (!path || !url) throw new NotFoundException("PDF još nije generisan.");
+    const buffer = await this.storageService.readPortfolioPdf({ portfolioId: id, storagePath: path, privateObject: url === `r2-private:${path}` });
+    return { buffer, filename: `portfolio-${id}${version ? `-v${version.versionNumber}` : ""}.pdf` };
+  }
+
+  async generateSharedPreviewPdf(token: string) {
+    if (!/^[a-f0-9]{64}$/.test(token)) throw new NotFoundException("Shared portfolio was not found.");
+    const project = await this.prisma.$transaction(tx => tx.portfolioProject.findUnique({
+      where: { publicShareToken: token },
+      include: portfolioProjectInclude,
+    }), { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
+    if (!project?.artistAccountId) throw new NotFoundException("Shared portfolio was not found.");
+    return this.renderPreviewPdf(project);
+  }
+
+  async generateAdminPreviewPdf(id: string) {
+    const project = await this.readProject(id);
+    if (!project) throw new NotFoundException("Portfolio project was not found.");
+    return this.renderPreviewPdf(project);
+  }
+
+  async updatePublicProject(id: string, dto: UpdatePortfolioProjectDto, artistAccountId?: string) {
+    const existingPortfolioProject = await this.readProject(id);
 
     if (!existingPortfolioProject) {
       throw new NotFoundException("Portfolio project was not found.");
     }
 
-    const portfolioProject = await this.prisma.portfolioProject.update({
+    this.assertDraftAccess(existingPortfolioProject, artistAccountId);
+
+    this.assertRevision(existingPortfolioProject, dto.expectedRevision);
+
+    const portfolioProject = await this.writeProject({
       where: {
         id,
+        artistAccountId: existingPortfolioProject.artistAccountId,
+        ...(existingPortfolioProject.collectionSchemaVersion === 2 ? { revision: dto.expectedRevision } : {}),
       },
-      data: this.buildProjectUpdateData(dto, existingPortfolioProject),
+      data: { ...this.buildProjectUpdateData(dto, existingPortfolioProject),
+        ...((dto.documentSelection !== undefined || dto.cvSections !== undefined || dto.designConfig?.minimal !== undefined || (dto.includeCv !== undefined && dto.includeCv !== existingPortfolioProject.includeCv)) ? { latestPdfUrl: null, latestPdfStoragePath: null } : {}),
+        ...(existingPortfolioProject.collectionSchemaVersion === 2 ? { revision: { increment: 1 }, latestPdfUrl: null, latestPdfStoragePath: null } : {}) },
       include: portfolioProjectInclude,
     });
 
@@ -362,14 +373,20 @@ export class PortfolioProjectsService {
     portfolioId: string,
     artworkId: string,
     dto: UpdatePortfolioArtworkDto,
+    artistAccountId?: string,
   ) {
+    const authorizedProject = await this.ensureProjectExists(portfolioId, artistAccountId);
     await this.ensureArtworkBelongsToProject(portfolioId, artworkId);
+    this.assertRevision(authorizedProject, dto.expectedRevision);
 
-    const portfolioProject = await this.prisma.portfolioProject.update({
+    const portfolioProject = await this.writeProject({
       where: {
         id: portfolioId,
+        artistAccountId: authorizedProject.artistAccountId,
+        ...(authorizedProject.collectionSchemaVersion === 2 ? { revision: dto.expectedRevision } : {}),
       },
       data: {
+        ...(authorizedProject.collectionSchemaVersion === 2 ? { revision: { increment: 1 }, latestPdfUrl: null, latestPdfStoragePath: null } : {}),
         artworks: {
           update: {
             where: {
@@ -385,12 +402,12 @@ export class PortfolioProjectsService {
     return this.serialize(portfolioProject);
   }
 
-  async uploadPublicArtwork(portfolioId: string, file: Express.Multer.File | undefined) {
+  async uploadPublicArtwork(portfolioId: string, file: Express.Multer.File | undefined, artistAccountId?: string, expectedRevision?: number) {
+    const authorizedProject = await this.ensureProjectExists(portfolioId, artistAccountId);
+    this.assertRevision(authorizedProject, expectedRevision);
     if (!file) {
       throw new BadRequestException("A file is required for portfolio artwork uploads.");
     }
-
-    await this.ensureProjectExists(portfolioId);
 
     const artworkCount = await this.prisma.portfolioArtwork.count({
       where: {
@@ -414,11 +431,14 @@ export class PortfolioProjectsService {
     try {
       const nextOrderIndex = await this.getNextArtworkOrderIndex(portfolioId);
 
-      const portfolioProject = await this.prisma.portfolioProject.update({
+      const portfolioProject = await this.writeProject({
         where: {
           id: portfolioId,
+          artistAccountId: authorizedProject.artistAccountId,
+          ...(authorizedProject.collectionSchemaVersion === 2 ? { revision: expectedRevision } : {}),
         },
         data: {
+          ...(authorizedProject.collectionSchemaVersion === 2 ? { revision: { increment: 1 }, latestPdfUrl: null, latestPdfStoragePath: null } : {}),
           artworks: {
             create: {
               imageUrl: uploadedFile.publicUrl,
@@ -446,7 +466,7 @@ export class PortfolioProjectsService {
     }
   }
 
-  async uploadPublicProfileImage(portfolioId: string, file: Express.Multer.File | undefined) {
+  async uploadPublicProfileImage(portfolioId: string, file: Express.Multer.File | undefined, artistAccountId?: string, expectedRevision?: number) {
     return this.uploadPublicProjectImage(portfolioId, file, {
       entityType: "portfolio-profile",
       missingFileMessage: "A file is required for portfolio profile image uploads.",
@@ -454,10 +474,10 @@ export class PortfolioProjectsService {
         profileImageUrl: uploadedFile.publicUrl,
         profileImageStoragePath: uploadedFile.path,
       }),
-    });
+    }, artistAccountId, expectedRevision);
   }
 
-  async uploadPublicCollectionCover(portfolioId: string, file: Express.Multer.File | undefined) {
+  async uploadPublicCollectionCover(portfolioId: string, file: Express.Multer.File | undefined, artistAccountId?: string, expectedRevision?: number) {
     return this.uploadPublicProjectImage(portfolioId, file, {
       entityType: "portfolio-collection-cover",
       missingFileMessage: "A file is required for portfolio collection cover uploads.",
@@ -465,102 +485,67 @@ export class PortfolioProjectsService {
         collectionCoverUrl: uploadedFile.publicUrl,
         collectionCoverStoragePath: uploadedFile.path,
       }),
-    });
+    }, artistAccountId, expectedRevision);
   }
 
-  async generatePdf(id: string, options?: { requireCleanAccess?: boolean }) {
-    const portfolioProject = await this.prisma.portfolioProject.findUnique({
-      where: {
-        id,
-      },
-      include: portfolioProjectInclude,
-    });
+  async uploadPublicCoverImage(portfolioId: string, file: Express.Multer.File | undefined, artistAccountId?: string, expectedRevision?: number) {
+    return this.uploadPublicProjectImage(portfolioId, file, {
+      entityType: "portfolio-cover",
+      missingFileMessage: "A file is required for portfolio cover image uploads.",
+      updateData: (uploadedFile) => ({
+        coverImageUrl: uploadedFile.publicUrl,
+        coverImageStoragePath: uploadedFile.path,
+      }),
+    }, artistAccountId, expectedRevision);
+  }
 
-    if (!portfolioProject) {
-      throw new NotFoundException("Portfolio project was not found.");
-    }
+  async generatePublicPdf(id: string, artistAccountId?: string, operationKey?: string) {
+    return this.generatePdf(id, { requireCleanAccess: true, artistAccountId, operationKey });
+  }
 
-    if (options?.requireCleanAccess && !this.canDownloadCleanPdf(portfolioProject)) {
-      throw new ForbiddenException("This portfolio must be paid or premium before generating a clean PDF.");
-    }
-
-    const pdfBuffer = await generatePortfolioPdf(portfolioProject);
-    const uploadedPdf = await this.storageService.uploadFile({
-      recordId: portfolioProject.id,
-      entityType: "portfolio-pdf",
-      fileName: `${portfolioProject.artistName}-portfolio.pdf`,
-      mimeType: "application/pdf",
-      fileSizeBytes: pdfBuffer.length,
-      body: pdfBuffer,
-    });
-
+  async generatePdf(id: string, options?: { requireCleanAccess?: boolean; artistAccountId?: string; operationKey?: string }) {
+    const project = await this.readProject(id);
+    if (!project) throw new NotFoundException("Portfolio nije pronađen.");
+    // Admin review uses watermarked preview; it cannot spend another account's quota.
+    this.assertDraftAccess(project, options?.artistAccountId);
+    if (!project.artistAccountId || !this.commerce) throw new ForbiddenException("PDF izvoz zahtijeva prijavljenog vlasnika.");
+    const snapshot = frozenPortfolio(project), hash = contentHash(snapshot), plan = buildPortfolioDocumentPlan(project);
+    if (!plan.pages.length) throw new BadRequestException("Izaberi sadržaj za PDF.");
+    const usage = await this.commerce.reserve(project.artistAccountId, id, options?.operationKey ?? randomUUID(), hash);
+    if (usage.status === "COMMITTED") return this.serialize(project);
     try {
-      const updatedPortfolioProject = await this.prisma.$transaction(async (tx) => {
-        const latestVersion = await tx.portfolioVersion.findFirst({
-          where: {
-            portfolioId: portfolioProject.id,
-          },
-          orderBy: {
-            versionNumber: "desc",
-          },
-          select: {
-            versionNumber: true,
-          },
-        });
-
-        const nextVersionNumber = (latestVersion?.versionNumber ?? 0) + 1;
-
-        await tx.portfolioVersion.create({
-          data: {
-            portfolioId: portfolioProject.id,
-            versionNumber: nextVersionNumber,
-            pdfUrl: uploadedPdf.publicUrl,
-            storagePath: uploadedPdf.path,
-            template: portfolioProject.template,
-            language: portfolioProject.language,
-            includeBranding: portfolioProject.includeBranding,
-          },
-        });
-
-        return tx.portfolioProject.update({
-          where: {
-            id: portfolioProject.id,
-          },
-          data: {
-            latestPdfUrl: uploadedPdf.publicUrl,
-            latestPdfStoragePath: uploadedPdf.path,
-            status:
-              portfolioProject.status === PortfolioProjectStatus.PAID
-                ? PortfolioProjectStatus.PAID
-                : PortfolioProjectStatus.GENERATED,
-          },
-          include: portfolioProjectInclude,
-        });
+      let pageCount = 0;
+      const buffer = await generatePortfolioPdf(project, { onPageCount: count => { pageCount = count; } });
+      const uploaded = await this.storageService.uploadFile({ visibility: "private", recordId: id, entityType: "portfolio-pdf", fileName: `${project.artistName}-${plan.documentSelection.scope.toLowerCase()}.pdf`, mimeType: "application/pdf", fileSizeBytes: buffer.length, body: buffer });
+      const updated = await this.prisma.$transaction(async tx => {
+        // Same lock order as reservation: account before project. A new usage
+        // acquires a project FK lock, so reversing these can deadlock in parallel.
+        await this.commerce!.lockForFinalization(tx, project.artistAccountId!);
+        await tx.$queryRaw`SELECT id FROM "PortfolioProject" WHERE id=${id}::uuid FOR UPDATE`;
+        const current = await tx.portfolioProject.findUnique({ where: { id }, include: portfolioProjectInclude });
+        if (!current || current.artistAccountId !== project.artistAccountId || contentHash(frozenPortfolio(current)) !== hash) throw new ConflictException("Portfolio je promijenjen tokom izvoza. Pokušaj ponovo.");
+        const latest = await tx.portfolioVersion.findFirst({ where: { portfolioId: id }, orderBy: { versionNumber: "desc" } });
+        const version = await tx.portfolioVersion.create({ data: { portfolioId: id, versionNumber: (latest?.versionNumber ?? 0) + 1, pdfUrl: uploaded.publicUrl, storagePath: uploaded.path, template: project.template, language: project.language, includeBranding: project.includeBranding,
+          documentScope: plan.documentSelection.scope, manifest: snapshot, contentHash: hash, pageCount, artworkCount: plan.artworkCount, sourceRevision: project.revision } });
+        await this.commerce!.finish(tx, usage.id, version.id);
+        return tx.portfolioProject.update({ where: { id }, data: { latestPdfUrl: uploaded.publicUrl, latestPdfStoragePath: uploaded.path, status: PortfolioProjectStatus.GENERATED }, include: portfolioProjectInclude });
       });
-
-      return this.serialize(updatedPortfolioProject);
-    } catch (error) {
-      try {
-        await this.storageService.deleteFile(uploadedPdf.path);
-      } catch (cleanupError) {
-        console.error("Could not clean up generated portfolio PDF after DB failure.", cleanupError);
-      }
-
-      throw error;
-    }
+      return this.serialize(updated);
+    } catch (error) { await this.commerce.release(usage.id); throw error; }
   }
 
-  async generatePreviewPdf(id: string) {
-    const portfolioProject = await this.prisma.portfolioProject.findUnique({
-      where: {
-        id,
-      },
-      include: portfolioProjectInclude,
-    });
+  async generatePreviewPdf(id: string, artistAccountId?: string) {
+    const portfolioProject = await this.readProject(id);
 
     if (!portfolioProject) {
       throw new NotFoundException("Portfolio project was not found.");
     }
+
+    this.assertDraftAccess(portfolioProject, artistAccountId);
+    return this.renderPreviewPdf(portfolioProject);
+  }
+
+  private async renderPreviewPdf(portfolioProject: PortfolioProjectWithRelations) {
 
     const pdfBuffer = await generatePortfolioPdf(portfolioProject, {
       watermark: true,
@@ -576,19 +561,47 @@ export class PortfolioProjectsService {
     };
   }
 
-  async generateCoverTestPdf(id: string) {
-    const portfolioProject = await this.prisma.portfolioProject.findUnique({
-      where: {
-        id,
-      },
-      include: portfolioProjectInclude,
-    });
+  async generateTransientPreview(id: string, accountId: string, dto: UpdatePortfolioProjectDto) {
+    const project = await this.prisma.$transaction(tx => tx.portfolioProject.findFirst({ where: { id, artistAccountId: accountId }, include: portfolioProjectInclude }),
+      { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
+    if (!project) throw new NotFoundException("Portfolio nije pronađen.");
+    this.assertRevision(project, dto.expectedRevision);
+    const data = this.buildProjectUpdateData(dto, project);
+    let pageCount = buildPortfolioDocumentPlan(project).pageCount;
+    const preview = Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined));
+    const buffer = await generatePortfolioPdf({ ...project, ...preview } as PortfolioProjectWithRelations, { watermark: true, onPageCount: count => { pageCount = count; } });
+    return { buffer, pageCount };
+  }
+
+  private async readProject(id: string) {
+    return this.prisma.$transaction(tx => tx.portfolioProject.findUnique({ where: { id }, include: portfolioProjectInclude }),
+      { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
+  }
+
+  private async writeProject(args: Prisma.PortfolioProjectUpdateArgs) {
+    try { return await this.prisma.portfolioProject.update({ ...args, include: portfolioProjectInclude }); }
+    catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") throw new ConflictException("Portfolio je promijenjen. Osvježi editor.");
+      throw error;
+    }
+  }
+
+  private assertRevision(project: { collectionSchemaVersion?: number; revision?: number }, expectedRevision?: number) {
+    if (project.collectionSchemaVersion === 2 && (expectedRevision === undefined || project.revision !== expectedRevision)) {
+      throw new ConflictException("Portfolio je promijenjen. Osvježi editor i ponovo potvrdi izmjenu.");
+    }
+  }
+
+  async generateCoverTestPdf(id: string, artistAccountId?: string) {
+    const portfolioProject = await this.readProject(id);
 
     if (!portfolioProject) {
       throw new NotFoundException("Portfolio project was not found.");
     }
 
-    const pdfBuffer = await generateSelectedTemplateTestPdf(portfolioProject);
+    this.assertDraftAccess(portfolioProject, artistAccountId);
+
+    const pdfBuffer = await generateSelectedTemplateTestPdf(portfolioProject, { watermark: true });
     const safeArtistName = portfolioProject.artistName
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
@@ -622,7 +635,7 @@ export class PortfolioProjectsService {
     ]);
 
     return {
-      items: items.map((item) => this.serialize(item)),
+      items: await Promise.all(items.map((item) => this.serialize(item))),
       meta: {
         page,
         pageSize,
@@ -668,19 +681,39 @@ export class PortfolioProjectsService {
     };
   }
 
-  private async ensureProjectExists(id: string) {
+  private async ensureProjectExists(id: string, artistAccountId?: string) {
     const existingProject = await this.prisma.portfolioProject.findUnique({
       where: {
         id,
       },
       select: {
         id: true,
+        artistAccountId: true,
+        source: true,
+        collectionSchemaVersion: true,
+        revision: true,
       },
     });
 
     if (!existingProject) {
       throw new NotFoundException("Portfolio project was not found.");
     }
+    this.assertDraftAccess(existingProject, artistAccountId);
+    return existingProject;
+  }
+
+  private assertDraftAccess(
+    project: { artistAccountId: string | null; source: PortfolioProjectSource },
+    artistAccountId?: string,
+  ) {
+    if (project.artistAccountId) {
+      if (!artistAccountId) throw new UnauthorizedException("Artist authentication is required.");
+      if (project.artistAccountId !== artistAccountId) {
+        throw new NotFoundException("Portfolio project was not found.");
+      }
+      return;
+    }
+    throw new NotFoundException("Portfolio project was not found.");
   }
 
   private async ensureArtworkBelongsToProject(portfolioId: string, artworkId: string) {
@@ -729,12 +762,14 @@ export class PortfolioProjectsService {
       missingFileMessage: string;
       updateData: (uploadedFile: { publicUrl: string; path: string }) => Prisma.PortfolioProjectUpdateInput;
     },
+    artistAccountId?: string,
+    expectedRevision?: number,
   ) {
+    const authorizedProject = await this.ensureProjectExists(portfolioId, artistAccountId);
+    this.assertRevision(authorizedProject, expectedRevision);
     if (!file) {
       throw new BadRequestException(options.missingFileMessage);
     }
-
-    await this.ensureProjectExists(portfolioId);
 
     const uploadedFile = await this.storageService.uploadFile({
       recordId: portfolioId,
@@ -746,11 +781,13 @@ export class PortfolioProjectsService {
     });
 
     try {
-      const portfolioProject = await this.prisma.portfolioProject.update({
+      const portfolioProject = await this.writeProject({
         where: {
           id: portfolioId,
+          artistAccountId: authorizedProject.artistAccountId,
+          ...(authorizedProject.collectionSchemaVersion === 2 ? { revision: expectedRevision } : {}),
         },
-        data: options.updateData(uploadedFile),
+        data: { ...options.updateData(uploadedFile), ...(authorizedProject.collectionSchemaVersion === 2 ? { revision: { increment: 1 }, latestPdfUrl: null, latestPdfStoragePath: null } : {}) },
         include: portfolioProjectInclude,
       });
 
@@ -770,6 +807,39 @@ export class PortfolioProjectsService {
     dto: UpdatePortfolioProjectDto,
     existingProject: PortfolioProjectWithRelations,
   ): Prisma.PortfolioProjectUpdateInput {
+    let nextDesignConfig = this.buildDesignConfigUpdateData(dto.designConfig, existingProject);
+    if (dto.documentSelection !== undefined) {
+      if (!existingProject.artistAccountId) throw new UnauthorizedException("Izbor PDF stranica zahtijeva prijavljenog vlasnika.");
+      let selection;
+      try { selection = parseDocumentSelection(dto.documentSelection); }
+      catch (error) { throw new BadRequestException(error instanceof Error ? error.message : "Neispravan izbor PDF-a."); }
+      const config = nextDesignConfig ?? existingProject.designConfig ?? {
+        mode: "PRESET", pages: Object.fromEntries(portfolioDesignPageKeys.map(key => [key, existingProject.template])),
+        footer: existingProject.template === "ARTBOARD_EDITORIAL" ? "ARTBOARD" : existingProject.template === "SALES_PRO" ? "SALES" : "MINIMAL",
+      };
+      nextDesignConfig = { ...(typeof config === "object" && !Array.isArray(config) ? config : {}), documentSelection: selection };
+    }
+    if (dto.includeCv === false && dto.documentSelection === undefined && getDocumentSelection(existingProject).scope === "CV") {
+      const config = nextDesignConfig ?? existingProject.designConfig;
+      if (config && typeof config === "object" && !Array.isArray(config)) nextDesignConfig = { ...config, documentSelection: { ...getDocumentSelection(existingProject), scope: "PORTFOLIO" } };
+    }
+    let cvSections: Prisma.InputJsonValue | undefined;
+    if (dto.cvSections !== undefined) {
+      if (!existingProject.artistAccountId) throw new UnauthorizedException("Čuvanje CV-a zahtijeva prijavljenog vlasnika.");
+      try { cvSections = parsePortfolioCv(dto.cvSections); }
+      catch (error) { throw new BadRequestException(error instanceof Error ? error.message : "Neispravan CV."); }
+    }
+    if (existingProject.collectionSchemaVersion === 2) {
+      const prefix = `${env.r2PublicUrl.replace(/\/+$/, "")}/portfolio-projects/${existingProject.id}/`;
+      for (const value of [dto.profileImageUrl, dto.coverImageUrl, dto.collectionCoverUrl]) {
+        if (value && !value.startsWith(prefix)) throw new BadRequestException("Portfolio slike moraju pripadati ovom projektu.");
+      }
+    }
+    if (nextDesignConfig !== undefined || dto.includeCv !== undefined || cvSections !== undefined) {
+      const preview = { ...existingProject, designConfig: nextDesignConfig ?? existingProject.designConfig,
+        includeCv: dto.includeCv ?? existingProject.includeCv, cvSections: cvSections ?? existingProject.cvSections };
+      if (!buildPortfolioDocumentPlan(preview).pageCount) throw new BadRequestException("Izabrane PDF sekcije nemaju sadržaj.");
+    }
     return {
       title: this.optionalRequiredString(dto.title),
       artistName: this.optionalRequiredString(dto.artistName),
@@ -777,10 +847,18 @@ export class PortfolioProjectsService {
       location: this.optionalString(dto.location),
       email: this.optionalString(dto.email),
       phone: this.optionalString(dto.phone),
+      dateOfBirth: dto.dateOfBirth === undefined ? undefined : dto.dateOfBirth ? new Date(`${dto.dateOfBirth}T00:00:00.000Z`) : null,
+      behanceUrl: dto.behanceUrl === undefined ? undefined : normalizeBehanceUrl(dto.behanceUrl) || null,
+      motto: this.optionalString(dto.motto),
+      mottoAuthor: this.optionalString(dto.mottoAuthor),
       websiteUrl: this.optionalString(dto.websiteUrl),
       instagramUrl: this.optionalString(dto.instagramUrl),
       profileImageUrl: this.optionalString(dto.profileImageUrl),
+      profileImageStoragePath: dto.profileImageUrl !== undefined && dto.profileImageUrl.trim() !== existingProject.profileImageUrl
+        ? existingProject.artworks.find(w => w.imageUrl === dto.profileImageUrl)?.storagePath ?? existingProject.collections?.find(c => c.coverImageUrl === dto.profileImageUrl)?.coverImageStoragePath ?? null : undefined,
       coverImageUrl: this.optionalString(dto.coverImageUrl),
+      coverImageStoragePath: dto.coverImageUrl !== undefined && dto.coverImageUrl.trim() !== existingProject.coverImageUrl
+        ? existingProject.artworks.find(w => w.imageUrl === dto.coverImageUrl)?.storagePath ?? existingProject.collections?.find(c => c.coverImageUrl === dto.coverImageUrl)?.coverImageStoragePath ?? null : undefined,
       collectionName: this.optionalString(dto.collectionName),
       collectionYear: this.optionalString(dto.collectionYear),
       collectionDescription: this.optionalString(dto.collectionDescription),
@@ -793,8 +871,9 @@ export class PortfolioProjectsService {
       fontStyle: dto.fontStyle,
       includeBranding: dto.includeBranding,
       includeCv: dto.includeCv,
+      cvSections,
       includePrices: dto.includePrices,
-      designConfig: this.buildDesignConfigUpdateData(dto.designConfig, existingProject),
+      designConfig: nextDesignConfig,
     };
   }
 
@@ -846,11 +925,20 @@ export class PortfolioProjectsService {
     }
 
     const normalizedFooter = selectedFooter as (typeof portfolioFooterValues)[number];
+    let minimal: ReturnType<typeof parseMinimalDesign> | undefined;
+    const previousMinimal = existingProject.designConfig && typeof existingProject.designConfig === "object" && !Array.isArray(existingProject.designConfig) ? existingProject.designConfig.minimal : undefined;
+    if (value.minimal !== undefined || previousMinimal !== undefined) {
+      try { minimal = parseMinimalDesign(value.minimal ?? previousMinimal); }
+      catch (error) { throw new BadRequestException(error instanceof Error ? error.message : "Neispravna naslovnica."); }
+    }
 
     return {
       mode: value.mode,
       pages: normalizedPages,
       footer: normalizedFooter,
+      ...(minimal ? { minimal } : {}),
+      ...(existingProject.designConfig && typeof existingProject.designConfig === "object" && !Array.isArray(existingProject.designConfig) && existingProject.designConfig.documentSelection
+        ? { documentSelection: existingProject.designConfig.documentSelection } : {}),
     };
   }
 
@@ -887,19 +975,30 @@ export class PortfolioProjectsService {
     return trimmedValue ? trimmedValue : undefined;
   }
 
-  private serialize(project: PortfolioProjectWithRelations) {
+  async serialize(project: PortfolioProjectWithRelations) {
     if (!project.artistName) {
       throw new BadRequestException("Portfolio project is missing artist name.");
     }
 
-    const canDownloadCleanPdf = this.canDownloadCleanPdf(project);
+    const quota = project.artistAccountId && this.commerce ? await this.commerce.entitlement(project.artistAccountId) : null;
+    const canDownloadCleanPdf = quota ? quota.remaining > 0 : this.canDownloadCleanPdf(project);
+    const plan = buildPortfolioDocumentPlan(project);
 
     return {
       ...project,
+      latestPdfUrl: project.artistAccountId && project.latestPdfUrl ? this.versionUrl(project.id) : project.latestPdfUrl,
+      versions: project.versions.map(version => ({ ...version, pdfUrl: project.artistAccountId ? this.versionUrl(project.id, version.id) : version.pdfUrl })),
+      documentSelection: getDocumentSelection(project),
+      collectionsAvailable: env.portfolioCollectionsEnabled && Boolean(project.artistAccountId),
+      dateOfBirth: project.dateOfBirth?.toISOString().slice(0, 10) ?? null,
       access: {
-        canDownloadCleanPdf,
+        ...(quota ? { quota } : {}),
+        canGeneratePdf: canDownloadCleanPdf,
+        privatePdfStorageReady: Boolean(env.r2PrivatePdfBucketName && env.r2PrivatePdfBucketName !== env.r2BucketName),
+        localTestExportAvailable: env.nodeEnv === "development",
+        canDownloadCleanPdf: canDownloadCleanPdf || project.versions.length > 0,
         requiresPayment: !canDownloadCleanPdf,
-        reason: canDownloadCleanPdf
+        reason: quota ? (quota.plan === "PREMIUM" ? "PREMIUM" : quota.remaining > 0 ? "FREE" : "PAYMENT_REQUIRED") : canDownloadCleanPdf
           ? this.isActivePlatinumProject(project)
             ? "PREMIUM"
             : "PAID"
@@ -907,8 +1006,10 @@ export class PortfolioProjectsService {
       },
       counts: {
         artworks: project.artworks.length,
-        selectedArtworks: project.artworks.filter((artwork) => artwork.isSelected).length,
-        versions: project.versions.length,
+        selectedArtworks: plan.artworkCount,
+        collections: plan.collectionCount,
+        pages: plan.pageCount,
+        versions: project._count?.versions ?? project.versions.length,
         payments: project.payments.length,
       },
     };
@@ -919,9 +1020,6 @@ export class PortfolioProjectsService {
   }
 
   private isActivePlatinumProject(project: PortfolioProjectWithRelations) {
-    return (
-      project.artistAccount?.subscription?.plan === SubscriptionPlan.PLATINUM &&
-      project.artistAccount.subscription.status === SubscriptionStatus.ACTIVE
-    );
+    return hasPremiumAccess(project.artistAccount?.subscription);
   }
 }

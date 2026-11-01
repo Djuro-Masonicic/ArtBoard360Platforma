@@ -3,6 +3,8 @@ import type { Artist, Artwork, SocialPlatform } from "@/types/api";
 import { ApiError } from "./api";
 
 export interface UpdateArtistProfilePayload {
+  artistStatement?: string;
+  presentationForm?: "FEMININE" | "MASCULINE" | "NEUTRAL";
   bio?: string;
   quote?: string;
   email?: string;
@@ -119,6 +121,7 @@ export async function deleteArtistArtwork(artworkId: string) {
 export async function changeArtistPassword(payload: {
   currentPassword: string;
   newPassword: string;
+  confirmNewPassword?: string;
 }) {
   const response = await fetch("/api/artist/change-password", {
     method: "POST",
@@ -130,6 +133,11 @@ export async function changeArtistPassword(payload: {
   });
 
   return readRouteResponse<{ success: boolean; message: string }>(response);
+}
+
+export async function replaceArtistArtworkImage(id: string, file: File) {
+  const form = new FormData(); form.set("file", file);
+  return readRouteResponse<Artwork>(await fetch(`/api/artist/artworks/${id}/image`, { method: "POST", body: form, cache: "no-store" }));
 }
 
 async function readRouteResponse<T>(response: Response) {

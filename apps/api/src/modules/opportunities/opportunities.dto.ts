@@ -1,6 +1,22 @@
 import { Transform } from "class-transformer";
-import { IsBoolean, IsDateString, IsEnum, IsNotEmpty, IsOptional, IsString } from "class-validator";
-import { OpportunityType } from "@prisma/client";
+import {
+  IsBoolean,
+  IsDateString,
+  IsEmail,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MinLength,
+} from "class-validator";
+import {
+  OpportunityApplicationMethod,
+  OpportunityOrganizerType,
+  OpportunitySubmissionStatus,
+  OpportunityType,
+} from "@prisma/client";
+
+import { OpportunityDetailsDto } from "./opportunity-details.dto";
 
 import { PaginationQueryDto } from "../../common/dto/pagination-query.dto";
 
@@ -14,6 +30,68 @@ function transformBoolean(value: unknown): boolean | undefined {
   }
 
   return String(value).toLowerCase() === "true";
+}
+
+export class CreatePublicOpportunitySubmissionDto extends OpportunityDetailsDto {
+  @IsString()
+  @MinLength(10)
+  title!: string;
+
+  @IsEnum(OpportunityType)
+  type!: OpportunityType;
+
+  @IsString()
+  @IsNotEmpty()
+  description!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  conditions!: string;
+
+  @IsOptional()
+  @IsString()
+  compensation?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  countryCode!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  city!: string;
+
+  @IsOptional()
+  @IsDateString()
+  deadlineAt?: string;
+
+  @Transform(({ value }) => transformBoolean(value))
+  @IsBoolean()
+  isOpenEnded!: boolean;
+
+  @IsEnum(OpportunityApplicationMethod)
+  applicationMethod!: OpportunityApplicationMethod;
+
+  @IsString()
+  @IsNotEmpty()
+  applyValue!: string;
+
+  @IsOptional()
+  @IsString()
+  additionalInformation?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  organizerName!: string;
+
+  @IsEmail()
+  contactEmail!: string;
+
+  @IsEnum(OpportunityOrganizerType)
+  organizerType!: OpportunityOrganizerType;
+
+  @Transform(({ value }) => transformBoolean(value))
+  @IsBoolean()
+  consent!: boolean;
 }
 
 /**
@@ -33,6 +111,10 @@ export class ListOpportunitiesQueryDto extends PaginationQueryDto {
   type?: OpportunityType;
 
   @IsOptional()
+  @IsEnum(OpportunitySubmissionStatus)
+  status?: OpportunitySubmissionStatus;
+
+  @IsOptional()
   @Transform(({ value }) => transformBoolean(value))
   @IsBoolean()
   includeDrafts?: boolean;
@@ -44,7 +126,7 @@ export class ListOpportunitiesQueryDto extends PaginationQueryDto {
  * The public site only reads opportunities. Admin writes go through this DTO so
  * invalid shapes are rejected before they reach Prisma.
  */
-export class CreateOpportunityDto {
+export class CreateOpportunityDto extends OpportunityDetailsDto {
   @IsString()
   @IsNotEmpty()
   title!: string;
@@ -86,6 +168,50 @@ export class CreateOpportunityDto {
   deadlineAt?: string;
 
   @IsOptional()
+  @IsString()
+  conditions?: string;
+
+  @IsOptional()
+  @IsString()
+  compensation?: string;
+
+  @IsOptional()
+  @IsString()
+  countryCode?: string;
+
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isOpenEnded?: boolean;
+
+  @IsOptional()
+  @IsEnum(OpportunityApplicationMethod)
+  applicationMethod?: OpportunityApplicationMethod;
+
+  @IsOptional()
+  @IsString()
+  applyEmail?: string;
+
+  @IsOptional()
+  @IsString()
+  additionalInformation?: string;
+
+  @IsOptional()
+  @IsEnum(OpportunityOrganizerType)
+  organizerType?: OpportunityOrganizerType;
+
+  @IsOptional()
+  @IsEnum(OpportunitySubmissionStatus)
+  submissionStatus?: OpportunitySubmissionStatus;
+
+  @IsOptional()
+  @IsString()
+  reviewNotes?: string;
+
+  @IsOptional()
   @IsBoolean()
   isPaid?: boolean;
 
@@ -108,7 +234,7 @@ export class CreateOpportunityDto {
  * This lets the admin editor save only changed values without forcing the
  * frontend to resend the whole row forever.
  */
-export class UpdateOpportunityDto {
+export class UpdateOpportunityDto extends OpportunityDetailsDto {
   @IsOptional()
   @IsString()
   title?: string;
@@ -148,6 +274,50 @@ export class UpdateOpportunityDto {
   @IsOptional()
   @IsDateString()
   deadlineAt?: string;
+
+  @IsOptional()
+  @IsString()
+  conditions?: string;
+
+  @IsOptional()
+  @IsString()
+  compensation?: string;
+
+  @IsOptional()
+  @IsString()
+  countryCode?: string;
+
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isOpenEnded?: boolean;
+
+  @IsOptional()
+  @IsEnum(OpportunityApplicationMethod)
+  applicationMethod?: OpportunityApplicationMethod;
+
+  @IsOptional()
+  @IsString()
+  applyEmail?: string;
+
+  @IsOptional()
+  @IsString()
+  additionalInformation?: string;
+
+  @IsOptional()
+  @IsEnum(OpportunityOrganizerType)
+  organizerType?: OpportunityOrganizerType;
+
+  @IsOptional()
+  @IsEnum(OpportunitySubmissionStatus)
+  submissionStatus?: OpportunitySubmissionStatus;
+
+  @IsOptional()
+  @IsString()
+  reviewNotes?: string;
 
   @IsOptional()
   @IsBoolean()

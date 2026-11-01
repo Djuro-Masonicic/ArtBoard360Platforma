@@ -1,7 +1,9 @@
 import { UploadForm } from "@/components/upload-form";
+import { requireAdminSession } from "@/lib/admin-session";
 import { getArtists } from "@/services/artists";
 
 export default async function UploadPage() {
+  await requireAdminSession();
   const artistsResponse = await getArtists({
     page: 1,
     pageSize: 100,

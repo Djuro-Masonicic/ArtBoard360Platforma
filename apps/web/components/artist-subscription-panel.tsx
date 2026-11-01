@@ -1,191 +1,133 @@
 "use client";
 
-import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { subscriptionDate as date, subscriptionMoney as money, type SubscriptionOverview } from "@/lib/subscription-overview";
+import { updateSubscriptionRenewal } from "@/services/artist-subscriptions";
+import styles from "./artist-subscription-panel.module.css";
 
-import { DemoCardCheckout } from "@/components/demo-card-checkout";
-import { NavigationButton } from "@/components/navigation-button";
-import { useUiFeedback, useUiLoadingState } from "@/components/ui-feedback-provider";
-import { cancelPlatinumSubscriptionRequest } from "@/services/artist-subscriptions";
-import type { ArtistSubscription } from "@/types/api";
+const freeFeatures = ["Besplatna prijava i profil", "Uređivanje profila jednom mjesečno", "1 besplatna Instagram objava (10 dodatnih za 4,90 €)", "1 besplatan Portfolio Builder export", "1 besplatna QR vizit karta", "Prisustvo u pretraživaču umjetnika", "Pregled oglasne table"];
+const premiumFeatures = ["Neograničeno uređivanje profila i radova", "Automatsko povezivanje profila i portfolija", "10 Instagram objava mjesečno (10 dodatnih za 4,90 €)", "5 Portfolio Builder exporta mjesečno (dodatni 4,90 €)", "Neograničen export QR vizit kartica", "Pristup ArtBoard Edu sadržajima", "Mogućnost kreiranja i prodaje Edu sadržaja"];
 
-interface ArtistSubscriptionPanelProps {
-  initialSubscription: ArtistSubscription;
-  mode: "manage" | "subscribe";
+function Check() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7" /></svg>; }
+function Usage({ title, text, total, used }: { title: string; text: string; total?: number; used?: number | null }) {
+  return <div className={styles.usageBox}><div className={styles.usageLine}><strong>{title}</strong><span>{text}</span></div>
+    {total !== undefined && used !== null && used !== undefined ? <div className={styles.segments} role="img" aria-label={title + ": " + used + " od " + total + " iskorišćeno"}>
+      {Array.from({ length: total }, (_, i) => <span key={i} data-active={i < used} style={i < used ? { backgroundSize: total * 100 + "% 100%", backgroundPosition: (total === 1 ? 0 : i / (total - 1) * 100) + "% 0" } : undefined} />)}
+    </div> : null}
+  </div>;
 }
 
-export function ArtistSubscriptionPanel({ initialSubscription, mode }: ArtistSubscriptionPanelProps) {
+export function ArtistSubscriptionPanel({ initialOverview }: { initialOverview: SubscriptionOverview }) {
+  const [overview, setOverview] = useState(initialOverview);
+  const [confirming, setConfirming] = useState(false), [pending, setPending] = useState(false);
+  const [error, setError] = useState(""), [notice, setNotice] = useState("");
+  const inflight = useRef(false), cancelButton = useRef<HTMLButtonElement>(null), confirmationTitle = useRef<HTMLHeadingElement>(null);
   const router = useRouter();
-  const { showAlert } = useUiFeedback();
-  const [subscription, setSubscription] = useState(initialSubscription);
-  const [isPending, startTransition] = useTransition();
-  const isPlatinum = subscription.plan === "PLATINUM" && subscription.status === "ACTIVE";
+  useEffect(() => { setOverview(initialOverview); }, [initialOverview]);
+  useEffect(() => {
+    if (!overview.billing.accessUntil) return;
+    const deadline = Date.parse(overview.billing.accessUntil);
+    if (deadline <= Date.now()) return;
+    let timer: ReturnType<typeof setTimeout>;
+    const schedule = () => {
+      const remaining = deadline - Date.now();
+      timer = setTimeout(() => { if (Date.now() >= deadline) router.refresh(); else schedule(); }, Math.min(Math.max(remaining + 100, 1), 86_400_000));
+    };
+    schedule();
+    return () => clearTimeout(timer);
+  }, [overview.billing.accessUntil, router]);
+  useEffect(() => { if (confirming) confirmationTitle.current?.focus(); }, [confirming]);
 
-  useUiLoadingState(isPending);
-
-  function handleCheckoutComplete(nextSubscription: ArtistSubscription) {
-    setSubscription(nextSubscription);
-    router.push("/artist/subscription");
-    router.refresh();
+  const { state, billing: b, usage, capabilities: caps, prices } = overview;
+  const premium = overview.effectivePlan === "PREMIUM", canceled = state === "CANCELED_PENDING_EXPIRY", failed = state === "PAYMENT_FAILED", expired = state === "EXPIRED";
+  const amount = b.monthlyAmountCents === null ? "Nije evidentirano" : money(b.monthlyAmountCents);
+  const method = b.paymentMethod ? b.paymentMethod.brand + " •••• " + b.paymentMethod.last4 : "Nije evidentirano";
+  const range = (start: string | null, end: string | null) => start && end ? date(start, true) + " – " + date(end) : date(start || end);
+  const status = canceled ? "Otkazano · aktivno do " + date(b.accessUntil, true) : failed ? "Naplata nije uspjela" : premium ? "Aktivan" : expired ? "Premium istekao" : "Free plan";
+  const details = failed ? [
+    ["Premium aktivan do", date(b.accessUntil)], ["Neuspješna naplata", b.lastFailedAt ? date(b.lastFailedAt) + (b.failedAmountCents !== null ? " · " + money(b.failedAmountCents) : "") : "Nije evidentirano"],
+    ["Ponovni pokušaj", b.nextRetryAt ? date(b.nextRetryAt) : "Nije najavljen"], ["Način plaćanja", method],
+  ] : premium ? [
+    ["Plan aktivan od", date(b.activatedAt)], [canceled ? "Premium aktivan do" : "Obračunski period", canceled ? date(b.accessUntil) : range(b.periodStart, b.periodEnd)],
+    ["Sljedeća naplata", canceled ? "Nema, članstvo je otkazano" : caps.providerConnected ? date(b.periodEnd) + (b.monthlyAmountCents !== null ? " · " + amount : "") : "Nije potvrđena"], ["Način plaćanja", method],
+  ] : expired ? [["Posljednji evidentirani Premium period", range(b.lastPremiumStart, b.lastPremiumEnd)], ["Sada", "Free plan, bez pretplate"]]
+    : [["Plan", "Free, bez pretplate"], ["Nalog otvoren", date(overview.account.createdAt)]];
+  const portfolioText = premium ? usage.portfolio.used + " od " + usage.portfolio.limit + " iskorišćeno · " + (canceled ? "važi do " : "obnova ") + date(usage.portfolio.periodEnd)
+    : "1 besplatan · " + (usage.portfolio.remaining > 0 ? "dostupan" : usage.portfolio.reserved > 0 ? "u obradi" : "iskorišćen");
+  const instagramText = usage.instagram.known && usage.instagram.used !== null ? premium ? usage.instagram.used + " od " + usage.instagram.limit + " iskorišćeno · " + (canceled ? "važi do " : "obnova ") + date(usage.instagram.periodEnd)
+    : "1 besplatna · " + (usage.instagram.used > 0 ? "iskorišćena" : "dostupna") : "Podaci još nijesu dostupni";
+  const qrText = !usage.qr.known ? "Podaci još nijesu dostupni" : premium ? canceled ? "Uključeno do " + date(b.accessUntil) : "Uključeno · nove verzije bez ograničenja"
+    : usage.qr.available ? "1 besplatna · dostupna" : expired ? "Ranije preuzete verzije ostaju dostupne" : "1 besplatna · iskorišćena";
+  async function mutate(action: "cancel" | "reactivate") {
+    if (inflight.current) return;
+    inflight.current = true; setPending(true); setError(""); setNotice("");
+    try {
+      const updated = await updateSubscriptionRenewal(action);
+      setOverview(updated); setConfirming(false);
+      setNotice(action === "cancel" ? "Obnavljanje je otkazano. Premium ostaje aktivan do " + date(updated.billing.accessUntil) : "Obnavljanje je ponovo uključeno. Tekući period nije ponovo naplaćen.");
+      router.refresh();
+    } catch (e) { setError(e instanceof Error ? e.message : "Izmjena nije uspjela. Pokušaj ponovo."); }
+    finally { inflight.current = false; setPending(false); }
   }
 
-  function handleCancelMembership() {
-    if (!window.confirm("Da li sigurno želiš da otkažeš članstvo na kraju tekućeg obračunskog perioda?")) return;
-
-    startTransition(async () => {
-      try {
-        const nextSubscription = await cancelPlatinumSubscriptionRequest();
-        setSubscription(nextSubscription);
-        showAlert({
-          kind: "success",
-          title: "Otkazivanje je zakazano",
-          message: "Premium ostaje aktivan do kraja tekućeg obračunskog perioda.",
-        });
-      } catch (error) {
-        showAlert({
-          kind: "error",
-          title: "Članstvo nije otkazano",
-          message: error instanceof Error ? error.message : "Pokušaj ponovo.",
-        });
-      }
-    });
-  }
-
-  if (mode === "subscribe") {
-    return (
-      <main className="mx-auto w-full max-w-[1290px] px-1 pb-20 pt-[92px] sm:px-4 sm:pt-[110px] lg:pt-[126px]">
-        <Link className="mb-8 inline-flex items-center gap-2 text-[12px] font-extrabold uppercase text-[#5b6070] transition hover:text-[#111318]" href="/paketi">
-          <ChevronLeft aria-hidden="true" size={17} strokeWidth={2.2} />
-          Nazad na pakete
-        </Link>
-        {isPlatinum ? (
-          <div className="rounded-[20px] bg-white p-7 shadow-[0_16px_38px_rgba(17,19,24,0.08)] sm:p-10">
-            <p className="text-[12px] font-extrabold uppercase tracking-[0.14em] text-[#5b6070]">Premium je aktivan</p>
-            <h1 className="mt-4 text-[36px] font-extrabold leading-[1.05] text-[#111318] sm:text-[50px]">Promjena iznosa uskoro.</h1>
-            <p className="mt-5 max-w-[660px] text-[16px] leading-[1.65] text-[#5b6070]">
-              Trenutni sistem još ne čuva izabrani mjesečni iznos. Tvoja postojeća pretplata ostaje aktivna bez promjene.
-            </p>
-            <NavigationButton className="mt-7 inline-flex h-12 items-center justify-center rounded-full bg-[#111318] px-7 text-[13px] font-extrabold uppercase text-white" href="/artist/subscription">
-              Nazad na pretplatu
-            </NavigationButton>
-          </div>
-        ) : (
-          <DemoCardCheckout onComplete={handleCheckoutComplete} />
-        )}
-      </main>
-    );
-  }
-
-  const planName = isPlatinum ? "Premium" : "Free";
-
-  return (
-    <main className="-mx-5 -my-8 min-h-screen bg-[#f7f7f9] px-5 pb-24 pt-[126px] sm:-mx-8 sm:px-8 lg:pt-[142px]">
-      <div className="mx-auto w-full max-w-[1280px]">
-        <header>
-          <p className="text-[12px] font-extrabold uppercase tracking-[0.15em] text-[#697083]">Pretplata</p>
-          <h1 className="mt-5 text-[40px] font-extrabold leading-[1.02] tracking-normal text-[#111318] sm:text-[54px] lg:text-[66px]">Upravljanje pretplatom</h1>
-          <p className="mt-5 max-w-[760px] text-[16px] leading-[1.6] text-[#5b6070] sm:text-[18px]">
-            Pregledaj trenutni plan, promijeni iznos članstva ili ga otkaži kad želiš.
-          </p>
-        </header>
-
-        <section className="mt-10 grid items-start gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(300px,0.95fr)] lg:gap-10">
-          <div className="min-w-0 space-y-8">
-            <section className="rounded-[20px] bg-white p-6 shadow-[0_16px_38px_rgba(17,19,24,0.07)] sm:p-9">
-              <div className="flex flex-wrap items-start justify-between gap-5">
-                <div>
-                  <p className="text-[12px] font-extrabold uppercase tracking-[0.13em] text-[#697083]">Trenutni plan</p>
-                  <h2 className={isPlatinum ? "mt-3 bg-gradient-to-r from-[#625bd8] via-[#ed2f6c] to-[#ff6c45] bg-clip-text text-[38px] font-extrabold leading-none text-transparent sm:text-[48px]" : "mt-3 text-[38px] font-extrabold leading-none text-[#111318] sm:text-[48px]"}>
-                    {planName}
-                  </h2>
-                </div>
-                <StatusBadge cancelAtPeriodEnd={subscription.cancelAtPeriodEnd} status={subscription.status} />
-              </div>
-
-              <div className="my-7 h-px bg-[#eceef3]" />
-              <dl className="grid gap-x-8 gap-y-6 sm:grid-cols-2 xl:grid-cols-3">
-                <SubscriptionDetail label="Plan aktivan od" value={formatDate(subscription.currentPeriodStart)} />
-                <SubscriptionDetail label="Obračunski period do" value={formatDate(subscription.currentPeriodEnd)} />
-                <SubscriptionDetail label="Vrsta članstva" value={isPlatinum ? "Premium" : "Besplatno"} />
-                <SubscriptionDetail label="Način plaćanja" value={providerLabel(subscription.provider, isPlatinum)} />
-              </dl>
-            </section>
-
-            <section>
-              <p className="text-[12px] font-extrabold uppercase tracking-[0.13em] text-[#697083]">Dostupni planovi</p>
-              <div className="mt-5 grid gap-5 md:grid-cols-2">
-                <PlanOption active={!isPlatinum} description="Osnovni ArtBoard servisi za sve odobrene umjetnike: profil, prisustvo u pretraživaču i prvi Portfolio Builder export." name="Free" price="0€" tone="basic" />
-                <PlanOption active={isPlatinum} description="Fleksibilna cijena od 5€ do 30€ mjesečno. Isti Premium pristup, bez obzira na izabrani iznos." name="Premium" tone="premium" />
-              </div>
-            </section>
-          </div>
-
-          <aside className="self-start rounded-[20px] bg-white p-6 shadow-[0_16px_38px_rgba(17,19,24,0.07)] sm:p-8 lg:sticky lg:top-[108px]">
-            <p className="text-[12px] font-extrabold uppercase tracking-[0.13em] text-[#697083]">{isPlatinum ? "Premium je aktivan" : "Besplatan plan je aktivan"}</p>
-            <h2 className="mt-5 text-[30px] font-extrabold leading-[1.08] tracking-normal text-[#111318]">{isPlatinum ? "Tvoj nalog koristi Premium plan." : "Otključaj Premium mogućnosti."}</h2>
-            <p className="mt-5 text-[16px] leading-[1.65] text-[#5b6070]">
-              {isPlatinum
-                ? subscription.cancelAtPeriodEnd
-                  ? `Premium ostaje aktivan do ${formatDate(subscription.currentPeriodEnd)}, a zatim se nalog vraća na Free plan.`
-                  : "Imaš pristup svim Premium funkcionalnostima. Iznos članstva možeš promijeniti, a članstvo otkazati u bilo kom trenutku."
-                : "Izaberi mjesečni iznos koji ti odgovara i odmah otključaj sve Premium funkcionalnosti."}
-            </p>
-
-            <NavigationButton className="mt-7 inline-flex h-[52px] w-full items-center justify-center rounded-full bg-[#111318] px-6 text-[13px] font-extrabold uppercase text-white transition hover:bg-[#2c313f]" href="/artist/subscribe">
-              {isPlatinum ? "Promijeni iznos" : "Aktiviraj Premium"}
-            </NavigationButton>
-            <NavigationButton className="mt-3 inline-flex h-[52px] w-full items-center justify-center rounded-full border border-[#dfe2e9] px-6 text-[13px] font-extrabold uppercase text-[#343948] transition hover:bg-[#f7f7f9]" href="/artist/dashboard">
-              Nazad na dashboard
-            </NavigationButton>
-
-            {isPlatinum ? (
-              <button className="mx-auto mt-5 block text-[14px] font-bold text-[#dc2546] transition hover:text-[#ae1733] disabled:cursor-not-allowed disabled:opacity-50" disabled={isPending || subscription.cancelAtPeriodEnd} onClick={handleCancelMembership} type="button">
-                {subscription.cancelAtPeriodEnd ? "Otkazivanje je zakazano" : "Otkaži članstvo"}
-              </button>
-            ) : null}
-          </aside>
-        </section>
-      </div>
-    </main>
-  );
-}
-
-function PlanOption({ active, description, name, price, tone }: { active: boolean; description: string; name: string; price?: string; tone: "basic" | "premium" }) {
-  const isPremium = tone === "premium";
-
-  return (
-    <article className={isPremium ? "min-h-[212px] rounded-[20px] bg-gradient-to-br from-[#655fd8] via-[#ed2f6c] to-[#ff7442] p-7 text-white shadow-[0_18px_38px_rgba(44,108,220,0.16)]" : "min-h-[212px] rounded-[20px] bg-white p-7 shadow-[0_16px_38px_rgba(17,19,24,0.07)]"}>
-      <div className="flex items-start justify-between gap-4">
-        <h3 className="text-[26px] font-extrabold leading-none">{name}</h3>
-        {active ? (
-          <span className={isPremium ? "rounded-full bg-white/20 px-3 py-1.5 text-[12px] font-extrabold" : "rounded-full bg-[#edf4ff] px-3 py-1.5 text-[12px] font-extrabold text-[#1769df]"}>Aktivan</span>
-        ) : price ? (
-          <span className="text-[18px] font-extrabold text-[#5b6070]">{price}</span>
-        ) : null}
-      </div>
-      <p className={isPremium ? "mt-6 text-[15px] font-semibold leading-[1.65] text-white/90" : "mt-6 text-[15px] leading-[1.65] text-[#5b6070]"}>{description}</p>
-    </article>
-  );
-}
-
-function SubscriptionDetail({ label, value }: { label: string; value: string }) {
-  return <div><dt className="text-[13px] text-[#747b8c]">{label}</dt><dd className="mt-1.5 break-words text-[17px] font-extrabold text-[#171920]">{value}</dd></div>;
-}
-
-function StatusBadge({ cancelAtPeriodEnd, status }: { cancelAtPeriodEnd: boolean; status: ArtistSubscription["status"] }) {
-  const label = cancelAtPeriodEnd ? "Otkazivanje zakazano" : status === "ACTIVE" ? "Aktivan" : status === "PAST_DUE" ? "Uplata kasni" : status === "CANCELED" ? "Otkazan" : "Istekao";
-  return <span className="inline-flex w-fit items-center gap-2 rounded-full bg-[#edf4ff] px-4 py-2 text-[13px] font-extrabold text-[#1769df]"><span className="h-2 w-2 rounded-full bg-[#1a7cff]" />{label}</span>;
-}
-
-function providerLabel(provider: string | null | undefined, isPlatinum: boolean) {
-  if (!isPlatinum) return "Nije potrebno";
-  if (provider === "demo-card") return "Platna kartica";
-  return provider ?? "Nije evidentirano";
-}
-
-function formatDate(value?: string | null) {
-  if (!value) return "Nije određeno";
-  return new Intl.DateTimeFormat("sr-Latn-ME", { day: "numeric", month: "long", year: "numeric" }).format(new Date(value));
+  return <div className={styles.frame}><section className={styles.page} aria-labelledby="subscription-title" data-state={state}>
+    <span className={styles.eyebrow}>Pretplata</span>
+    <h1 className={styles.title} id="subscription-title">Upravljanje <span className={styles.gradient}>pretplatom</span></h1>
+    <p className={styles.intro}>Pregledaj plan i potrošnju, promijeni iznos članstva ili ga otkaži kad želiš.</p>
+    {notice ? <p role="status" className={styles.notice}>{notice}</p> : null}
+    <div className={styles.grid}>
+      <section className={styles.card + " " + styles.plan} aria-label="Trenutni plan" data-ab="sub-plan">
+        <div className={styles.planTop}>
+          <div className={styles.planIdentity}><span className={styles.eyebrow}>Trenutni plan</span><div className={styles.planName}>
+            <h2>{premium ? "Premium" : "Free"}</h2><span className={styles.badge + (premium && !failed ? " " + styles.gradientFrame : "")}><span className={failed ? styles.dangerBadge : ""}>{premium && !failed ? <Check /> : null}{status}</span></span>
+          </div></div>
+          <div className={styles.price}><strong className={premium && b.monthlyAmountCents === null ? styles.unknownPrice : ""}>{premium ? amount : "0 €"}</strong><span>{premium ? "mjesečno" : "bez pretplate"}</span></div>
+        </div>
+        <dl className={styles.details}>{details.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
+        <div className={styles.usage}>
+          <span className={styles.eyebrow}>Uključeno u {premium ? "Premium" : "Free"}</span>
+          <Usage title="Instagram objave" text={instagramText} total={premium ? usage.instagram.limit : undefined} used={usage.instagram.known ? usage.instagram.used : null} />
+          <Usage title="Portfolio Builder exporti" text={portfolioText} total={premium ? usage.portfolio.limit : undefined} used={usage.portfolio.used} />
+          {usage.portfolio.reserved > 0 ? <span className={styles.note}>U obradi: {usage.portfolio.reserved}. Raspoloživo: {usage.portfolio.remaining}.</span> : null}
+          <Usage title="QR vizit karta" text={qrText} />
+          <p className={styles.note}>{premium ? "Neiskorišćene objave i exporti se ne prenose u sljedeći mjesec. Set od 10 dodatnih objava i dodatni export koštaju po " + money(prices.extraExportCents) + " i naplaćuju se samo uz tvoju potvrdu."
+            : "Poslije besplatnog: set od 10 Instagram objava " + money(prices.instagramPackCents) + ", export " + money(prices.extraExportCents) + ", jednokratno i bez pretplate. Nova QR vizit karta uz Premium."}</p>
+          {!premium ? <div className={styles.topups}><Link className={styles.outline} href="/pretplata/placanje?proizvod=generator">Kupi set · {money(prices.instagramPackCents)}</Link><Link className={styles.outline} href="/placanje?proizvod=portfolio">Kupi export · {money(prices.extraExportCents)}</Link></div> : null}
+        </div>
+      </section>
+      <aside className={styles.card + " " + styles.actions} aria-label="Upravljanje članstvom" data-ab="sub-actions" aria-busy={pending}>
+        <span className={styles.eyebrow + (failed ? " " + styles.red : "")}>{failed ? "Naplata" : canceled ? "Članstvo je otkazano" : premium ? "Članstvo" : "Premium članstvo"}</span>
+        <h2>{failed ? "Naplata nije uspjela." : canceled ? "Premium je aktivan do " + date(b.accessUntil) : premium ? (caps.providerConnected ? "Sljedeće obnavljanje: " + date(b.periodEnd) : "Tekući Premium period: do " + date(b.accessUntil)) : expired ? "Premium je istekao " + date(b.lastPremiumEnd) : "Koristiš Free plan."}</h2>
+        <p>{failed ? (b.failedAmountCents !== null ? "Nismo uspjeli naplatiti " + money(b.failedAmountCents) + " za sljedeći period. " : "Naplata za sljedeći period nije potvrđena. ") + (b.nextRetryAt ? "Sljedeći pokušaj je " + date(b.nextRetryAt) + ". " : "Novi pokušaj naplate nije najavljen. ") + "Premium pristup važi do " + date(b.accessUntil) + "."
+          : canceled ? "Nakon toga nalog prelazi na Free. Preuzete objave, PDF-ovi i kartice ostaju dostupni. Ako se predomisliš, članstvo nastavljaš bez nove prijave."
+          : premium ? "Iznos članstva biraš od 8,90 do 30 € mjesečno, a Premium pristup je isti za svaki iznos. Novi iznos važi od sljedećeg obračunskog perioda."
+          : expired ? "Nalog sada koristi Free plan, a preuzete verzije ostaju dostupne. Premium od " + money(prices.premiumMinimumCents) + " mjesečno uključuje 10 Instagram objava, 5 Portfolio Builder exporta i QR vizit kartu."
+          : "Premium od " + money(prices.premiumMinimumCents) + " mjesečno uključuje 10 Instagram objava i 5 Portfolio Builder exporta mjesečno, QR vizit kartu i neograničeno uređivanje profila."}</p>
+        <div className={styles.actionStack}>
+          {canceled ? <button className={styles.primary} disabled={pending || !caps.canReactivate} onClick={() => void mutate("reactivate")}>{pending ? "Obrađujemo…" : "Obnovi članstvo"}</button>
+            : premium ? <button className={styles.primary} disabled aria-describedby="subscription-limitations">{failed ? "Ažuriraj karticu" : "Promijeni iznos"}</button>
+            : <Link className={styles.gradientAction} href="/placanje?proizvod=premium">{expired ? "Obnovi Premium" : "Aktiviraj Premium"}</Link>}
+          {premium && !canceled && !confirming ? <button ref={cancelButton} className={styles.cancel} disabled={!caps.canCancel} onClick={() => { setError(""); setConfirming(true); }}>Otkaži članstvo</button> : null}
+          {confirming ? <section className={styles.confirmation} aria-labelledby="cancel-confirmation-title">
+            <h3 ref={confirmationTitle} tabIndex={-1} id="cancel-confirmation-title">Otkazati Premium članstvo?</h3>
+            <p>Premium ostaje aktivan do {date(b.accessUntil)} Nakon toga nalog prelazi na Free, a preuzete objave, PDF-ovi i kartice ostaju dostupni.</p>
+            <div><button className={styles.confirmButton} disabled={pending} onClick={() => void mutate("cancel")}>{pending ? "Obrađujemo…" : "Potvrdi otkazivanje"}</button><button className={styles.dismiss} disabled={pending} onClick={() => { setConfirming(false); setError(""); requestAnimationFrame(() => cancelButton.current?.focus()); }}>Odustani</button></div>
+          </section> : null}
+        </div>
+        {error ? <p role="alert" className={styles.error}>{error}</p> : null}
+        {overview.limitations.length > 0 ? <p id="subscription-limitations" className={styles.note}>{overview.limitations.join(" ")}</p> : null}
+      </aside>
+    </div>
+    <section className={styles.plans} aria-label="Planovi"><span className={styles.eyebrow}>Planovi</span><div className={styles.planGrid}>
+      {[false, true].map(isPremium => <div key={String(isPremium)} className={isPremium ? styles.premiumFrame : styles.freeFrame}>
+        <article className={styles.comparison}><div className={styles.comparisonHeading}><h2>{isPremium ? "Premium" : "Free"}</h2><strong>{isPremium ? "od " + money(prices.premiumMinimumCents) + " mjesečno" : "0 €"}</strong></div>
+          {isPremium ? <p>Iznos biraš od 8,90 do 30 € mjesečno; pristup je isti za svaki iznos.</p> : null}
+          <ul>{(isPremium ? premiumFeatures : freeFeatures).map((feature, i) => <li key={feature}><Check /><span>{feature}{isPremium && i >= 5 ? <small>Uskoro</small> : null}</span></li>)}</ul>
+          {isPremium === premium ? <span className={styles.current}>Trenutni plan</span> : null}
+        </article>
+      </div>)}
+    </div></section>
+  </section></div>;
 }

@@ -1,5 +1,6 @@
 import {
   Injectable,
+  BadRequestException,
   NotFoundException,
   OnModuleInit,
   UnauthorizedException,
@@ -229,6 +230,7 @@ export class AuthService implements OnModuleInit {
   }
 
   async changeArtistPassword(artistAccountId: string, dto: ChangeArtistPasswordDto) {
+    if (dto.confirmNewPassword !== undefined && dto.confirmNewPassword !== dto.newPassword) throw new BadRequestException("Nova lozinka i potvrda moraju biti iste.");
     const artistAccount = await this.prisma.artistAccount.findUnique({
       where: {
         id: artistAccountId,

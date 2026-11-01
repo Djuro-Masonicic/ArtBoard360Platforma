@@ -1,4 +1,5 @@
 import type { PortfolioArtwork, PortfolioProject } from "@/types/api";
+import { buildPortfolioDocumentPlan, getMinimalDesignLabel } from "@artboard/portfolio-document-plan";
 
 import { PortfolioPdfCanvasViewer } from "./portfolio-pdf-canvas-viewer";
 import { PortfolioPrintToolbar } from "./portfolio-print-toolbar";
@@ -23,9 +24,8 @@ const PAPER = "#fbfbfa";
 export function PortfolioPdfPreview({ mode = "preview", project }: PortfolioPdfPreviewProps) {
   if (mode === "preview") {
     const previewPdfUrl = `/api/portfolio-projects/${project.id}/pdf?mode=preview`;
-    const estimatedPages = Math.max(4, project.counts.selectedArtworks + 4);
-    const displayedPages = Math.min(7, estimatedPages);
-    const templateLabel = formatTemplateLabel(project.template);
+    const estimatedPages = buildPortfolioDocumentPlan(project).pageCount;
+    const templateLabel = project.template === "INSTITUTIONAL_MINIMAL" ? getMinimalDesignLabel(project) : formatTemplateLabel(project.template);
     const formatLabel = project.pageFormat === "US_LETTER" ? "Letter" : "A4";
 
     return (
@@ -46,6 +46,7 @@ export function PortfolioPdfPreview({ mode = "preview", project }: PortfolioPdfP
 
         <PortfolioPrintToolbar
           canDownload={project.access.canDownloadCleanPdf}
+          canGenerate={(project.access.canGeneratePdf ?? project.access.canDownloadCleanPdf) && project.access.privatePdfStorageReady !== false}
           latestPdfUrl={project.latestPdfUrl}
           mode={mode}
           projectId={project.id}
@@ -64,7 +65,7 @@ export function PortfolioPdfPreview({ mode = "preview", project }: PortfolioPdfP
                 {formatPreviewTitle(project)}
               </h1>
               <div className="flex flex-wrap gap-1.5">
-                {[templateLabel, formatLabel, `${estimatedPages} strana`].map((label) => (
+                {[templateLabel, formatLabel, `${estimatedPages} strana · procjena`].map((label) => (
                   <span
                     className="inline-flex h-[26px] items-center rounded-full px-[11px] text-[11.5px] font-bold text-[#c4c8d4] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.14)]"
                     key={label}
@@ -93,8 +94,9 @@ export function PortfolioPdfPreview({ mode = "preview", project }: PortfolioPdfP
 
           <div className="flex flex-wrap items-center justify-center gap-[10px_14px]">
             <span className="text-[13px] font-semibold text-[#8d93a5]">
-              Prikazano {displayedPages} od {estimatedPages} strana
+              Pregled prikazuje do 7 strana.
             </span>
+            <a className="text-[13px] font-semibold text-[#f3f4f7] underline" href={previewPdfUrl} target="_blank" rel="noreferrer">Otvori cijeli PDF</a>
             <a
               className="inline-flex h-[34px] items-center justify-center rounded-full px-4 text-[12.5px] font-extrabold uppercase text-[#f3f4f7] shadow-[inset_0_0_0_1.5px_#f3f4f7] transition hover:bg-[#f3f4f7] hover:text-[#07080d]"
               href={`/portfolio-builder/${project.id}`}
@@ -115,6 +117,7 @@ export function PortfolioPdfPreview({ mode = "preview", project }: PortfolioPdfP
     <main className="min-h-screen bg-[#eef2f7] px-3 pb-3 pt-16 text-[#20242d]">
       <PortfolioPrintToolbar
         canDownload={project.access.canDownloadCleanPdf}
+        canGenerate={(project.access.canGeneratePdf ?? project.access.canDownloadCleanPdf) && project.access.privatePdfStorageReady !== false}
         latestPdfUrl={project.latestPdfUrl}
         mode={mode}
         projectId={project.id}

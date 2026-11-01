@@ -1,4 +1,9 @@
 import { Module } from "@nestjs/common";
+import { PromotionsModule } from "./modules/promotions/promotions.module";
+import { QrCardsModule } from "./modules/qr-cards/qr-cards.module";
+import { ContactModule } from "./modules/contact/contact.module";
+import { ArtistDashboardModule } from "./modules/artist-dashboard/artist-dashboard.module";
+import { ArtistCollectionsModule } from "./modules/artist-collections/artist-collections.module";
 
 import { ArtworksModule } from "./modules/artworks/artworks.module";
 import { ArtistsModule } from "./modules/artists/artists.module";
@@ -19,6 +24,10 @@ import { StorageModule } from "./storage/storage.module";
  */
 @Module({
   imports: [
+    PromotionsModule,
+    QrCardsModule,
+    ArtistDashboardModule,
+    ContactModule,
     PrismaModule,
     StorageModule,
     AuthModule,
@@ -26,6 +35,7 @@ import { StorageModule } from "./storage/storage.module";
     ArtistSubmissionsModule,
     ArtistSubscriptionsModule,
     ArtworksModule,
+    ArtistCollectionsModule,
     FaqsModule,
     OpportunitiesModule,
     PortfolioProjectsModule,

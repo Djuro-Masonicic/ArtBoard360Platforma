@@ -5,6 +5,7 @@ import { PaginatedResponse } from "../../common/dto/pagination-query.dto";
 import { createSlug } from "../../common/utils/text";
 import { PrismaService } from "../../prisma/prisma.service";
 import { R2StorageService } from "../../storage/r2-storage.service";
+import sharp from "sharp";
 import {
   ArtistSocialLinkInputDto,
   CreateArtistDto,
@@ -48,6 +49,9 @@ const artistListInclude = {
 } satisfies Prisma.ArtistInclude;
 
 const artistDetailInclude = {
+  collections: { orderBy: [{ orderIndex: "asc" }, { id: "asc" }], select: {
+    id: true, title: true, description: true, year: true, coverImageUrl: true, orderIndex: true,
+  } },
   artworks: {
     orderBy: {
       orderIndex: "asc",
@@ -174,11 +178,32 @@ export class ArtistsService {
     return this.serializeArtist(hydratedArtist);
   }
 
-  async updateArtist(id: string, dto: UpdateArtistDto) {
+  async getOwnedArtist(id: string) {
+    const artist = await this.prisma.artist.findUnique({ where: { id }, include: artistDetailInclude });
+    if (!artist) throw new NotFoundException("Profil nije pronađen.");
+    return this.serializeArtist(artist)!;
+  }
+
+  async updateArtist(id: string, dto: UpdateArtistDto, ownerArtistId?: string) {
+    if (ownerArtistId !== undefined && ownerArtistId !== id) throw new NotFoundException("Profil nije pronađen.");
+    if (dto.artistStatement && dto.artistStatement.trim().split(/\s+/u).length > 60) throw new BadRequestException("Umjetnički iskaz može imati najviše 60 riječi.");
+    if (dto.disciplines && (dto.disciplines.length > 3 || new Set(dto.disciplines).size !== dto.disciplines.length)) throw new BadRequestException("Izaberi najviše tri različite discipline.");
+    if (dto.disciplines) {
+      const catalog = await this.prisma.discipline.findMany({ where: { OR: [{ name: { in: dto.disciplines } }, { slug: { in: dto.disciplines } }] } });
+      dto.disciplines = dto.disciplines.map(value => {
+        const match = catalog.find(d => d.name === value || d.slug === value);
+        if (!match) throw new BadRequestException("Izabrana disciplina nije u katalogu.");
+        return match.name;
+      });
+      if (new Set(dto.disciplines).size !== dto.disciplines.length) throw new BadRequestException("Discipline se ne smiju ponavljati.");
+    }
     await this.assertArtistExists(id);
 
     await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "Artist" WHERE "id"=${id}::uuid FOR UPDATE`;
       const data: Prisma.ArtistUpdateInput = {};
+      if (dto.artistStatement !== undefined) data.artistStatement = dto.artistStatement.trim() || null;
+      if (dto.presentationForm !== undefined) data.presentationForm = dto.presentationForm;
 
       if (dto.name !== undefined) {
         data.name = dto.name.trim();
@@ -210,6 +235,7 @@ export class ArtistsService {
 
       if (dto.coverImageUrl !== undefined) {
         data.coverImageUrl = dto.coverImageUrl || null;
+        await tx.artwork.updateMany({ where: { artistId: id, isBackground: true }, data: { isBackground: false } });
       }
 
       if (dto.thumbnailUrl !== undefined) {
@@ -244,12 +270,16 @@ export class ArtistsService {
     return this.serializeArtist(hydratedArtist);
   }
 
-  async uploadProfileImage(id: string, file: Express.Multer.File | undefined) {
+  async uploadProfileImage(id: string, file: Express.Multer.File | undefined, ownerArtistId?: string) {
+    if (ownerArtistId !== undefined && ownerArtistId !== id) throw new NotFoundException("Profil nije pronađen.");
     await this.assertArtistExists(id);
 
     if (!file) {
       throw new BadRequestException("A profile image file is required.");
     }
+    this.storageService.validateUpload(file.size, file.mimetype, "profile");
+    try { await sharp(file.buffer, { limitInputPixels: 40_000_000 }).metadata(); }
+    catch { throw new BadRequestException("Fotografija nije ispravna ili je prevelika."); }
 
     const uploadedFile = await this.storageService.uploadFile({
       recordId: id,
@@ -423,6 +453,8 @@ export class ArtistsService {
       name: artist.name,
       slug: artist.slug,
       bio: artist.bio,
+      artistStatement: artist.artistStatement,
+      presentationForm: artist.presentationForm,
       quote: artist.quote,
       email: artist.email,
       profileImageUrl: artist.profileImageUrl,
@@ -430,6 +462,8 @@ export class ArtistsService {
       coverImageUrl: artist.coverImageUrl,
       thumbnailUrl: artist.thumbnailUrl,
       isNsfw: artist.isNsfw,
+      isDraft: artist.isDraft,
+      isArchived: artist.isArchived,
       darkenCoverOverlay: artist.darkenCoverOverlay,
       createdAt: artist.createdAt,
       updatedAt: artist.updatedAt,
@@ -442,6 +476,7 @@ export class ArtistsService {
         : [],
       socialLinks: "socialLinks" in artist ? artist.socialLinks : [],
       artworks: "artworks" in artist ? artist.artworks : [],
+      collections: "collections" in artist ? artist.collections : [],
       testimonials: "testimonials" in artist ? artist.testimonials : [],
       counts: "_count" in artist
         ? {

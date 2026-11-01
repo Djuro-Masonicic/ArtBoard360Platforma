@@ -1,12 +1,22 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import { Opportunity, OpportunityType, Prisma } from "@prisma/client";
+import {
+  Opportunity,
+  OpportunityApplicationMethod,
+  OpportunitySubmissionStatus,
+  OpportunityType,
+  Prisma,
+} from "@prisma/client";
+import { randomUUID } from "node:crypto";
 
 import { PaginatedResponse } from "../../common/dto/pagination-query.dto";
 import { env } from "../../config/env";
 import { ResendMailService } from "../../mail/resend-mail.service";
 import { PrismaService } from "../../prisma/prisma.service";
+import { R2StorageService } from "../../storage/r2-storage.service";
+import { OpportunityDetailsDto } from "./opportunity-details.dto";
 import {
   CreateOpportunityDto,
+  CreatePublicOpportunitySubmissionDto,
   ListOpportunitiesQueryDto,
   UpdateOpportunityDto,
 } from "./opportunities.dto";
@@ -23,6 +33,7 @@ export class OpportunitiesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly mailService: ResendMailService,
+    private readonly storageService: R2StorageService,
   ) {}
 
   async listOpportunities(query: ListOpportunitiesQueryDto): Promise<PaginatedResponse<unknown>> {
@@ -30,7 +41,7 @@ export class OpportunitiesService {
       ...query,
       includeDrafts: false,
     });
-    return this.findPaginatedOpportunities(query, where);
+    return this.findPaginatedOpportunities(query, where, true);
   }
 
   async listAdminOpportunities(
@@ -47,6 +58,7 @@ export class OpportunitiesService {
   private async findPaginatedOpportunities(
     query: ListOpportunitiesQueryDto,
     where: Prisma.OpportunityWhereInput,
+    publicOnly = false,
   ): Promise<PaginatedResponse<unknown>> {
     const page = query.page;
     const pageSize = query.pageSize;
@@ -72,7 +84,7 @@ export class OpportunitiesService {
     ]);
 
     return {
-      items,
+      items: publicOnly ? items.map((item) => this.publicOpportunity(item)) : items,
       meta: {
         page,
         pageSize,
@@ -96,6 +108,116 @@ export class OpportunitiesService {
     return opportunity;
   }
 
+  async createPublicSubmission(
+    dto: CreatePublicOpportunitySubmissionDto,
+    coverImage?: Express.Multer.File,
+  ) {
+    if (!dto.consent) {
+      throw new BadRequestException("Morate prihvatiti uslove korišćenja i politiku privatnosti.");
+    }
+
+    if (!dto.isOpenEnded && !dto.deadlineAt) {
+      throw new BadRequestException("Rok za prijavu je obavezan za pozive koji nijesu otvoreni.");
+    }
+
+    const applyValue = dto.applyValue.trim();
+    if (dto.applicationMethod === OpportunityApplicationMethod.EMAIL) {
+      if (!/^\S+@\S+\.\S+$/.test(applyValue)) {
+        throw new BadRequestException("E-mail za prijave nije ispravan.");
+      }
+    } else {
+      try {
+        const url = new URL(applyValue);
+        if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error("Invalid protocol");
+      } catch {
+        throw new BadRequestException("Link za prijave mora biti ispravna HTTP ili HTTPS adresa.");
+      }
+    }
+
+    const id = randomUUID();
+    let uploadedCover: { path: string; publicUrl: string } | null = null;
+
+    try {
+      if (coverImage) {
+        uploadedCover = await this.storageService.uploadFile({
+          recordId: id,
+          entityType: "opportunity-cover",
+          fileName: coverImage.originalname,
+          mimeType: coverImage.mimetype,
+          fileSizeBytes: coverImage.size,
+          body: coverImage.buffer,
+        });
+      }
+
+      const title = dto.title.trim();
+      const description = dto.description.trim();
+      const compensation = this.nullableString(dto.compensation);
+      const opportunity = await this.prisma.opportunity.create({
+        data: {
+          ...this.detailsData(dto),
+          id,
+          title,
+          slug: await this.makeUniqueSlug(title),
+          type: dto.type,
+          organization: dto.organizerName.trim(),
+          organizerType: dto.organizerType,
+          location: this.formatLocation(dto.city, dto.countryCode),
+          countryCode: dto.countryCode.trim(),
+          city: dto.city.trim(),
+          summary: description.slice(0, 220),
+          description,
+          conditions: dto.conditions.trim(),
+          compensation,
+          additionalInformation: this.nullableString(dto.additionalInformation),
+          applicationMethod: dto.applicationMethod,
+          applyEmail:
+            dto.applicationMethod === OpportunityApplicationMethod.EMAIL ? applyValue : null,
+          applyUrl:
+            dto.applicationMethod === OpportunityApplicationMethod.LINK ? applyValue : null,
+          contactEmail: dto.contactEmail.trim().toLowerCase(),
+          deadlineAt: dto.isOpenEnded ? null : this.nullableDate(dto.deadlineAt),
+          isOpenEnded: dto.isOpenEnded,
+          coverImageUrl: uploadedCover?.publicUrl ?? null,
+          coverImageStoragePath: uploadedCover?.path ?? null,
+          consentAcceptedAt: new Date(),
+          submissionStatus: OpportunitySubmissionStatus.PENDING,
+          isPaid: dto.compensationKind === "NONE" ? false : Boolean((dto.compensationAmount ?? 0) > 0 || (compensation && !/bez honorara|volontersk/i.test(compensation))),
+          isDraft: true,
+        },
+      });
+
+      let emailNotificationSent = true;
+      try {
+        await this.mailService.sendOpportunitySubmissionNotification({
+          submissionId: opportunity.id,
+          title: opportunity.title,
+          organization: opportunity.organization ?? "",
+          contactEmail: opportunity.contactEmail ?? "",
+        });
+      } catch (error) {
+        emailNotificationSent = false;
+        console.error("Opportunity submission was stored, but the admin notification failed.", error);
+      }
+
+      return {
+        success: true,
+        submissionId: opportunity.id,
+        status: opportunity.submissionStatus,
+        emailNotificationSent,
+        message: "Oglas je poslat na provjeru.",
+      };
+    } catch (error) {
+      if (uploadedCover) {
+        try {
+          await this.storageService.deleteFile(uploadedCover.path);
+        } catch (cleanupError) {
+          console.error("Could not clean up opportunity cover after submission failure.", cleanupError);
+        }
+      }
+      throw error;
+    }
+  }
+
   async createOpportunity(dto: CreateOpportunityDto): Promise<Opportunity> {
     const title = dto.title.trim();
     const description = dto.description.trim();
@@ -112,16 +234,28 @@ export class OpportunitiesService {
 
     return this.prisma.opportunity.create({
       data: {
+        ...this.detailsData(dto),
         title,
         slug,
         type: dto.type ?? OpportunityType.OPEN_CALL,
         organization: this.nullableString(dto.organization),
         location: this.nullableString(dto.location),
+        countryCode: this.nullableString(dto.countryCode),
+        city: this.nullableString(dto.city),
         summary: this.nullableString(dto.summary),
         description,
+        conditions: this.nullableString(dto.conditions),
+        compensation: this.nullableString(dto.compensation),
+        additionalInformation: this.nullableString(dto.additionalInformation),
+        applicationMethod: dto.applicationMethod ?? null,
         applyUrl: this.nullableString(dto.applyUrl),
+        applyEmail: this.nullableString(dto.applyEmail),
         contactEmail: this.nullableString(dto.contactEmail),
         deadlineAt: this.nullableDate(dto.deadlineAt),
+        isOpenEnded: dto.isOpenEnded ?? false,
+        organizerType: dto.organizerType ?? null,
+        submissionStatus: dto.submissionStatus ?? OpportunitySubmissionStatus.APPROVED,
+        reviewNotes: this.nullableString(dto.reviewNotes),
         isPaid: dto.isPaid ?? false,
         isFeatured: dto.isFeatured ?? false,
         isArchived: dto.isArchived ?? false,
@@ -132,7 +266,7 @@ export class OpportunitiesService {
 
   async updateOpportunity(id: string, dto: UpdateOpportunityDto): Promise<Opportunity> {
     const existing = await this.getOpportunityById(id);
-    const data: Prisma.OpportunityUpdateInput = {};
+    const data: Prisma.OpportunityUpdateInput = this.detailsData(dto);
 
     if (dto.title !== undefined) {
       const title = dto.title.trim();
@@ -156,6 +290,8 @@ export class OpportunitiesService {
     if (dto.type !== undefined) data.type = dto.type;
     if (dto.organization !== undefined) data.organization = this.nullableString(dto.organization);
     if (dto.location !== undefined) data.location = this.nullableString(dto.location);
+    if (dto.countryCode !== undefined) data.countryCode = this.nullableString(dto.countryCode);
+    if (dto.city !== undefined) data.city = this.nullableString(dto.city);
     if (dto.summary !== undefined) data.summary = this.nullableString(dto.summary);
 
     if (dto.description !== undefined) {
@@ -169,29 +305,71 @@ export class OpportunitiesService {
     }
 
     if (dto.applyUrl !== undefined) data.applyUrl = this.nullableString(dto.applyUrl);
+    if (dto.applyEmail !== undefined) data.applyEmail = this.nullableString(dto.applyEmail);
     if (dto.contactEmail !== undefined) data.contactEmail = this.nullableString(dto.contactEmail);
     if (dto.deadlineAt !== undefined) data.deadlineAt = this.nullableDate(dto.deadlineAt);
+    if (dto.conditions !== undefined) data.conditions = this.nullableString(dto.conditions);
+    if (dto.compensation !== undefined) data.compensation = this.nullableString(dto.compensation);
+    if (dto.additionalInformation !== undefined) {
+      data.additionalInformation = this.nullableString(dto.additionalInformation);
+    }
+    if (dto.applicationMethod !== undefined) data.applicationMethod = dto.applicationMethod;
+    if (dto.organizerType !== undefined) data.organizerType = dto.organizerType;
+    if (dto.isOpenEnded !== undefined) data.isOpenEnded = dto.isOpenEnded;
+    if (dto.reviewNotes !== undefined) data.reviewNotes = this.nullableString(dto.reviewNotes);
+    if (dto.submissionStatus !== undefined) {
+      data.submissionStatus = dto.submissionStatus;
+      data.reviewedAt = new Date();
+      data.isDraft = dto.submissionStatus !== OpportunitySubmissionStatus.APPROVED;
+    }
     if (dto.isPaid !== undefined) data.isPaid = dto.isPaid;
     if (dto.isFeatured !== undefined) data.isFeatured = dto.isFeatured;
     if (dto.isArchived !== undefined) data.isArchived = dto.isArchived;
     if (dto.isDraft !== undefined) data.isDraft = dto.isDraft;
 
-    return this.prisma.opportunity.update({
+    const updated = await this.prisma.opportunity.update({
       where: {
         id,
       },
       data,
     });
+
+    const decisionChanged =
+      dto.submissionStatus !== undefined &&
+      dto.submissionStatus !== existing.submissionStatus &&
+      dto.submissionStatus !== OpportunitySubmissionStatus.PENDING;
+    if (decisionChanged && updated.contactEmail) {
+      try {
+        await this.mailService.sendOpportunityReviewNotification({
+          recipientEmail: updated.contactEmail,
+          title: updated.title,
+          approved: updated.submissionStatus === OpportunitySubmissionStatus.APPROVED,
+          reviewNotes: updated.reviewNotes,
+        });
+      } catch (error) {
+        console.error("Opportunity status was saved, but the submitter notification failed.", error);
+      }
+    }
+
+    return updated;
   }
 
   async deleteOpportunity(id: string): Promise<{ id: string; deleted: true }> {
     await this.getOpportunityById(id);
 
-    await this.prisma.opportunity.delete({
+    const deleted = await this.prisma.opportunity.delete({
       where: {
         id,
       },
     });
+
+    if (deleted.coverImageStoragePath) {
+      try {
+        await this.storageService.deleteFile(deleted.coverImageStoragePath);
+      } catch (error) {
+        console.error("Opportunity was deleted, but its cover could not be removed.", error);
+      }
+    }
 
     return {
       id,
@@ -205,7 +383,7 @@ export class OpportunitiesService {
   ): Promise<{ message: string }> {
     const opportunity = await this.getOpportunityById(id);
 
-    if (opportunity.isArchived || opportunity.isDraft) {
+    if (opportunity.isDemo || opportunity.submissionStatus !== OpportunitySubmissionStatus.APPROVED || opportunity.isArchived || opportunity.isDraft) {
       throw new BadRequestException("Ovaj oglas trenutno nije otvoren za prijave.");
     }
 
@@ -280,6 +458,54 @@ export class OpportunitiesService {
     };
   }
 
+  private publicOpportunity(item: Opportunity) {
+    const { contactEmail, coverImageStoragePath, consentAcceptedAt, reviewNotes, reviewedAt, ...publicData } = item;
+    return {
+      ...publicData,
+      hasArtboardApplication: !item.applicationMethod && !item.applyUrl && Boolean(contactEmail),
+    };
+  }
+
+  async getPublicOpportunity(identifier: string) {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
+    const item = await this.prisma.opportunity.findFirst({
+      where: {
+        isArchived: false,
+        isDraft: false,
+        submissionStatus: OpportunitySubmissionStatus.APPROVED,
+        OR: [{ slug: identifier }, ...(isUuid ? [{ id: identifier }] : [])],
+      },
+    });
+    if (!item) throw new NotFoundException("Opportunity was not found.");
+    return this.publicOpportunity(item);
+  }
+
+  async recordPublicView(id: string) {
+    const result = await this.prisma.opportunity.updateMany({
+      where: { id, isArchived: false, isDraft: false, submissionStatus: OpportunitySubmissionStatus.APPROVED },
+      data: { viewCount: { increment: 1 } },
+    });
+    if (!result.count) throw new NotFoundException("Opportunity was not found.");
+    return { success: true };
+  }
+
+  private detailsData(dto: OpportunityDetailsDto) {
+    const clean = (values: string[] | undefined) => Array.from(new Set((values ?? []).map((value) => value.trim()).filter(Boolean)));
+    return {
+      ...(dto.workMode !== undefined ? { workMode: dto.workMode } : {}),
+      ...(dto.compensationKind !== undefined ? { compensationKind: dto.compensationKind } : {}),
+      ...(dto.compensationAmount !== undefined ? { compensationAmount: dto.compensationAmount } : {}),
+      ...(dto.compensationCurrency != null ? { compensationCurrency: dto.compensationCurrency } : {}),
+      ...(dto.applicationFee !== undefined ? { applicationFee: dto.applicationFee } : {}),
+      ...(dto.maxAge !== undefined ? { maxAge: dto.maxAge } : {}),
+      ...(dto.disciplines !== undefined ? { disciplines: clean(dto.disciplines) } : {}),
+      ...(dto.eligibleCountries !== undefined ? { eligibleCountries: clean(dto.eligibleCountries) } : {}),
+      ...(dto.applicationLanguages !== undefined ? { applicationLanguages: clean(dto.applicationLanguages) } : {}),
+      ...(dto.requiredDocuments !== undefined ? { requiredDocuments: clean(dto.requiredDocuments) } : {}),
+      ...(dto.coveredCosts !== undefined ? { coveredCosts: clean(dto.coveredCosts) } : {}),
+    };
+  }
+
   private buildWhere(query: ListOpportunitiesQueryDto): Prisma.OpportunityWhereInput {
     const andFilters: Prisma.OpportunityWhereInput[] = [];
 
@@ -287,6 +513,7 @@ export class OpportunitiesService {
       andFilters.push({
         isArchived: false,
         isDraft: false,
+        submissionStatus: OpportunitySubmissionStatus.APPROVED,
       });
     }
 
@@ -294,6 +521,10 @@ export class OpportunitiesService {
       andFilters.push({
         type: query.type,
       });
+    }
+
+    if (query.status) {
+      andFilters.push({ submissionStatus: query.status });
     }
 
     if (query.search) {
@@ -345,6 +576,25 @@ export class OpportunitiesService {
     }
 
     return date;
+  }
+
+  private formatLocation(city: string, countryCode: string) {
+    const countryNames: Record<string, string> = {
+      ME: "Crna Gora",
+      RS: "Srbija",
+      HR: "Hrvatska",
+      BA: "Bosna i Hercegovina",
+      MK: "Sjeverna Makedonija",
+      SI: "Slovenija",
+      XK: "Kosovo",
+      AL: "Albanija",
+      REG: "Online · cijeli region",
+      OTHER: "Druga država",
+    };
+    const normalizedCity = city.trim();
+    const country = countryNames[countryCode.trim()] ?? countryCode.trim();
+    if (!country || normalizedCity.toLocaleLowerCase() === country.toLocaleLowerCase()) return normalizedCity;
+    return `${normalizedCity}, ${country}`;
   }
 
   private slugify(value: string): string {

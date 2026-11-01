@@ -72,6 +72,7 @@ const adminNavigation: Array<{
   icon: LucideIcon;
   label: string;
 }> = [
+  { href: "/admin/artist-deletion-requests", label: "Brisanje naloga", helper: "Zahtjevi umjetnika za pregled", icon: LayoutDashboard },
   { href: "/admin", label: "Pregled", helper: "Sažetak platforme", icon: LayoutDashboard },
   { href: "/admin/admissions", label: "Prijave", helper: "Pregled i odobravanje", icon: FileText },
   { href: "/admin/artists", label: "Umjetnici", helper: "Profili i sadržaj", icon: Users },

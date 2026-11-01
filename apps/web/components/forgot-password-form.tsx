@@ -1,88 +1,123 @@
 "use client";
 
+import { ArrowLeft, Mail } from "lucide-react";
 import Link from "next/link";
 import { FormEvent, useState, useTransition } from "react";
 
-import { NavigationButton } from "@/components/navigation-button";
+import { authStyles as styles } from "@/components/auth-page-shell";
 import { useUiFeedback, useUiLoadingState } from "@/components/ui-feedback-provider";
 import { requestArtistPasswordReset } from "@/services/password-reset";
 
 export function ForgotPasswordForm() {
   const { showAlert } = useUiFeedback();
   const [email, setEmail] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   useUiLoadingState(isPending);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function sendResetLink() {
+    const normalizedEmail = email.trim();
+
+    if (!isValidEmail(normalizedEmail)) {
+      setError("Unesi ispravnu e-mail adresu.");
+      return;
+    }
+
+    setEmail(normalizedEmail);
+    setError(null);
 
     startTransition(async () => {
       try {
-        const response = await requestArtistPasswordReset(email);
+        const response = await requestArtistPasswordReset(normalizedEmail);
         setIsSubmitted(true);
         showAlert({
           kind: "success",
-          title: "Provjeri email",
+          title: "Provjeri e-mail",
           message: response.message,
         });
-      } catch (error) {
+      } catch (requestError) {
+        const originalMessage = requestError instanceof Error ? requestError.message : "Pokušaj ponovo.";
+        const message = /email must be an email/i.test(originalMessage)
+          ? "Unesi ispravnu e-mail adresu."
+          : originalMessage;
+        setError(message);
         showAlert({
           kind: "error",
           title: "Zahtjev nije poslat",
-          message: error instanceof Error ? error.message : "Pokusaj ponovo.",
+          message,
         });
       }
     });
   }
 
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    sendResetLink();
+  }
+
   if (isSubmitted) {
     return (
-      <div>
-        <h2 className="text-[28px] font-bold text-[#2f3138]">Provjeri svoj email</h2>
-        <p className="mt-4 text-[16px] leading-[1.6] text-[#5f6772]">
-          Ako postoji aktivan artist nalog za <strong>{email}</strong>, poslali smo link koji vazi 60 minuta.
+      <div className={styles.stateContent}>
+        <span className={styles.stateIcon} aria-hidden="true"><Mail /></span>
+        <h2 className={styles.stateTitle}>Provjeri e-mail</h2>
+        <p className={styles.stateCopy}>
+          Ako postoji nalog sa adresom <strong>{email}</strong>, poslali smo link za postavljanje
+          nove lozinke. Ne vidiš e-mail? Provjeri folder za neželjenu poštu ili pošalji link ponovo.
         </p>
-        <NavigationButton
-          className="mt-7 inline-flex h-12 w-full items-center justify-center rounded-full border border-[#182fc7] px-6 text-[16px] font-medium text-[#182fc7] transition hover:bg-[#182fc7] hover:text-white"
-          href="/artist/login"
-        >
-          Nazad na prijavu
-        </NavigationButton>
+        <div className={styles.stateActions}>
+          <button className={styles.secondaryButton} disabled={isPending} onClick={sendResetLink} type="button">
+            {isPending ? "Slanje..." : "Pošalji ponovo"}
+          </button>
+          <Link className={styles.backLink} href="/artist/login"><ArrowLeft /> Nazad na login</Link>
+        </div>
       </div>
     );
   }
 
   return (
-    <form className="space-y-5" onSubmit={handleSubmit}>
-      <label className="block space-y-2">
-        <span className="text-[15px] font-semibold text-[#2f3138]">E-mail artist naloga</span>
-        <input
-          autoComplete="email"
-          className="h-12 w-full rounded-full border border-[#d8dfeb] bg-white px-5 text-[16px] text-[#2f3138] outline-none transition focus:border-[#182fc7]"
-          onChange={(event) => setEmail(event.target.value)}
-          placeholder="ime@domen.com"
-          required
-          type="email"
-          value={email}
-        />
-      </label>
+    <>
+      <div className={styles.cardHeader}>
+        <h2 className={styles.cardTitle}>Nova lozinka</h2>
+        <p className={styles.cardCopy}>
+          Unesi e-mail adresu kojom se prijavljuješ. Poslaćemo ti link za postavljanje nove lozinke.
+        </p>
+      </div>
 
-      <button
-        className="inline-flex h-12 w-full items-center justify-center rounded-full bg-[#182fc7] px-6 text-[16px] font-medium text-white transition hover:bg-[#1326a8] disabled:cursor-not-allowed disabled:bg-[#9aa6dd]"
-        disabled={isPending}
-        type="submit"
-      >
-        {isPending ? "Slanje..." : "Posalji reset link"}
-      </button>
+      <form className={styles.form} onSubmit={handleSubmit}>
+        <label className={styles.field} htmlFor="forgot-password-email">
+          <span className={styles.label}>E-mail</span>
+          <input
+            aria-invalid={Boolean(error)}
+            autoComplete="email"
+            className={`${styles.input} ${error ? styles.inputError : ""}`}
+            id="forgot-password-email"
+            onChange={(event) => {
+              setEmail(event.target.value);
+              setError(null);
+            }}
+            placeholder="ime@primjer.com"
+            required
+            type="email"
+            value={email}
+          />
+        </label>
 
-      <Link
-        className="block text-center text-[14px] font-semibold text-[#4f5967] underline underline-offset-4 transition hover:text-[#182fc7]"
-        href="/artist/login"
-      >
-        Nazad na prijavu
-      </Link>
-    </form>
+        {error ? <p className={styles.fieldError} role="alert">{error}</p> : null}
+
+        <button className={styles.primaryButton} disabled={isPending} type="submit">
+          {isPending ? "Slanje..." : "Pošalji link"}
+        </button>
+
+        <Link className={`${styles.backLink} self-center`} href="/artist/login">
+          <ArrowLeft /> Nazad na login
+        </Link>
+      </form>
+    </>
   );
+}
+
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }

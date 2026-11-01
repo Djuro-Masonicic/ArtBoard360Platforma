@@ -56,7 +56,7 @@ export function createArtwork(payload: CreateArtworkPayload) {
  * The current production flow posts a multipart form to the NestJS backend.
  * The API validates the file, uploads it to R2, and then stores metadata in Postgres.
  */
-export function uploadArtworkFile(payload: UploadArtworkFilePayload) {
+export async function uploadArtworkFile(payload: UploadArtworkFilePayload) {
   const formData = new FormData();
   formData.set("artistId", payload.artistId);
   formData.set("file", payload.file);
@@ -77,12 +77,14 @@ export function uploadArtworkFile(payload: UploadArtworkFilePayload) {
     formData.set("orderIndex", String(payload.orderIndex));
   }
 
-  return apiFetch<Artwork>(
-    "/artworks/upload",
-    {
-      method: "POST",
-      body: formData,
-    },
-    "browser",
-  );
+  const response = await fetch("/api/admin/artworks/upload", {
+    method: "POST",
+    body: formData,
+    cache: "no-store",
+  });
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(Array.isArray(result.message) ? result.message.join(" ") : result.message ?? "Upload failed.");
+  }
+  return result as Artwork;
 }

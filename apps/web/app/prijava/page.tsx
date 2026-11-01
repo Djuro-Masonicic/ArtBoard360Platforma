@@ -1,42 +1,55 @@
+import { PrijavaArtworkRails } from "@/components/prijava-artwork-rails";
 import { PrijavaFlow } from "@/components/prijava-flow";
+import styles from "@/components/prijava-page.module.css";
+import { ARTBOARD_DISCIPLINES } from "@/lib/artboard-disciplines";
 import { getArtists } from "@/services/artists";
 
 export default async function PrijavaPage() {
-  const artistsResponse = await getArtists({
-    page: 1,
-    pageSize: 100,
-    includeNsfw: true,
-  });
+  const artistsResponse = await getArtists({ page: 1, pageSize: 100, includeNsfw: true });
 
-  // We reuse the imported artist data to build a stable discipline list for
-  // the registration form until a dedicated disciplines endpoint exists.
-  const disciplines = Array.from(
-    new Map(
-      artistsResponse.items
-        .flatMap((artist) => artist.disciplines)
-        .map((discipline) => [discipline.slug, discipline]),
-    ).values(),
-  ).sort((left, right) => left.name.localeCompare(right.name));
+  const disciplines = ARTBOARD_DISCIPLINES.map((discipline) => ({
+    id: discipline.slug,
+    ...discipline,
+  }));
+
+  const allArtworkImageUrls = Array.from(
+    new Set(
+      artistsResponse.items.flatMap((artist) =>
+        artist.isNsfw ? [] : artist.artworks.map((artwork) => artwork.imageUrl),
+      ),
+    ),
+  );
+  const artworkImageUrls = pickRandom(allArtworkImageUrls, 12);
 
   return (
-    <div className="space-y-10 pb-14 sm:space-y-12">
-      <section className="mx-auto max-w-[1180px] px-4 pt-[18vh] text-center sm:px-6">
-        <p className="text-[13px] font-medium uppercase tracking-[0.32em] text-[#7b8391]">
-          Prijava za ArtBoard platformu
-        </p>
-        <h1 className="mt-6 text-[46px] font-bold leading-[0.96] text-[#2f3138] sm:text-[64px]">
-          Prijava umjetnika,
-          <br />
-          korak po korak.
-        </h1>
-        <p className="mx-auto mt-6 max-w-[880px] text-[20px] leading-[1.45] text-[#4e5560] sm:text-[22px]">
-          Forma je sada vodjena i preglednija. Prolazis pitanje po pitanje, uz dovoljno prostora da
-          pripremis portfolio, drustvene mreze i materijale za selekciju.
-        </p>
+    <div className={styles.page}>
+      <PrijavaArtworkRails imageUrls={artworkImageUrls} />
 
-      </section>
+      <div className={styles.content}>
+        <section className={styles.hero}>
+          <p className={styles.eyebrow}>Besplatna prijava</p>
+          <h1 className={styles.title}>
+            Postani dio ArtBoard <span className={styles.gradientText}>zajednice.</span>
+          </h1>
+          <p className={styles.intro}>
+            Prijava je jednostavna i traje svega nekoliko minuta. Unesi osnovne podatke, dodaj
+            radove i linkove, a mi ćemo pregledati profil prije objave.
+          </p>
+        </section>
 
-      <PrijavaFlow disciplines={disciplines} />
+        <PrijavaFlow disciplines={disciplines} />
+      </div>
     </div>
   );
+}
+
+function pickRandom<T>(items: T[], count: number) {
+  const shuffled = [...items];
+
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[randomIndex]] = [shuffled[randomIndex]!, shuffled[index]!];
+  }
+
+  return shuffled.slice(0, count);
 }

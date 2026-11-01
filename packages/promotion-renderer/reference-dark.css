@@ -1,0 +1,82 @@
+@scope (.promotion-root[data-theme="dark"]) {
+@keyframes ab-step-flow{0%{background-position:0% 50%}100%{background-position:100% 50%}}:scope [data-ab-step]:hover>span:first-child{background-image:linear-gradient(120deg,#0D74FF 0%,#3A63F6 35%,#6A4BF4 65%,#8A3BF2 100%)!important;background-size:180% 180%!important;background-repeat:no-repeat!important;box-shadow:none!important;animation:ab-step-flow 8s ease-in-out infinite alternate}:scope [data-ab="promo-nav-side"]>button:first-child:hover,:scope [data-ab="promo-nav-main"]>button:last-child:hover,:scope [data-ab="promo-download"]:hover,:scope [data-ab="promo-gen"]:hover{background-image:linear-gradient(120deg,#0D74FF 0%,#3A63F6 35%,#6A4BF4 65%,#8A3BF2 100%)!important;background-color:transparent!important;background-size:180% 180%!important;background-repeat:no-repeat!important;background-origin:border-box!important;background-clip:border-box!important;border-color:transparent!important;box-shadow:none!important;color:#fff!important;animation:ab-step-flow 8s ease-in-out infinite alternate}:scope [data-ab="promo-save"]{position:relative}:scope [data-ab="promo-save"]:hover{background-image:none!important;background-color:#0b0d14!important;box-shadow:none!important;border-color:transparent!important;color:#f3f4f7!important;animation:none!important}:scope [data-ab="promo-save"]:hover::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1.5px;background-image:linear-gradient(120deg,#0D74FF 0%,#3A63F6 35%,#6A4BF4 65%,#8A3BF2 100%);background-size:180% 180%;background-repeat:no-repeat;animation:ab-step-flow 8s ease-in-out infinite alternate;-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);pointer-events:none}@media (prefers-reduced-motion:reduce){[data-ab-step]:hover>span:first-child,:scope [data-ab="promo-nav-side"]>button:first-child:hover,:scope [data-ab="promo-nav-main"]>button:last-child:hover,:scope [data-ab="promo-download"]:hover,:scope [data-ab="promo-gen"]:hover,[data-ab="promo-save"]:hover::before{animation:none!important}}
+
+.ab-thm{display:inline-flex;align-items:center;gap:2px;padding:3px;border-radius:999px;flex:0 0 auto}
+.ab-thm-b{width:30px;height:28px;border:0;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;background:transparent;transition:background .2s,color .2s,box-shadow .2s;padding:0}
+
+
+
+
+.ab-thm-D{background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}
+.ab-thm-D .ab-thm-b{color:rgba(255,255,255,.62)}
+.ab-thm-D .ab-thm-b:hover{color:#fff}
+.ab-thm-D .ab-thm-b[aria-pressed="true"]{background:rgba(255,255,255,.18);color:#fff}
+.ab-thm-b:focus-visible{outline:2px solid #1a7cff;outline-offset:2px}
+@media (max-width:560px){.ab-thm{padding:2px}.ab-thm-b{width:30px;height:28px}.ab-thm-b[aria-pressed="true"]{display:none}}
+
+
+/* Zajednička komponenta: profil korisnika i koraci generatora (10. 10. 2026) */
+[data-ab-steps]>button{min-height:64px}
+@media (max-width:900px){
+  [data-ab-steps]{flex-direction:row!important;display:flex!important;overflow-x:auto;margin:0 -16px;padding:4px 16px 12px;gap:6px!important;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  [data-ab-steps]::-webkit-scrollbar{display:none}
+  [data-ab-steps]>button{flex:0 0 auto;min-height:0!important;padding:6px 16px 6px 6px!important;gap:10px!important;border-radius:999px!important}
+  [data-ab-steps]>button>span:first-child{flex:0 0 34px!important;width:34px!important;height:34px!important}
+  [data-ab-step-label]{font-size:13.5px!important;white-space:nowrap}
+}
+
+@keyframes ab-gh-flow{0%{background-position:0% 50%}100%{background-position:100% 50%}}:scope [data-abh="f-gen"]:hover,:scope [data-abh="f-gen"]:focus-visible{background-image:linear-gradient(120deg,#0D74FF 0%,#3A63F6 35%,#6A4BF4 65%,#8A3BF2 100%)!important;background-color:transparent!important;background-size:180% 180%!important;background-repeat:no-repeat!important;background-origin:border-box!important;background-clip:border-box!important;border-color:transparent!important;box-shadow:none!important;color:#fff!important;animation:ab-gh-flow 8s ease-in-out infinite alternate}:scope [data-abh="h-gen"]:hover,:scope [data-abh="h-gen"]:focus-visible{border-color:transparent!important;box-shadow:none!important}:scope [data-abh="h-gen"]:hover::before,:scope [data-abh="h-gen"]:focus-visible::before{content:"";position:absolute;inset:calc(-1 * var(--abi,0px));border-radius:inherit;padding:1.5px;background-image:linear-gradient(120deg,#0D74FF 0%,#3A63F6 35%,#6A4BF4 65%,#8A3BF2 100%);background-size:180% 180%;background-repeat:no-repeat;animation:ab-gh-flow 8s ease-in-out infinite alternate;-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);pointer-events:none}@media (prefers-reduced-motion:reduce){[data-abh]:hover, [data-abh]:hover::before {animation:none!important}}:scope [data-ab-step][aria-current="step"]>span:first-child{background-image:linear-gradient(120deg,#0D74FF 0%,#3A63F6 35%,#6A4BF4 65%,#8A3BF2 100%)!important;background-size:180% 180%!important;background-repeat:no-repeat!important;box-shadow:none!important;animation:ab-gh-flow 8s ease-in-out infinite alternate}
+:scope :is(a,button,summary,select,[role="button"],[role="tab"],[role="link"],[tabindex],input[type="checkbox"],input[type="radio"]):focus-visible{outline:2px solid #0D74FF!important;outline-offset:2px!important}
+
+  :scope { margin: 0; background: #05060b; color: #f3f4f7; font-family: 'Alcyone UI', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  * { box-sizing: border-box; }
+  a { color: #f3f4f7; text-decoration: none; }
+  a:hover { color: #7fb0ff; }
+  input, textarea, select, button { font-family: inherit; }
+  input:focus, textarea:focus, select:focus { outline: none; box-shadow: 0 0 0 1.5px rgba(255,255,255,.55) !important; }
+  ::selection { background: rgba(13,116,255,.16); }
+  :focus-visible { outline: 2px solid #0D74FF; outline-offset: 3px; border-radius: 6px; }
+  
+  
+  
+
+
+[data-ab-layout="dl"]>[data-ab="promo-preview"]{order:-1;flex:1.7 1 420px!important;max-width:660px!important}
+[data-ab-layout="dl"]>[data-ab="promo-panel"]{flex:1 1 300px!important;max-width:440px}
+
+@media (max-width:900px){
+header{position:relative!important}
+[data-ab="pb-divider"]{display:none!important}
+header button,header a[data-ab="pb-tool"],aside button,main button{min-height:40px}
+aside{flex:1 1 100%!important;max-width:100%!important;position:static!important;max-height:none!important}
+[data-ab="promo-preview"]{position:static!important;max-width:100%!important;flex:1 1 100%!important}
+[data-ab="promo-panel"]{flex:1 1 100%!important}
+[data-ab="pb-stat"]{font-size:10px!important;letter-spacing:.06em!important}
+main [style*="font-size: 11.5px"],aside [style*="font-size: 11.5px"]{font-size:12.5px!important}
+main [style*="font-size: 12px"],aside [style*="font-size: 12px"]{font-size:13px!important}
+main [style*="font-size: 12.5px"],aside [style*="font-size: 12.5px"]{font-size:13.5px!important}
+main [style*="font-size: 13px"],aside [style*="font-size: 13px"]{font-size:14px!important}
+main [style*="font-size: 13.5px"],aside [style*="font-size: 13.5px"]{font-size:14px!important}
+[data-ab="promo-redownload"]{min-height:36px}
+[data-ab="promo-actions"] button{min-height:44px}
+[data-ab-layout="dl"]>[data-ab="promo-panel"]{max-width:100%!important}
+[data-ab="gen-title"]{order:3;flex:1 1 100%}
+[data-ab="promo-nav-side"]{display:none!important}
+[data-ab="pb-back"] > span{display:none}
+}
+@media (min-width:901px){[data-ab="promo-nav-main"]{display:none!important}}
+/* Alcyone – zvanični ArtBoard font; 800/900 koriste Bold rez (najdeblji rez se ne koristi u interfejsu) */
+@keyframes ab-flow{0%{background-position:0% 50%}100%{background-position:100% 50%}}@keyframes ab-line{0%{background-position:0% 50%}100%{background-position:200% 50%}}@media (prefers-reduced-motion:reduce){[data-ab-line],[data-ab-grad]{animation:none!important}}
+@keyframes ab-flow{0%{background-position:0% 50%}100%{background-position:100% 50%}}@keyframes ab-line{0%{background-position:0% 50%}100%{background-position:200% 50%}}@media (prefers-reduced-motion:reduce){[data-ab-line],[data-ab-grad]{animation:none!important}}
+
+
+
+
+
+
+
+
+@media print{}
+@media (max-width:600px){[data-ab="promo-save"],[data-ab="qr-save"],[data-ab="promo-gen"],[data-ab="promo-download"],[data-ab="qr-primary"]{padding:0 10px!important;letter-spacing:.035em!important}}@media (max-width:374px){div:has(> [data-ab="promo-save"]),div:has(> [data-ab="qr-save"]){grid-template-columns:1fr!important}}
+.promo-hover-5f186a0a97:hover{color:#8fb4ff}.promo-hover-38062bb0e2:hover{background:rgba(255,255,255,.06)}.promo-hover-08d1c386ac:hover{background:linear-gradient(#0b0d14,#0b0d14) padding-box,linear-gradient(90deg,#0D74FF,#0D74FF 12%,#8A3BF2 32%,#FE171D 52%,#FF8A1F 76%,#FFD31B) border-box;background-size:100% 100%,200% 100%;animation:ab-flow 10s cubic-bezier(.45,.05,.55,.95) infinite alternate;color:#fff}.promo-hover-604f7f8776:hover{background:rgba(255,255,255,.08);color:#f3f4f7}.promo-hover-f2f6e4fb78:hover{transform:translateY(-3px)}.promo-hover-f2f6e4fb78:hover{transform:translateY(-3px)}.promo-hover-d1e80b874b:hover{background:linear-gradient(#f3f4f7,#f3f4f7) padding-box,linear-gradient(90deg,#0D74FF,#0D74FF 12%,#8A3BF2 32%,#FE171D 52%,#FF8A1F 76%,#FFD31B) border-box;background-size:100% 100%,260% 100%;color:#07080d}.promo-hover-6ab0401219:hover{background:#f3f4f7;color:#07080d}.promo-hover-6ab0401219:hover{background:#f3f4f7;color:#07080d}.promo-hover-604f7f8776:hover{background:rgba(255,255,255,.08);color:#f3f4f7}.promo-hover-08d1c386ac:hover{background:linear-gradient(#0b0d14,#0b0d14) padding-box,linear-gradient(90deg,#0D74FF,#0D74FF 12%,#8A3BF2 32%,#FE171D 52%,#FF8A1F 76%,#FFD31B) border-box;background-size:100% 100%,200% 100%;animation:ab-flow 10s cubic-bezier(.45,.05,.55,.95) infinite alternate;color:#fff}
+}

@@ -16,12 +16,18 @@ interface FormState {
   fullName: string;
   email: string;
   phone: string;
+  city: string;
   biography: string;
+  artistStatement: string;
   motto: string;
+  mottoAuthor: string;
+  showEmailPublic: boolean;
+  presentationForms: string[];
   blogUrl: string;
   notes: string;
   adminNotes: string;
   confirmedRules: boolean;
+  containsNsfw: boolean;
   status: ArtistSubmissionStatus;
   disciplineSlugs: string[];
   portfolioLinks: string[];
@@ -41,12 +47,18 @@ export function AdminAdmissionEditor({ disciplines, submission }: AdminAdmission
     fullName: submission.fullName,
     email: submission.email,
     phone: submission.phone ?? "",
+    city: submission.city ?? "",
     biography: submission.biography,
+    artistStatement: submission.artistStatement ?? "",
     motto: submission.motto ?? "",
+    mottoAuthor: submission.mottoAuthor ?? "",
+    showEmailPublic: submission.showEmailPublic,
+    presentationForms: submission.presentationForms.slice(0, 1),
     blogUrl: submission.blogUrl ?? "",
     notes: submission.notes ?? "",
     adminNotes: submission.adminNotes ?? "",
     confirmedRules: submission.confirmedRules,
+    containsNsfw: submission.containsNsfw,
     status: submission.status,
     disciplineSlugs: submission.disciplines.map((discipline) => discipline.slug),
     portfolioLinks: submission.portfolioLinks.map((link) => link.url),
@@ -126,6 +138,13 @@ export function AdminAdmissionEditor({ disciplines, submission }: AdminAdmission
     });
   }
 
+  function togglePresentationForm(option: string) {
+    setFormState((current) => ({
+      ...current,
+      presentationForms: current.presentationForms.includes(option) ? [] : [option],
+    }));
+  }
+
   function removeArtwork(artworkId: string) {
     setArtworks((current) => current.filter((artwork) => artwork.id !== artworkId));
   }
@@ -148,12 +167,18 @@ export function AdminAdmissionEditor({ disciplines, submission }: AdminAdmission
         fullName: formState.fullName.trim(),
         email: formState.email.trim(),
         phone: formState.phone.trim(),
+        city: formState.city.trim(),
         biography: formState.biography.trim(),
+        artistStatement: formState.artistStatement.trim(),
         motto: formState.motto.trim(),
+        mottoAuthor: formState.mottoAuthor.trim(),
+        showEmailPublic: formState.showEmailPublic,
+        presentationForms: formState.presentationForms,
         blogUrl: blogUrl || undefined,
         notes: formState.notes.trim(),
         adminNotes: formState.adminNotes.trim(),
         confirmedRules: formState.confirmedRules,
+        containsNsfw: formState.containsNsfw,
         status: forcedStatus ?? formState.status,
         disciplines: formState.disciplineSlugs,
         portfolioLinks: formState.portfolioLinks.map((item) => item.trim()).filter(Boolean),
@@ -168,12 +193,18 @@ export function AdminAdmissionEditor({ disciplines, submission }: AdminAdmission
           fullName: response.fullName,
           email: response.email,
           phone: response.phone ?? "",
+          city: response.city ?? "",
           biography: response.biography,
+          artistStatement: response.artistStatement ?? "",
           motto: response.motto ?? "",
+          mottoAuthor: response.mottoAuthor ?? "",
+          showEmailPublic: response.showEmailPublic,
+          presentationForms: response.presentationForms.slice(0, 1),
           blogUrl: response.blogUrl ?? "",
           notes: response.notes ?? "",
           adminNotes: response.adminNotes ?? "",
           confirmedRules: response.confirmedRules,
+          containsNsfw: response.containsNsfw,
           disciplineSlugs: response.disciplines.map((discipline) => discipline.slug),
           portfolioLinks: response.portfolioLinks.map((link) => link.url),
           socialLinks: response.socialLinks.map((link) => link.url),
@@ -246,12 +277,30 @@ export function AdminAdmissionEditor({ disciplines, submission }: AdminAdmission
             />
           </Field>
 
+          <Field label="Grad">
+            <input
+              className={fieldClassName}
+              onChange={(event) => setField("city", event.target.value)}
+              type="text"
+              value={formState.city}
+            />
+          </Field>
+
           <Field label="Moto">
             <input
               className={fieldClassName}
               onChange={(event) => setField("motto", event.target.value)}
               type="text"
               value={formState.motto}
+            />
+          </Field>
+
+          <Field label="Autor mota">
+            <input
+              className={fieldClassName}
+              onChange={(event) => setField("mottoAuthor", event.target.value)}
+              type="text"
+              value={formState.mottoAuthor}
             />
           </Field>
 
@@ -272,6 +321,35 @@ export function AdminAdmissionEditor({ disciplines, submission }: AdminAdmission
             value={formState.biography}
           />
         </Field>
+
+        <Field label="Umjetnicki iskaz">
+          <textarea
+            className={areaClassName}
+            onChange={(event) => setField("artistStatement", event.target.value)}
+            value={formState.artistStatement}
+          />
+        </Field>
+
+        <section className="space-y-4 rounded-[24px] border border-[#e2e8f0] bg-[#f8fbff] p-5">
+          <h3 className="text-[18px] font-semibold text-[#2f3138]">
+            Predstavljanje u tekstovima
+          </h3>
+          <div className="flex flex-wrap gap-3">
+            {["Umjetnica", "Umjetnik", "Bez rodnog oblika"].map((option) => (
+              <label
+                className="flex items-center gap-2 rounded-full border border-[#dce3ed] bg-white px-4 py-3 text-[14px] text-[#4f5762]"
+                key={option}
+              >
+                <input
+                  checked={formState.presentationForms.includes(option)}
+                  onChange={() => togglePresentationForm(option)}
+                  type="checkbox"
+                />
+                <span>{option}</span>
+              </label>
+            ))}
+          </div>
+        </section>
 
         <Field label="Napomene autora">
           <textarea
@@ -349,6 +427,26 @@ export function AdminAdmissionEditor({ disciplines, submission }: AdminAdmission
           <span>Autor je potvrdio pravila prijave.</span>
         </label>
 
+        <div className="grid gap-3 md:grid-cols-2">
+          <label className="flex items-start gap-3 rounded-[20px] border border-[#e2e8f0] bg-[#f8fbff] p-4 text-[15px] text-[#4f5762]">
+            <input
+              checked={formState.showEmailPublic}
+              onChange={(event) => setField("showEmailPublic", event.target.checked)}
+              type="checkbox"
+            />
+            <span>Prikaži e-mail na javnom profilu.</span>
+          </label>
+
+          <label className="flex items-start gap-3 rounded-[20px] border border-[#e2e8f0] bg-[#f8fbff] p-4 text-[15px] text-[#4f5762]">
+            <input
+              checked={formState.containsNsfw}
+              onChange={(event) => setField("containsNsfw", event.target.checked)}
+              type="checkbox"
+            />
+            <span>Profil sadrži radove sa sadržajem 18+.</span>
+          </label>
+        </div>
+
         <div className="flex flex-wrap gap-3 border-t border-[#e7ecf3] pt-5">
           <button
             className="inline-flex items-center justify-center rounded-full border border-[#182fc7] px-5 py-3 text-[15px] font-medium text-[#182fc7] transition hover:bg-[#182fc7] hover:text-white"
@@ -390,6 +488,19 @@ export function AdminAdmissionEditor({ disciplines, submission }: AdminAdmission
 
         <section className="rounded-[30px] border border-[#dde4ef] bg-white/95 p-5 shadow-[0_18px_48px_rgba(31,46,86,0.06)]">
           <h3 className="text-[18px] font-semibold text-[#2f3138]">Materijali</h3>
+
+          {submission.coverPhotoUrl ? (
+            <div className="mt-4">
+              <p className="mb-2 text-[14px] font-medium text-[#66707d]">Naslovna slika</p>
+              <a href={submission.coverPhotoUrl} rel="noreferrer" target="_blank">
+                <img
+                  alt={`Naslovna slika - ${submission.fullName}`}
+                  className="aspect-[16/9] w-full rounded-[18px] border border-[#e1e7ef] object-cover"
+                  src={submission.coverPhotoUrl}
+                />
+              </a>
+            </div>
+          ) : null}
 
           {submission.portfolioPdfUrl ? (
             <a

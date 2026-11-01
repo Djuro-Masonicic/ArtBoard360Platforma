@@ -21,16 +21,23 @@ export interface SubmitArtistSubmissionPayload {
   fullName: string;
   email: string;
   phone?: string;
+  city: string;
   biography: string;
+  artistStatement?: string;
   motto?: string;
+  mottoAuthor?: string;
+  showEmailPublic: boolean;
+  presentationForms: string[];
   blogUrl?: string;
   notes?: string;
   confirmedRules: boolean;
+  containsNsfw: boolean;
   disciplines: string[];
   portfolioLinks: string[];
   socialLinks: string[];
   portfolioPdf?: File | null;
   profilePhoto: File;
+  coverPhoto: File;
   featuredWorks: File[];
 }
 
@@ -42,12 +49,17 @@ export function submitArtistSubmission(payload: SubmitArtistSubmissionPayload) {
   const formData = new FormData();
   formData.set("fullName", payload.fullName);
   formData.set("email", payload.email);
+  formData.set("city", payload.city);
   formData.set("biography", payload.biography);
+  formData.set("showEmailPublic", String(payload.showEmailPublic));
+  formData.set("presentationForms", JSON.stringify(payload.presentationForms));
   formData.set("confirmedRules", String(payload.confirmedRules));
+  formData.set("containsNsfw", String(payload.containsNsfw));
   formData.set("disciplines", JSON.stringify(payload.disciplines));
   formData.set("portfolioLinks", JSON.stringify(payload.portfolioLinks));
   formData.set("socialLinks", JSON.stringify(payload.socialLinks));
   formData.set("profilePhoto", payload.profilePhoto);
+  formData.set("coverPhoto", payload.coverPhoto);
 
   if (payload.phone) {
     formData.set("phone", payload.phone);
@@ -55,6 +67,14 @@ export function submitArtistSubmission(payload: SubmitArtistSubmissionPayload) {
 
   if (payload.motto) {
     formData.set("motto", payload.motto);
+  }
+
+  if (payload.artistStatement) {
+    formData.set("artistStatement", payload.artistStatement);
+  }
+
+  if (payload.mottoAuthor) {
+    formData.set("mottoAuthor", payload.mottoAuthor);
   }
 
   if (payload.blogUrl) {
@@ -109,12 +129,18 @@ export function updateArtistSubmission(
     fullName: string;
     email: string;
     phone?: string;
+    city?: string;
     biography: string;
+    artistStatement?: string;
     motto?: string;
+    mottoAuthor?: string;
+    showEmailPublic?: boolean;
+    presentationForms?: string[];
     blogUrl?: string;
     notes?: string;
     adminNotes?: string;
     confirmedRules: boolean;
+    containsNsfw?: boolean;
     status: ArtistSubmissionStatus;
     disciplines: string[];
     portfolioLinks: string[];
@@ -131,12 +157,18 @@ async function fetchAdminSubmissionUpdate(
     fullName: string;
     email: string;
     phone?: string;
+    city?: string;
     biography: string;
+    artistStatement?: string;
     motto?: string;
+    mottoAuthor?: string;
+    showEmailPublic?: boolean;
+    presentationForms?: string[];
     blogUrl?: string;
     notes?: string;
     adminNotes?: string;
     confirmedRules: boolean;
+    containsNsfw?: boolean;
     status: ArtistSubmissionStatus;
     disciplines: string[];
     portfolioLinks: string[];

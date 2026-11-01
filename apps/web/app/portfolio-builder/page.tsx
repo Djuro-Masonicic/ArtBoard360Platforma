@@ -1,7 +1,13 @@
+import type { Metadata } from "next";
 import { PortfolioBuilderLanding } from "@/components/portfolio-builder-landing";
 import { getArtistSessionUser } from "@/lib/artist-session";
 import { getArtistPortfolioProjects } from "@/services/portfolio-projects";
 import type { PortfolioProject } from "@/types/api";
+
+export const metadata: Metadata = {
+  title: "Portfolio Builder | ArtBoard",
+  description: "Kreiraj profesionalni PDF portfolio ili link za dijeljenje. Počni od ArtBoard profila ili kreiraj portfolio od nule.",
+};
 
 export default async function PortfolioBuilderPage() {
   const session = await getArtistSessionUser();

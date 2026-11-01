@@ -19,6 +19,8 @@
     "storage:setup": "dotenv -e ../../.env -- tsx scripts/setup-storage.ts"
   },
   "dependencies": {
+    "@artboard/portfolio-document-plan": "*",
+    "@artboard/qr-card-renderer": "*",
     "@aws-sdk/client-s3": "^3.883.0",
     "@aws-sdk/s3-request-presigner": "^3.883.0",
     "@fontsource/dm-sans": "^5.2.8",
@@ -36,10 +38,13 @@
     "nodemailer": "^8.0.11",
     "pdfkit": "^0.19.1",
     "pg": "^8.16.0",
+    "qrcode": "^1.5.4",
     "reflect-metadata": "^0.2.2",
     "resend": "^6.12.4",
     "rxjs": "^7.8.2",
-    "sharp": "^0.35.3"
+    "sharp": "^0.35.3",
+    "@artboard/promotion-renderer": "*",
+    "playwright-core": "^1.64.1"
   },
   "devDependencies": {
     "@types/express": "^5.0.1",
@@ -47,6 +52,8 @@
     "@types/node": "^24.0.0",
     "@types/pdfkit": "^0.17.6",
     "@types/pg": "^8.15.0",
+    "@types/qrcode": "^1.5.6",
+    "jsqr": "^1.4.0",
     "prisma": "^7.0.0",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",

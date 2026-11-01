@@ -1,0 +1,714 @@
+.page {
+  margin: -2rem -1.25rem;
+  padding-top: 77px;
+  overflow: hidden;
+  background: #f7f7f9;
+  color: #111318;
+}
+
+.hero {
+  position: relative;
+  background: rgb(247, 247, 249);
+  color: rgb(17, 19, 24);
+  font-family: var(--font-alcyone), sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.portfolioSection,
+.statementSection,
+.collectionsSection {
+  background: #f7f7f9;
+}
+
+.cover {
+  position: relative;
+  height: clamp(240px, 30vw, 420px);
+  overflow: hidden;
+  background: rgb(107, 46, 34);
+}
+
+.coverImage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.coverOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(rgba(17, 19, 24, 0.42), rgba(17, 19, 24, 0) 34%);
+  pointer-events: none;
+}
+
+.coverOverlayStrong {
+  background: linear-gradient(180deg, rgba(17, 19, 24, 0.5), rgba(17, 19, 24, 0.12) 52%);
+}
+
+.portfolioSection {
+  width: min(84vw, 1600px);
+  margin-inline: auto;
+}
+
+.coverInner {
+  position: relative;
+  width: 100%;
+  max-width: 1280px;
+  margin-inline: auto;
+  padding: 28px clamp(20px, 4vw, 56px) 0;
+  box-sizing: border-box;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.72);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1;
+  transition: border-color 180ms ease, transform 180ms ease;
+}
+
+.backLink:hover,
+.backLink:focus-visible {
+  border-color: #ffffff;
+  outline: none;
+  transform: translateX(-3px);
+}
+
+.profileInner {
+  display: flex;
+  width: 100%;
+  max-width: 1280px;
+  align-items: center;
+  gap: clamp(20px, 3vw, 40px);
+  margin-inline: auto;
+  padding: clamp(28px, 3vw, 30px) clamp(20px, 4vw, 26px) 0;
+  box-sizing: border-box;
+}
+
+.avatar {
+  display: grid;
+  flex: 0 0 auto;
+  width: 164px;
+  height: 164px;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #e1e2e7;
+  box-shadow: 0 12px 28px rgba(17, 19, 24, 0.14);
+  color: #525767;
+  font-size: 42px;
+  font-weight: 800;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profileInfo {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.profileInfo h1 {
+  margin: 0;
+  color: #101218;
+  font-size: clamp(26px, 3vw, 38px);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: 0;
+}
+
+.disciplines {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 0;
+}
+
+.disciplines span {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background:
+    linear-gradient(#f7f7f9, #f7f7f9) padding-box,
+    linear-gradient(90deg, #0d74ff, #8a3bf2, #fe171d, #ff8a1f, #ffd31b, #0d74ff) border-box;
+  background-size: 100% 100%, 230% 100%;
+  color: #262a35;
+  font-size: 11.5px;
+  font-weight: 600;
+  animation: borderFlow 9s ease-in-out infinite alternate;
+}
+
+.contacts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-top: 0;
+  color: #111318;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.contacts a {
+  position: relative;
+}
+
+.contacts a::after {
+  position: absolute;
+  right: 0;
+  bottom: -3px;
+  left: 0;
+  height: 1px;
+  background: currentColor;
+  content: "";
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 180ms ease;
+}
+
+.contacts a:hover::after,
+.contacts a:focus-visible::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+.contacts a:focus-visible {
+  outline: none;
+}
+
+.contactDivider {
+  width: 1px;
+  height: 16px;
+  background: #d2d5dd;
+}
+
+.email {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: #343946;
+  font-weight: 580;
+}
+
+.worksRing {
+  position: relative;
+  display: grid;
+  flex: 0 0 auto;
+  width: 140px;
+  height: 140px;
+  place-items: center;
+  color: #111318;
+}
+
+.worksRing > svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  animation: ringSpin 14s linear infinite;
+}
+
+.worksRing text {
+  fill: currentColor;
+  font-family: inherit;
+  font-size: 9.5px;
+  font-weight: 820;
+  letter-spacing: 0;
+}
+
+.worksRing > span {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  border: 1px solid #c9ccd6;
+  border-radius: 50%;
+  background: transparent;
+  transition: background-color 180ms ease, color 180ms ease, transform 180ms ease;
+}
+
+.worksRing:hover > span,
+.worksRing:focus-visible > span {
+  background: #111318;
+  color: #ffffff;
+  transform: translateY(3px);
+}
+
+.worksRing:focus-visible {
+  outline: 2px solid #0d74ff;
+  outline-offset: 5px;
+  border-radius: 50%;
+}
+
+.statementSection {
+  display: grid;
+  width: 100%;
+  max-width: 1280px;
+  grid-template-columns: minmax(0, 180px) minmax(0, 1fr);
+  gap: 32px;
+  margin: 0 auto;
+  padding: clamp(56px, 7vw, 96px) clamp(20px, 4vw, 56px) 0;
+  box-sizing: border-box;
+  font-family: var(--font-alcyone), sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-margin-top: 90px;
+}
+
+.biographyRow {
+  display: grid;
+  width: 100%;
+  max-width: 1280px;
+  grid-template-columns: minmax(0, 180px) minmax(0, 1fr);
+  gap: 32px;
+  margin: 0 auto;
+  padding: clamp(28px, 3.4vw, 48px) clamp(20px, 4vw, 56px) 96px;
+  box-sizing: border-box;
+  font-family: var(--font-alcyone), sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.sectionLabel,
+.sectionHeading > p {
+  margin: 0;
+  color: #8d93a3;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.biographyRow .sectionLabel {
+  padding-top: 4px;
+  color: rgb(138, 143, 159);
+  font-size: 11px;
+}
+
+.statementSection .sectionLabel {
+  padding-top: 6px;
+  color: rgb(138, 143, 159);
+  font-size: 11px;
+}
+
+.statementText {
+  max-width: 680px;
+}
+
+.biographyContent {
+  max-width: 920px;
+}
+
+.biographyText {
+  display: grid;
+  gap: 14px;
+  color: rgb(74, 79, 96);
+  font-size: 15px;
+  line-height: 1.7;
+  text-wrap: pretty;
+}
+
+.biographyText p,
+.statementText p {
+  margin: 0;
+}
+
+.biographyText strong {
+  color: rgb(17, 19, 24);
+  font-weight: 700;
+}
+
+.quote {
+  display: flex;
+  max-width: 920px;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.quote > p {
+  margin: 0;
+  color: #111318;
+  font-family: "Instrument Serif", Georgia, "Times New Roman", serif;
+  font-size: clamp(20px, 2vw, 26px);
+  font-style: italic;
+  line-height: 1.3;
+  text-wrap: balance;
+}
+
+.quote footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 0;
+  color: rgb(91, 96, 112);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.quote footer span {
+  width: 24px;
+  height: 1px;
+  background: rgb(91, 96, 112);
+}
+
+.portfolioSection {
+  padding-bottom: clamp(94px, 10vw, 160px);
+  scroll-margin-top: 94px;
+}
+
+.sectionHeading h2 {
+  margin: 8px 0 0;
+  color: #111318;
+  font-size: clamp(27px, 2.1vw, 36px);
+  font-weight: 820;
+  line-height: 1.1;
+  letter-spacing: 0;
+}
+
+.galleryWrap {
+  margin-top: 30px;
+}
+
+.emptyState {
+  padding: 36px;
+  border: 1px dashed #d2d6df;
+  background: #ffffff;
+  color: #666d7c;
+  font-size: 15px;
+}
+
+.statementText {
+  display: grid;
+  gap: 14px;
+  color: rgb(42, 47, 61);
+  font-size: clamp(16px, 1.4vw, 18px);
+  font-weight: 500;
+  line-height: 1.65;
+  text-wrap: pretty;
+}
+
+.collectionsSection {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: clamp(56px, 7vw, 96px) clamp(20px, 4vw, 56px) clamp(64px, 8vw, 112px);
+  box-sizing: border-box;
+  font-family: var(--font-alcyone), sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-margin-top: 90px;
+}
+
+.collectionsHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+
+.collectionsHeader .sectionHeading {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.collectionsHeader .sectionHeading h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.collectionsHeader > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding-bottom: 2px;
+  border-bottom: 1px solid #111318;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.collectionsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.collection {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 12px;
+  color: rgb(17, 19, 24);
+}
+
+.collectionMosaic {
+  display: grid;
+  aspect-ratio: 4 / 3;
+  grid-template-columns: 2fr 1fr;
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #e4e6eb;
+}
+
+.collectionMosaic > div {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.collectionMosaic .collectionLead {
+  grid-row: span 2;
+}
+
+.collectionMosaic img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 420ms ease;
+}
+
+.collection:hover .collectionMosaic img,
+.collection:focus-visible .collectionMosaic img {
+  transform: scale(1.025);
+}
+
+.collection:focus-visible {
+  outline: 2px solid #0d74ff;
+  outline-offset: 6px;
+}
+
+.collectionTitleRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.collectionTitleRow h3 {
+  margin: 0;
+  color: #111318;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.collectionTitleRow span {
+  flex: 0 0 auto;
+  color: #969cad;
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.collection > p {
+  display: -webkit-box;
+  margin: -6px 0 0;
+  overflow: hidden;
+  color: rgb(91, 96, 112);
+  font-size: 12.5px;
+  line-height: 1.55;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+@keyframes ringSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes borderFlow {
+  from {
+    background-position: 0 0, 0 50%;
+  }
+  to {
+    background-position: 0 0, 100% 50%;
+  }
+}
+
+@media (max-width: 1023px) {
+  .portfolioSection {
+    width: min(88vw, 1600px);
+  }
+
+  .profileInner {
+    gap: 28px;
+  }
+
+  .worksRing {
+    width: 118px;
+    height: 118px;
+  }
+
+  .worksRing > span {
+    width: 48px;
+    height: 48px;
+  }
+
+}
+
+@media (max-width: 767px) {
+  .cover {
+    height: 260px;
+  }
+
+  .portfolioSection {
+    width: calc(100% - 40px);
+  }
+
+  .profileInner {
+    display: grid;
+    grid-template-columns: 112px minmax(0, 1fr);
+    align-items: start;
+    gap: 20px;
+    padding-top: 28px;
+  }
+
+  .avatar {
+    width: 112px;
+    height: 112px;
+    font-size: 30px;
+  }
+
+  .profileInfo h1 {
+    font-size: clamp(30px, 9vw, 42px);
+  }
+
+  .disciplines {
+    margin-top: 13px;
+  }
+
+  .disciplines span {
+    min-height: 30px;
+    padding-inline: 11px;
+    font-size: 12px;
+  }
+
+  .contacts {
+    grid-column: 1 / -1;
+    gap: 10px 16px;
+    font-size: 13px;
+  }
+
+  .worksRing {
+    display: none;
+  }
+
+  .biographyRow,
+  .statementSection {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .biographyRow {
+    gap: 20px;
+    padding: 32px 20px 80px;
+  }
+
+  .biographyText {
+    font-size: 15px;
+  }
+
+  .quote {
+    margin-top: 8px;
+  }
+
+  .portfolioSection {
+    padding-bottom: 100px;
+  }
+
+  .statementText {
+    font-size: 16px;
+  }
+
+  .collectionsHeader {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .collectionsGrid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .portfolioSection {
+    width: calc(100% - 32px);
+  }
+
+  .profileInner {
+    grid-template-columns: 92px minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .avatar {
+    width: 92px;
+    height: 92px;
+  }
+
+  .profileInfo h1 {
+    font-size: 29px;
+  }
+
+  .contactDivider {
+    display: none;
+  }
+
+  .email {
+    flex-basis: 100%;
+  }
+}
+
+@media (min-width: 640px) {
+  .page {
+    margin: -2.5rem -2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .page {
+    margin: -3rem -2.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .disciplines span,
+  .worksRing svg {
+    animation: none;
+  }
+
+  .collectionMosaic img {
+    transition: none;
+  }
+}

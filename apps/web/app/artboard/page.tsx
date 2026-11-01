@@ -12,7 +12,7 @@ import { ArtBoardPortfolioShowcase } from "@/components/artboard-portfolio-showc
 import { ArtBoardToolsSection } from "@/components/artboard-tools-section";
 import { ArtBoardTestimonialsSection } from "@/components/artboard-testimonials-section";
 import { ArtBoardVerificationSection } from "@/components/artboard-verification-section";
-import { ArtBoardWhySection, type WhyArtworkPreview } from "@/components/artboard-why-section";
+import { ArtBoardArtworkMarquee, ArtBoardWhySection, type WhyArtworkPreview } from "@/components/artboard-why-section";
 import { siteRoutes } from "@/lib/site-routes";
 import { getArtists } from "@/services/artists";
 import { getArtBoardStats } from "@/services/stats";
@@ -610,6 +610,8 @@ export default async function ArtBoardPage() {
       </div>
 
       <ArtBoardWhySection artworks={whyArtworks} />
+
+      <ArtBoardArtworkMarquee artworks={whyArtworks} />
 
       <ArtBoardToolsSection />
 

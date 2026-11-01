@@ -1,11 +1,11 @@
 import { ArtistDashboardEditor } from "@/components/artist-dashboard-editor";
 import { requireArtistSession } from "@/lib/artist-session";
-import { getArtistBySlug } from "@/services/artists";
+import { getArtistDashboard } from "@/services/artist-dashboard";
 import { getArtistPortfolioProjects } from "@/services/portfolio-projects";
 
 export default async function ArtistDashboardPage() {
   const session = await requireArtistSession();
-  const artist = await getArtistBySlug(session.user.artistSlug);
+  const dashboard = await getArtistDashboard(session.token);
   const portfolioProjectsResponse = await getArtistPortfolioProjects(session.token, {
     page: 1,
     pageSize: 24,
@@ -21,7 +21,8 @@ export default async function ArtistDashboardPage() {
 
   return (
     <ArtistDashboardEditor
-      artist={artist}
+      dashboard={dashboard}
+      portfolioTotal={portfolioProjectsResponse.meta.total}
       mustChangePassword={session.user.mustChangePassword}
       portfolioProjects={portfolioProjectsResponse.items}
       sessionEmail={session.user.email}

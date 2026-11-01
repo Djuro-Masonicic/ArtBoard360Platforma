@@ -10,7 +10,6 @@ import type {
 } from "@/types/api";
 
 import { ApiError, apiFetch, buildQueryString } from "./api";
-import { publicEnv } from "@/lib/env";
 
 type PortfolioProjectQuery = {
   page?: number;
@@ -26,6 +25,13 @@ export type CreateGuestPortfolioProjectPayload = {
 };
 
 export type UpdatePortfolioProjectPayload = {
+  documentSelection?: import("@artboard/portfolio-document-plan").DocumentSelection;
+  cvSections?: import("@artboard/portfolio-document-plan").PortfolioCvData;
+  expectedRevision?: number;
+  dateOfBirth?: string;
+  behanceUrl?: string;
+  motto?: string;
+  mottoAuthor?: string;
   title?: string;
   artistName?: string;
   discipline?: string;
@@ -53,6 +59,7 @@ export type UpdatePortfolioProjectPayload = {
 };
 
 export type UpdatePortfolioArtworkPayload = {
+  expectedRevision?: number;
   title?: string;
   collectionName?: string;
   year?: string;
@@ -65,8 +72,29 @@ export type UpdatePortfolioArtworkPayload = {
   orderIndex?: number;
 };
 
-export function getPublicPortfolioProject(id: string) {
-  return apiFetch<PortfolioProject>(`/portfolio-projects/public/${id}`);
+export function getPublicPortfolioProject(id: string, token?: string) {
+  return apiFetch<PortfolioProject>(`/portfolio-projects/public/${id}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+}
+
+async function portfolioFetch<T>(path: string, init: RequestInit) {
+  const headers = new Headers(init.headers);
+  if (typeof init.body === "string") headers.set("Content-Type", "application/json");
+  const response = await fetch(path, { ...init, headers, cache: "no-store" });
+  const payload = await response.json();
+  if (!response.ok) throw new ApiError(String(payload.message ?? "Portfolio request failed."), response.status, payload);
+  return payload as T;
+}
+
+export function createPortfolioShareLink(id: string) {
+  return portfolioFetch<{ token: string }>(`/api/portfolio-projects/${id}/actions/share`, { method: "POST" });
+}
+export function revokePortfolioShareLink(id: string) {
+  return portfolioFetch<{ revoked: boolean }>(`/api/portfolio-projects/${id}/actions/share`, { method: "DELETE" });
+}
+export function getPortfolioVersions(id: string, page = 1) {
+  return portfolioFetch<import("@/types/api").PaginatedResponse<import("@/types/api").PortfolioVersion>>(`/api/portfolio-projects/${id}/actions/versions?page=${page}&pageSize=12`, { method: "GET" });
 }
 
 export function getArtistPortfolioProjects(token: string, query?: PortfolioProjectQuery) {
@@ -188,13 +216,12 @@ export function createGuestPortfolioProject(payload: CreateGuestPortfolioProject
 }
 
 export function updatePortfolioProject(id: string, payload: UpdatePortfolioProjectPayload) {
-  return apiFetch<PortfolioProject>(
-    `/portfolio-projects/public/${id}`,
+  return portfolioFetch<PortfolioProject>(
+    `/api/portfolio-projects/${id}`,
     {
       method: "PATCH",
       body: JSON.stringify(payload),
     },
-    "browser",
   );
 }
 
@@ -203,92 +230,89 @@ export function updatePortfolioArtwork(
   artworkId: string,
   payload: UpdatePortfolioArtworkPayload,
 ) {
-  return apiFetch<PortfolioProject>(
-    `/portfolio-projects/public/${portfolioId}/artworks/${artworkId}`,
+  return portfolioFetch<PortfolioProject>(
+    `/api/portfolio-projects/${portfolioId}/actions/artworks/${artworkId}`,
     {
       method: "PATCH",
       body: JSON.stringify(payload),
     },
-    "browser",
   );
 }
 
-export function uploadPortfolioArtwork(portfolioId: string, file: File) {
+export function uploadPortfolioArtwork(portfolioId: string, file: File, expectedRevision?: number) {
   const formData = new FormData();
   formData.append("file", file);
+  if (expectedRevision !== undefined) formData.append("expectedRevision", String(expectedRevision));
 
-  return apiFetch<PortfolioProject>(
-    `/portfolio-projects/public/${portfolioId}/artworks/upload`,
+  return portfolioFetch<PortfolioProject>(
+    `/api/portfolio-projects/${portfolioId}/actions/artworks/upload`,
     {
       method: "POST",
       body: formData,
     },
-    "browser",
   );
 }
 
-export function uploadPortfolioProfileImage(portfolioId: string, file: File) {
+export function uploadPortfolioCoverImage(portfolioId: string, file: File, expectedRevision?: number) {
+  const body = new FormData();
+  body.append("file", file);
+  if (expectedRevision !== undefined) body.append("expectedRevision", String(expectedRevision));
+  return portfolioFetch<PortfolioProject>(`/api/portfolio-projects/${portfolioId}/actions/cover-image`, { method: "POST", body });
+}
+
+export function uploadPortfolioProfileImage(portfolioId: string, file: File, expectedRevision?: number) {
   const formData = new FormData();
   formData.append("file", file);
+  if (expectedRevision !== undefined) formData.append("expectedRevision", String(expectedRevision));
 
-  return apiFetch<PortfolioProject>(
-    `/portfolio-projects/public/${portfolioId}/profile-image`,
+  return portfolioFetch<PortfolioProject>(
+    `/api/portfolio-projects/${portfolioId}/actions/profile-image`,
     {
       method: "POST",
       body: formData,
     },
-    "browser",
   );
 }
 
-export function uploadPortfolioCollectionCover(portfolioId: string, file: File) {
+export function uploadPortfolioCollectionCover(portfolioId: string, file: File, expectedRevision?: number) {
   const formData = new FormData();
   formData.append("file", file);
+  if (expectedRevision !== undefined) formData.append("expectedRevision", String(expectedRevision));
 
-  return apiFetch<PortfolioProject>(
-    `/portfolio-projects/public/${portfolioId}/collection-cover`,
+  return portfolioFetch<PortfolioProject>(
+    `/api/portfolio-projects/${portfolioId}/actions/collection-cover`,
     {
       method: "POST",
       body: formData,
     },
-    "browser",
   );
 }
 
 export function completePortfolioDemoPayment(portfolioId: string) {
-  return apiFetch<PortfolioProject>(
-    `/portfolio-projects/public/${portfolioId}/demo-payment`,
+  return portfolioFetch<PortfolioProject>(
+    `/api/portfolio-projects/${portfolioId}/actions/demo-payment`,
     {
       method: "POST",
     },
-    "browser",
   );
 }
 
-export function generatePublicPortfolioPdf(portfolioId: string) {
-  return apiFetch<PortfolioProject>(
-    `/portfolio-projects/public/${portfolioId}/generate-pdf`,
+export function generatePublicPortfolioPdf(portfolioId: string, operationKey = crypto.randomUUID()) {
+  return portfolioFetch<PortfolioProject>(
+    `/api/portfolio-projects/${portfolioId}/actions/generate-pdf`,
     {
       method: "POST",
+        headers: { "Idempotency-Key": operationKey },
     },
-    "browser",
   );
 }
 
 export function getPortfolioPreviewPdfUrl(portfolioId: string) {
-  const requestUrl = new URL(
-    `/portfolio-projects/public/${portfolioId}/preview-pdf`,
-    publicEnv.apiBaseUrl,
-  );
-
-  return requestUrl.toString();
+  return `/api/portfolio-projects/${portfolioId}/pdf?mode=preview`;
 }
 
 export async function downloadPortfolioCoverTestPdf(portfolioId: string) {
-  const requestUrl = new URL(
-    `/portfolio-projects/public/${portfolioId}/cover-test-pdf`,
-    publicEnv.apiBaseUrl,
-  );
+  const requestUrl = `/api/portfolio-projects/${portfolioId}/actions/cover-test-pdf`;
   const response = await fetch(requestUrl, {
     cache: "no-store",
   });

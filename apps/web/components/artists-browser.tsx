@@ -1,8 +1,6 @@
 "use client";
 
 import {
-  ArrowRight,
-  BadgeCheck,
   ChevronDown,
   Grid2X2,
   Image as ImageIcon,
@@ -16,6 +14,7 @@ import { FormEvent, useMemo, useState } from "react";
 import { siteRoutes } from "@/lib/site-routes";
 import type { Artist } from "@/types/api";
 
+import { ArtBoardAnimatedStat } from "./artboard-animated-stat";
 import {
   ArtistCard,
   formatDiscipline,
@@ -71,15 +70,6 @@ export function ArtistsBrowser({ artists, totalArtists }: ArtistsBrowserProps) {
     () => artists.filter((artist) => getArtistVisual(artist)).slice(0, 3),
     [artists],
   );
-  const artworkCount = Math.max(
-    1100,
-    artists.reduce(
-      (total, artist) => total + (artist.counts?.artworks ?? artist.artworks.length),
-      0,
-    ),
-  );
-  const disciplineCount = 25;
-
   const filteredArtists = useMemo(() => {
     const query = searchTerm.trim().toLocaleLowerCase("sr");
 
@@ -134,15 +124,15 @@ export function ArtistsBrowser({ artists, totalArtists }: ArtistsBrowserProps) {
                 Upoznaj <span>umjetnike</span> ArtBoard platforme.
               </h1>
               <p className={styles.lead}>
-                <strong>Oni stvaraju, a mi im pomažemo da budu viđeni.</strong> Upoznaj umjetnike
-                koji su nam ukazali povjerenje i otkrij njihove umjetničke priče predstavljene
-                kroz ArtBoard profile.
+                Oni stvaraju, a mi im pomažemo da budu viđeni. Upoznaj umjetnike koji su nam
+                ukazali povjerenje i otkrij njihove umjetničke priče predstavljene kroz ArtBoard
+                profile.
               </p>
 
-              <div className={styles.stats}>
-                <Stat value={`${Math.max(70, totalArtists)}+`} label="Objavljenih umjetnika" />
-                <Stat value={`${formatNumber(artworkCount)}+`} label="Objavljenih radova" />
-                <Stat value={String(disciplineCount)} label="Umjetničkih disciplina" />
+              <div className={styles.stats} id="stats">
+                <Stat value={Math.max(70, totalArtists)} label="Objavljenih umjetnika" />
+                <Stat value={1013} label="Objavljenih radova" formatValue />
+                <Stat value={26} label="Umjetničkih disciplina" suffix="" />
               </div>
             </div>
 
@@ -156,7 +146,9 @@ export function ArtistsBrowser({ artists, totalArtists }: ArtistsBrowserProps) {
                   >
                     <img alt="" src={getArtistVisual(artist) || ""} />
                     <span className={styles.heroArtistTag}>
-                      <i>{getInitials(artist.name)}</i>
+                      <i style={{ background: HERO_AVATAR_GRADIENTS[index] }}>
+                        {getInitials(artist.name)}
+                      </i>
                       <span>
                         <b>{artist.name}</b>
                         <small>
@@ -171,13 +163,18 @@ export function ArtistsBrowser({ artists, totalArtists }: ArtistsBrowserProps) {
                 ))}
               </div>
 
-              <form className={styles.heroSearch} onSubmit={handleHeroSearch} role="search">
+              <form
+                className={styles.heroSearch}
+                id="hform"
+                onSubmit={handleHeroSearch}
+                role="search"
+              >
                 <Search aria-hidden="true" size={20} />
-                <label className={styles.srOnly} htmlFor="artist-search">
+                <label className={styles.srOnly} htmlFor="hq">
                   Pretraži umjetnike
                 </label>
                 <input
-                  id="artist-search"
+                  id="hq"
                   onChange={(event) => {
                     setSearchTerm(event.target.value);
                     setVisibleCount(PAGE_SIZE);
@@ -299,60 +296,75 @@ export function ArtistsBrowser({ artists, totalArtists }: ArtistsBrowserProps) {
         </div>
       </section>
 
-      <section className={styles.ctaSection}>
-        <div className={styles.ctaStars} aria-hidden="true" />
-        <div className={styles.ctaInner}>
-          <div className={styles.ctaCopy}>
-            <p className={styles.ctaEyebrow}>
-              <span />Postani dio ArtBoard zajednice
-            </p>
-            <h2>
-              Tvoj profil može biti <span>sljedeći</span> u pretraživaču.
-            </h2>
-            <p>
-              Kreiraj besplatan umjetnički profil, dodaj radove i biografiju, a mi ćemo ga
-              predstaviti publici, kustosima, galerijama i poslodavcima.
-            </p>
-            <div className={styles.ctaActions}>
-              <Link className={styles.primaryAction} href={siteRoutes.artistApplication}>
-                Prijavi se besplatno
-              </Link>
-              <Link className={styles.secondaryAction} href={`${siteRoutes.artistApplication}#proces`}>
-                Kako ide pregled
-              </Link>
+      <section className={styles.ctaSection} id="pridruzi">
+        <div className={styles.ctaPanel}>
+          <div className={styles.ctaStars} aria-hidden="true" />
+          <div className={`${styles.ctaStars} ${styles.ctaStarsSecond}`} aria-hidden="true" />
+          <div className={styles.ctaInner}>
+            <div className={styles.ctaCopy}>
+              <p className={styles.ctaEyebrow}>
+                <span />Postani dio ArtBoard zajednice
+              </p>
+              <h2>
+                Tvoj profil može biti <span>sljedeći</span> u pretraživaču.
+              </h2>
+              <p>
+                Kreiraj besplatan umjetnički profil, dodaj radove i biografiju, a mi ćemo ga
+                predstaviti publici, kustosima, galerijama i poslodavcima.
+              </p>
+              <div className={styles.ctaActions}>
+                <Link className={styles.primaryAction} href={siteRoutes.application}>
+                  Prijavi se besplatno
+                </Link>
+              </div>
+              <p className={styles.ctaNote}>
+                Proces verifikacije i uslove objave profila možeš pročitati u{" "}
+                <Link href="/uslovi-koriscenja">Uslovima korišćenja</Link> i{" "}
+                <Link href="/uslovi-koriscenja#privatnost">Politici privatnosti</Link>.
+              </p>
             </div>
-          </div>
 
-          <ol className={styles.ctaSteps}>
-            <Step
-              icon={<UserRound />}
-              tone="blue"
-              title="Prijavi se i popuni profil"
-              text="Biografija, discipline, lokacija i kontakt na jednom mjestu."
-            />
-            <Step
-              icon={<ImageIcon />}
-              tone="red"
-              title="Dodaj svoje radove"
-              text="Predstavi radove u kvalitetu koji zaslužuju."
-            />
-            <Step
-              icon={<BadgeCheck />}
-              tone="yellow"
-              title="Verifikacija i objava"
-              text="Nakon pregleda tvoj profil postaje vidljiv u pretraživaču."
-            />
-          </ol>
+            <ol className={styles.ctaSteps}>
+              <Step
+                icon={<UserRound />}
+                tone="blue"
+                title="Prijavi se i popuni profil"
+                text="Biografija, discipline, lokacija i kontakt na jednom mjestu."
+              />
+              <Step
+                icon={<ImageIcon />}
+                tone="red"
+                title="Dodaj svoje radove"
+                text="Predstavi radove u kvalitetu koji zaslužuju."
+              />
+              <Step
+                icon={<CheckCircleIcon />}
+                tone="yellow"
+                title="Verifikacija i objava"
+                text="Nakon pregleda tvoj profil postaje vidljiv u pretraživaču."
+              />
+            </ol>
+          </div>
         </div>
       </section>
     </>
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({
+  formatValue = false,
+  label,
+  suffix = "+",
+  value,
+}: {
+  formatValue?: boolean;
+  label: string;
+  suffix?: string;
+  value: number;
+}) {
   return (
     <div className={styles.stat}>
-      <strong>{value}</strong>
+      <ArtBoardAnimatedStat formatValue={formatValue} suffix={suffix} value={value} />
       <span>{label}</span>
     </div>
   );
@@ -378,8 +390,16 @@ function Step({
         <strong>{title}</strong>
         <small>{text}</small>
       </span>
-      <ArrowRight aria-hidden="true" className={styles.stepArrow} size={18} />
     </li>
+  );
+}
+
+function CheckCircleIcon() {
+  return (
+    <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="8.6" />
+      <polyline points="8.4,12.2 11,14.6 15.8,9.8" />
+    </svg>
   );
 }
 
@@ -412,10 +432,6 @@ function compareArtists(left: Artist, right: Artist, sort: string) {
   return left.name.localeCompare(right.name, "sr");
 }
 
-function formatNumber(value: number) {
-  return new Intl.NumberFormat("de-DE").format(value);
-}
-
 function getInitials(name: string) {
   return name
     .split(/\s+/)
@@ -423,3 +439,9 @@ function getInitials(name: string) {
     .map((part) => part.charAt(0).toLocaleUpperCase("sr"))
     .join("");
 }
+
+const HERO_AVATAR_GRADIENTS = [
+  "linear-gradient(135deg, #0d74ff, #8a3bf2)",
+  "linear-gradient(135deg, #fe171d, #ff8a1f)",
+  "linear-gradient(135deg, #ffd31b, #0d74ff)",
+];

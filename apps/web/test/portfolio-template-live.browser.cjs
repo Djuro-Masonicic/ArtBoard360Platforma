@@ -1,0 +1,30 @@
+// Read-only production-route smoke: Guest changes exist only in browser memory.
+const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path');
+const { chromium, expect } = require('@playwright/test');
+const root = path.resolve(__dirname, '../../..'), blocks = process.argv.includes('--blocks'), cards = process.argv.includes('--cards'), look = blocks ? 'Blok' : cards ? 'Kartice' : 'Editorijal', out = path.join(root, blocks ? '.tmp/portfolio-blocks' : cards ? '.tmp/portfolio-cards' : '.tmp/portfolio-editorial');
+let browser;
+(async () => {
+  fs.mkdirSync(out, { recursive: true }); browser = await chromium.launch({ channel: 'chrome', headless: true });
+  const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } }), errors = [], writes = [];
+  page.on('pageerror', e => errors.push(e.message));
+  page.on('request', r => { if (r.url().includes('/api/') && !['GET', 'HEAD', 'OPTIONS'].includes(r.method())) writes.push(r.method() + ' ' + r.url()); });
+  const response = await page.goto('http://localhost:3000/portfolio-builder/new'); assert.equal(response.status(), 200);
+  await page.getByRole('textbox', { name: 'Ime i prezime', exact: true }).fill(look + ' Test');
+  await page.locator('nav [data-step="design"]').click();
+  await page.getByRole('button', { name: look, exact: true }).click();
+  await page.getByRole('option', { name: 'Naslovna strana G · Magazin', exact: true }).click();
+  await expect(page.locator('[aria-label="Izabrani templejt"]')).toContainText(look);
+  await expect(page.getByRole('button', { name: 'Sačuvaj izbor', exact: true })).toHaveCount(0);
+  await page.screenshot({ path: path.join(out, 'live-desktop.png'), fullPage: true });
+  await page.getByRole('button', { name: 'Uvećaj', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Pregled naslovnice' })).toContainText(look);
+  await page.screenshot({ path: path.join(out, 'live-modal.png') }); await page.keyboard.press('Escape');
+  await page.setViewportSize({ width: 390, height: 844 });
+  const dimensions = await page.evaluate(() => ({ viewport: innerWidth, document: document.documentElement.scrollWidth }));
+  assert(dimensions.document <= dimensions.viewport, 'No horizontal overflow');
+  await page.screenshot({ path: path.join(out, 'live-mobile.png'), fullPage: true });
+  await page.reload(); await expect(page.getByRole('textbox', { name: 'Ime i prezime', exact: true })).toHaveValue('');
+  assert.deepEqual(writes, []); assert.deepEqual(errors, []);
+  const result = { desktop: '1440x1000', mobile: '390x844', dimensions, guestRefreshResets: true, writes, errors };
+  fs.writeFileSync(path.join(out, 'live-smoke.json'), JSON.stringify(result, null, 2)); console.log(JSON.stringify(result));
+})().catch(e => { console.error(e); process.exitCode = 1; }).finally(async () => { if (browser) await browser.close(); });

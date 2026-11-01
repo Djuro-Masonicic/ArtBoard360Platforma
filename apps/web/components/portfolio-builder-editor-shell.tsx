@@ -1,21 +1,31 @@
 "use client";
+import { useAccountTheme } from "@/lib/use-account-theme";
 
 import Image from "next/image";
+import { editorRequest, profileMemoryPreview, type ProfileMemoryAdapter } from "@/lib/portfolio-profile-memory";
+import { PortfolioExportWorkspace } from "./portfolio-export-workspace";
+import type { GuestPortfolioMemoryAdapter } from "@/lib/guest-portfolio-memory";
+import { buildPortfolioDocumentPlan, parsePortfolioCv, readPortfolioCv, getMinimalDesign, getMinimalDesignLabel, type MinimalDesign } from "@artboard/portfolio-document-plan";
+import { PortfolioCollectionsWorkspace } from "./portfolio-collections-workspace";
+import { PortfolioSourceChanges } from "./portfolio-source-changes";
+import { PortfolioLivePdfPreview } from "./portfolio-live-pdf-preview";
+import { PortfolioWorksWorkspace } from "./portfolio-works-workspace";
+import { PortfolioCvWorkspace, createPortfolioCvDraft, type PortfolioCvDraft } from "./portfolio-cv-workspace";
+import { PortfolioDesignWorkspace, MinimalCoverPreview, createPortfolioDesignPreview, type PortfolioDesignPreview } from "./portfolio-design-workspace";
+import { commandPortfolioCollections } from "@/services/portfolio-collections";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Moon, Pencil, Sun } from "lucide-react";
+import { ArrowLeft, Moon, Sun } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import styles from "@/components/portfolio-builder-editor-shell.module.css";
+import { backendPortfolioEditorAdapter, type PortfolioEditorAdapter } from "@/lib/portfolio-editor-adapter";
+import { formatBirthDate, parseBirthDateInput } from "@/lib/portfolio-profile-fields";
+import { ApiError } from "@/services/api";
 
 import {
   generatePublicPortfolioPdf,
-  updatePortfolioArtwork,
-  updatePortfolioProject,
-  uploadPortfolioCollectionCover,
-  uploadPortfolioArtwork,
-  uploadPortfolioProfileImage,
   type UpdatePortfolioArtworkPayload,
   type UpdatePortfolioProjectPayload,
 } from "@/services/portfolio-projects";
@@ -33,9 +43,10 @@ import type {
 
 type PortfolioBuilderEditorShellProps = {
   project: PortfolioProject;
+  adapter?: PortfolioEditorAdapter;
 };
 
-type BuilderStep = "profile" | "works" | "design" | "export";
+type BuilderStep = "profile" | "collections" | "works" | "cv" | "design" | "export";
 type StudioTheme = "dark" | "light";
 
 const steps: Array<{
@@ -48,6 +59,16 @@ const steps: Array<{
   { id: "design", label: "Dizajn", helper: "Šablon, format, jezik" },
   { id: "export", label: "Izvoz", helper: "Pregled, PDF, link" },
 ];
+
+function getBuilderSteps(project?: PortfolioProject) {
+  if (project?.id.startsWith("guest-memory:")) return [steps[0]!, steps[1]!, { id: "cv" as const, label: "CV", helper: "Obrazovanje, iskustvo i izložbe" }, ...steps.slice(2)];
+  if (!project?.collectionsAvailable && project?.collectionSchemaVersion !== 2) return steps;
+  return [steps[0]!, { id: "collections" as const, label: "Kolekcije", helper: "Izbor kolekcija i radova" }, steps[1]!,
+    { id: "cv" as const, label: "CV", helper: "Obrazovanje, iskustvo i izložbe" }, ...steps.slice(2)];
+}
+function stepNumber(step: BuilderStep, project?: PortfolioProject) {
+  return getBuilderSteps(project).findIndex(x => x.id === step) + 1;
+}
 
 const templateLabels: Record<PortfolioTemplate, string> = {
   INSTITUTIONAL_MINIMAL: "Institutional Minimal",
@@ -69,9 +90,10 @@ const footerLabels: Record<PortfolioFooterTemplate, string> = {
   SALES: "Sales",
 };
 
-function createPresetDesignConfig(template: PortfolioTemplate): PortfolioDesignConfig {
+function createPresetDesignConfig(template: PortfolioTemplate, minimal?: MinimalDesign): PortfolioDesignConfig {
   return {
     mode: "PRESET",
+    ...(minimal ? { minimal } : {}),
     pages: {
       cover: template,
       profile: template,
@@ -89,7 +111,17 @@ function createPresetDesignConfig(template: PortfolioTemplate): PortfolioDesignC
 }
 
 function normalizeDesignConfig(project: PortfolioProject, fallbackTemplate: PortfolioTemplate) {
-  return project.designConfig ?? createPresetDesignConfig(fallbackTemplate);
+  if (!project.designConfig) return createPresetDesignConfig(fallbackTemplate);
+  const { documentSelection: _selection, ...design } = project.designConfig as PortfolioDesignConfig & { documentSelection?: unknown };
+  const preset = createPresetDesignConfig(fallbackTemplate);
+  return { ...preset, ...design, pages: { ...preset.pages, ...design.pages } };
+}
+
+function comparableJson(value: unknown) {
+  // JSONB may return keys in a different order. That must not turn an unchanged
+  // saved design into an unsaved edit and block PDF export after reopening.
+  return JSON.stringify(value, (_key, item) => item && typeof item === "object" && !Array.isArray(item)
+    ? Object.fromEntries(Object.entries(item).sort(([a], [b]) => a.localeCompare(b))) : item);
 }
 
 function isPremiumProject(project: PortfolioProject) {
@@ -147,10 +179,25 @@ function toggleDisciplineValue(values: string[], value: string) {
   return values.includes(value) ? values.filter((item) => item !== value) : [...values, value];
 }
 
-export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorShellProps) {
+export function PortfolioBuilderEditorShell({ project, adapter = backendPortfolioEditorAdapter }: PortfolioBuilderEditorShellProps) {
   const router = useRouter();
+  const isMemoryGuest = adapter.kind === "guest-memory";
+  const isMemoryProfile = adapter.kind === "profile-memory";
+  const isMemoryEditor = isMemoryGuest || isMemoryProfile;
   const [currentProject, setCurrentProject] = useState(project);
+  const [artworkDrafts, setArtworkDrafts] = useState<Record<string, UpdatePortfolioArtworkPayload>>({});
+  const [cvDraft, setCvDraft] = useState<PortfolioCvDraft>(() => createPortfolioCvDraft(project.cvSections));
+  const [cvEdited, setCvEdited] = useState(false);
+  const [replaceLegacyCv, setReplaceLegacyCv] = useState(false);
+  const [includeCv, setIncludeCv] = useState(project.includeCv);
+  const cvEditVersion = useRef(0);
+  useEffect(() => {
+    if (!cvEdited) setCvDraft(createPortfolioCvDraft(currentProject.cvSections));
+  }, [currentProject.cvSections, cvEdited]);
+  const [designPreview, setDesignPreview] = useState<PortfolioDesignPreview>(() => ({ ...createPortfolioDesignPreview(), look: getMinimalDesign(project).style === "BLOCKS" ? "Blocks" : getMinimalDesign(project).style === "CARDS" ? "Cards" : getMinimalDesign(project).style === "EDITORIAL" ? "Editorial" : getMinimalDesign(project).style === "GRADIENT" ? "Gradient" : getMinimalDesign(project).style === "ROUNDED" ? "Rounded" : "Minimal", cover: getMinimalDesign(project).cover }));
+  const [designPreviewEdited, setDesignPreviewEdited] = useState(false);
   const [activeStep, setActiveStep] = useState<BuilderStep>("profile");
+  const [pdfPageCount, setPdfPageCount] = useState<number | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<PortfolioTemplate>(project.template);
   const [designConfig, setDesignConfig] = useState<PortfolioDesignConfig>(() =>
     normalizeDesignConfig(project, project.template),
@@ -162,6 +209,11 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
   const [artistName, setArtistName] = useState(project.artistName);
   const [discipline, setDiscipline] = useState(project.discipline ?? "");
   const [email, setEmail] = useState(project.email ?? "");
+  const [phone, setPhone] = useState(project.phone ?? "");
+  const [birthDateInput, setBirthDateInput] = useState(() => formatBirthDate(project.dateOfBirth));
+  const [behanceUrl, setBehanceUrl] = useState(project.behanceUrl ?? "");
+  const [motto, setMotto] = useState(project.motto ?? "");
+  const [mottoAuthor, setMottoAuthor] = useState(project.mottoAuthor ?? "");
   const [location, setLocation] = useState(project.location ?? "");
   const [websiteUrl, setWebsiteUrl] = useState(project.websiteUrl ?? "");
   const [instagramUrl, setInstagramUrl] = useState(project.instagramUrl ?? "");
@@ -173,27 +225,64 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
   );
   const [collectionCoverUrl, setCollectionCoverUrl] = useState(project.collectionCoverUrl ?? "");
   const [bio, setBio] = useState(project.biography ?? "");
+  const [artistStatement, setArtistStatement] = useState(project.artistStatement ?? "");
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingArtwork, setIsUploadingArtwork] = useState(false);
   const [isUploadingProfileImage, setIsUploadingProfileImage] = useState(false);
-  const [isUploadingCollectionCover, setIsUploadingCollectionCover] = useState(false);
+  const [isUploadingCoverImage, setIsUploadingCoverImage] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const exportAttempt = useRef<{ signature: string; key: string } | null>(null);
+  function exportKey() {
+    const signature = JSON.stringify({ id: currentProject.id, revision: currentProject.revision, liveDraft, artworks: artworksWithDrafts });
+    if (exportAttempt.current?.signature !== signature) exportAttempt.current = { signature, key: crypto.randomUUID() };
+    return exportAttempt.current.key;
+  }
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [studioTheme, setStudioTheme] = useState<StudioTheme>("dark");
+  const { theme: studioTheme, changeTheme: changeStudioTheme, error: themeError } = useAccountTheme("dark", !isMemoryGuest, !isMemoryGuest);
 
+  useEffect(() => adapter.retain?.(), [adapter]);
+
+  // In memory mode these fields are just the current document state, with no
+  // save operation, persistence, network request or success-as-draft message.
+  // Image references belong to the adapter's upload operations. Mirroring them
+  // here could overwrite a newer upload with a previous render's image URL.
   useEffect(() => {
-    const savedTheme = window.localStorage.getItem("artboard-portfolio-studio-theme");
+    if (!isMemoryEditor) return;
+    let active = true;
+    void adapter.updateProject(currentProject.id, {
+      artistName, discipline, email, phone, location, websiteUrl, instagramUrl,
+      dateOfBirth: parseBirthDateInput(birthDateInput) ?? undefined, behanceUrl, motto, mottoAuthor,
+      collectionName, collectionYear, collectionDescription, biography: bio, artistStatement,
+      template: selectedTemplate, pageFormat, language, fontStyle, includeBranding,
+      includeCv, ...(cvEdited ? { cvSections: cvDraft } : {}),
+      designConfig: designConfig.mode === "CUSTOM" ? designConfig : createPresetDesignConfig(selectedTemplate, designConfig.minimal),
+    }).then((local) => { if (active) setCurrentProject(local); })
+      .catch((error: unknown) => { if (active) setSaveError(error instanceof Error ? error.message : "Izmjena nije primijenjena."); });
+    return () => { active = false; };
+  }, [adapter, isMemoryEditor, currentProject.id, artistName, discipline, email, phone, location, websiteUrl,
+    instagramUrl, collectionName, collectionYear, collectionDescription,
+    bio, artistStatement, birthDateInput, behanceUrl, motto, mottoAuthor, selectedTemplate, pageFormat, language, fontStyle, includeBranding, designConfig, includeCv, cvDraft, cvEdited]);
 
-    if (savedTheme === "dark" || savedTheme === "light") {
-      setStudioTheme(savedTheme);
-    }
-  }, []);
-
-  const selectedArtworks = useMemo(
-    () => currentProject.artworks.filter((artwork) => artwork.isSelected),
-    [currentProject.artworks],
-  );
+  const artworksWithDrafts = useMemo(() => currentProject.artworks.map(artwork => ({ ...artwork, ...artworkDrafts[artwork.id] })), [currentProject.artworks, artworkDrafts]);
+  const documentPlan = useMemo(() => buildPortfolioDocumentPlan({ ...currentProject, artworks: artworksWithDrafts }), [currentProject, artworksWithDrafts]);
+  const selectedArtworks = documentPlan.selectedArtworks;
+  const collectionsMode = !isMemoryGuest && Boolean(currentProject.collectionsAvailable || currentProject.collectionSchemaVersion === 2);
+  const liveDraft: UpdatePortfolioProjectPayload = { artistName, discipline, email, phone, location, websiteUrl, instagramUrl,
+    dateOfBirth: parseBirthDateInput(birthDateInput) ?? undefined, behanceUrl, motto, mottoAuthor,
+    profileImageUrl, biography: bio, artistStatement, template: selectedTemplate, pageFormat, language, fontStyle, includeBranding,
+    designConfig: designConfig.mode === "CUSTOM" ? designConfig : createPresetDesignConfig(selectedTemplate, designConfig.minimal), includeCv,
+    ...(cvEdited ? { cvSections: cvDraft } : {}) };
+  const hasUnsavedMetadata = Object.keys(artworkDrafts).length > 0 || Object.entries(liveDraft).some(([key,value]) => comparableJson(value ?? "") !== comparableJson(key === "designConfig" ? normalizeDesignConfig(currentProject, currentProject.template) : (currentProject as unknown as Record<string,unknown>)[key] ?? ""));
+  function adoptCollectionsProject(next: PortfolioProject) {
+    setCurrentProject(next); setProfileImageUrl(next.profileImageUrl ?? "");
+    setCollectionCoverUrl(next.collectionCoverUrl ?? "");
+  }
+  function adoptReviewedProject(next: PortfolioProject) {
+    adoptCollectionsProject(next); setArtistName(next.artistName); setDiscipline(next.discipline ?? ""); setEmail(next.email ?? "");
+    setBirthDateInput(formatBirthDate(next.dateOfBirth)); setBehanceUrl(next.behanceUrl ?? "");
+    setBio(next.biography ?? ""); setArtistStatement(next.artistStatement ?? ""); setWebsiteUrl(next.websiteUrl ?? ""); setInstagramUrl(next.instagramUrl ?? "");
+  }
 
   const coverImage =
     currentProject.coverImageUrl || selectedArtworks[0]?.imageUrl || currentProject.profileImageUrl;
@@ -204,10 +293,27 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
     setSaveError(null);
 
     try {
-      const savedProject = await updatePortfolioProject(currentProject.id, {
+      const savedCvEditVersion = cvEditVersion.current;
+      const hasLegacyCv = currentProject.cvSections != null && !readPortfolioCv(currentProject.cvSections) && Object.keys(Object(currentProject.cvSections)).length > 0;
+      if (cvEdited && hasLegacyCv && !replaceLegacyCv) throw new Error("Potvrdi zamjenu prethodnog CV-a novim unosom u koraku CV.");
+      const cvSections = cvEdited ? parsePortfolioCv(cvDraft) : undefined;
+      const dateOfBirth = parseBirthDateInput(birthDateInput);
+      if (dateOfBirth === null) throw new Error("Unesi ispravan datum rođenja (DD.MM.GGGG.), bez datuma u budućnosti.");
+      let latest = currentProject;
+      for (const [artworkId, payload] of Object.entries(artworkDrafts)) {
+        latest = await adapter.updateArtwork(latest.id, artworkId, { ...payload,
+          ...(latest.collectionSchemaVersion === 2 ? { expectedRevision: latest.revision } : {}) });
+        // Keep the last successful revision if a later request fails. Draft
+        // inputs stay available for retry; unrelated artwork fields are omitted.
+        setCurrentProject(latest);
+      }
+      let savedProject = await adapter.updateProject(latest.id, {
+        ...(latest.collectionSchemaVersion === 2 ? { expectedRevision: latest.revision } : {}),
         artistName,
         discipline,
         email,
+        phone,
+        dateOfBirth, behanceUrl, motto, mottoAuthor,
         location,
         websiteUrl,
         instagramUrl,
@@ -217,19 +323,29 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
         collectionDescription,
         collectionCoverUrl,
         biography: bio,
+        artistStatement,
         template: selectedTemplate,
         pageFormat,
         language,
         fontStyle,
         includeBranding,
+        includeCv,
+        ...(cvSections ? { cvSections } : {}),
         designConfig:
           designConfig.mode === "CUSTOM"
             ? designConfig
-            : createPresetDesignConfig(selectedTemplate),
+            : createPresetDesignConfig(selectedTemplate, designConfig.minimal),
         ...overrides,
       });
 
+      if (isMemoryProfile) {
+        savedProject = await (adapter as ProfileMemoryAdapter).save(savedProject);
+        router.replace(`/portfolio-builder/${savedProject.id}`);
+        router.refresh();
+        return savedProject;
+      }
       setCurrentProject(savedProject);
+      setArtworkDrafts({});
       setProfileImageUrl(savedProject.profileImageUrl ?? "");
       setCollectionName(savedProject.collectionName ?? "");
       setCollectionYear(savedProject.collectionYear ?? "");
@@ -240,7 +356,15 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
       setLanguage(savedProject.language);
       setFontStyle(savedProject.fontStyle);
       setIncludeBranding(savedProject.includeBranding);
-      setSaveMessage("Draft je sacuvan.");
+      setIncludeCv(savedProject.includeCv);
+      if (cvEdited && savedCvEditVersion === cvEditVersion.current) {
+        setCvDraft(createPortfolioCvDraft(savedProject.cvSections)); setCvEdited(false); setReplaceLegacyCv(false);
+      }
+      setSaveMessage(isMemoryGuest ? "Izmjene važe samo u otvorenoj stranici." : designPreviewEdited
+        ? `Aktuelni portfolio podaci su sačuvani. ${cvEdited ? "CV unos je takođe sačuvan. " : ""}Novi prikaz stilova i naslovnica ostaje privremen i još nije povezan sa PDF-om.`
+        : cvEdited
+        ? (savedCvEditVersion === cvEditVersion.current ? "CV i ostali podaci drafta su sačuvani." : "CV je sačuvan, ali imaš novije izmjene koje čekaju čuvanje.")
+        : "Draft je sacuvan.");
       return savedProject;
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : "Draft nije mogao biti sacuvan.");
@@ -262,15 +386,11 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
     setSaveError(null);
 
     try {
-      let latestProject = currentProject;
-
-      for (const file of selectedFiles) {
-        latestProject = await uploadPortfolioArtwork(latestProject.id, file);
-      }
+      const latestProject = await adapter.uploadArtworks(currentProject, selectedFiles);
 
       setCurrentProject(latestProject);
       setSaveMessage(
-        selectedFiles.length === 1
+        isMemoryEditor ? "Slike su privremene i postoje samo u otvorenoj stranici." : selectedFiles.length === 1
           ? "Rad je dodat u portfolio draft."
           : `Dodato je ${selectedFiles.length} radova u portfolio draft.`,
       );
@@ -293,11 +413,11 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
     setSaveError(null);
 
     try {
-      const savedProject = await uploadPortfolioProfileImage(currentProject.id, file);
+      const savedProject = await adapter.uploadProfileImage(currentProject.id, file, currentProject.collectionSchemaVersion === 2 ? currentProject.revision : undefined);
 
       setCurrentProject(savedProject);
       setProfileImageUrl(savedProject.profileImageUrl ?? "");
-      setSaveMessage("Profilna slika portfolija je sacuvana.");
+      setSaveMessage(isMemoryEditor ? "Profilna slika je privremena." : "Profilna slika portfolija je sacuvana.");
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : "Profilna slika nije mogla biti uploadovana.");
     } finally {
@@ -305,27 +425,26 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
     }
   }
 
-  async function uploadCollectionCover(files: FileList | null) {
+  async function uploadCoverImage(files: FileList | null) {
     const file = files?.[0];
 
     if (!file) {
       return;
     }
 
-    setIsUploadingCollectionCover(true);
+    setIsUploadingCoverImage(true);
     setSaveMessage(null);
     setSaveError(null);
 
     try {
-      const savedProject = await uploadPortfolioCollectionCover(currentProject.id, file);
+      const savedProject = await adapter.uploadCoverImage(currentProject.id, file, currentProject.collectionSchemaVersion === 2 ? currentProject.revision : undefined);
 
       setCurrentProject(savedProject);
-      setCollectionCoverUrl(savedProject.collectionCoverUrl ?? "");
-      setSaveMessage("Cover kolekcije je sacuvan.");
+      setSaveMessage(isMemoryEditor ? "Naslovna slika je privremena." : "Naslovna fotografija je sačuvana.");
     } catch (error) {
-      setSaveError(error instanceof Error ? error.message : "Cover kolekcije nije mogao biti uploadovan.");
+      setSaveError(error instanceof Error ? error.message : "Naslovna fotografija nije mogla biti uploadovana.");
     } finally {
-      setIsUploadingCollectionCover(false);
+      setIsUploadingCoverImage(false);
     }
   }
 
@@ -335,8 +454,8 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
     setSaveError(null);
 
     try {
-      const savedProject = await updatePortfolioArtwork(currentProject.id, artworkId, {
-        isSelected,
+      const savedProject = await adapter.updateArtwork(currentProject.id, artworkId, {
+        isSelected, ...(currentProject.collectionSchemaVersion === 2 ? { expectedRevision: currentProject.revision } : {}),
       });
 
       setCurrentProject(savedProject);
@@ -354,12 +473,12 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
     setSaveError(null);
 
     try {
-      const savedProject = await updatePortfolioProject(currentProject.id, {
-        coverImageUrl: artwork.imageUrl,
+      const savedProject = await adapter.updateProject(currentProject.id, {
+        coverImageUrl: artwork.imageUrl, ...(currentProject.collectionSchemaVersion === 2 ? { expectedRevision: currentProject.revision } : {}),
       });
 
       setCurrentProject(savedProject);
-      setSaveMessage("Pocetni rad je sacuvan.");
+      setSaveMessage(isMemoryEditor ? "Naslovni rad je izabran u ovoj stranici." : "Pocetni rad je sacuvan.");
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : "Pocetni rad nije mogao biti sacuvan.");
     } finally {
@@ -367,24 +486,32 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
     }
   }
 
-  async function saveArtworkDetails(artworkId: string, payload: UpdatePortfolioArtworkPayload) {
-    setIsSaving(true);
+  function saveArtworkDetails(artworkId: string, payload: UpdatePortfolioArtworkPayload) {
     setSaveMessage(null);
     setSaveError(null);
-
-    try {
-      const savedProject = await updatePortfolioArtwork(currentProject.id, artworkId, payload);
-
-      setCurrentProject(savedProject);
-      setSaveMessage("Detalji rada su sacuvani.");
-    } catch (error) {
-      setSaveError(error instanceof Error ? error.message : "Detalji rada nisu mogli biti sacuvani.");
-    } finally {
-      setIsSaving(false);
+    if (isMemoryEditor) {
+      void adapter.updateArtwork(currentProject.id, artworkId, payload).then(setCurrentProject)
+        .catch(error => setSaveError(error instanceof Error ? error.message : "Detalji rada nijesu primijenjeni."));
+      return;
     }
+    setArtworkDrafts(previous => ({ ...previous, [artworkId]: { ...previous[artworkId], ...payload } }));
   }
 
   async function reorderArtwork(draggedArtworkId: string, targetArtworkId: string) {
+    if (currentProject.collectionSchemaVersion === 2 && draggedArtworkId !== targetArtworkId) {
+      const dragged=currentProject.artworks.find(w=>w.id===draggedArtworkId), target=currentProject.artworks.find(w=>w.id===targetArtworkId);
+      if(!dragged||!target)return;
+      const same=(dragged.portfolioCollectionId??null)===(target.portfolioCollectionId??null);
+      if(!same && !window.confirm("Premjesti rad u drugu portfolio kolekciju? Izvorni profil i ru?ni metapodaci ostaju sa?uvani."))return;
+      setIsSaving(true);setSaveError(null);
+      try {
+        if(!same){setCurrentProject(await commandPortfolioCollections(currentProject,{action:"move",artworkIds:[dragged.id],collectionId:target.portfolioCollectionId??null}));return;}
+        const group=currentProject.artworks.filter(w=>(w.portfolioCollectionId??null)===(dragged.portfolioCollectionId??null)).sort((a,b)=>dragged.portfolioCollectionId?(a.collectionOrderIndex??a.orderIndex)-(b.collectionOrderIndex??b.orderIndex):a.orderIndex-b.orderIndex);
+        const ids=group.filter(w=>w.id!==dragged.id).map(w=>w.id);ids.splice(ids.indexOf(target.id),0,dragged.id);
+        setCurrentProject(await commandPortfolioCollections(currentProject,{action:"reorderWorks",artworkIds:ids,collectionId:dragged.portfolioCollectionId??null}));
+      }catch(error){setSaveError(error instanceof Error?error.message:"Redosljed nije sa?uvan.");}finally{setIsSaving(false);}
+      return;
+    }
     if (draggedArtworkId === targetArtworkId) {
       return;
     }
@@ -415,20 +542,13 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
     setSaveError(null);
 
     try {
-      let latestProject = currentProject;
-
-      for (const [index, artwork] of reorderedArtworks.entries()) {
-        if (artwork.orderIndex === index) {
-          continue;
-        }
-
-        latestProject = await updatePortfolioArtwork(currentProject.id, artwork.id, {
-          orderIndex: index,
-        });
-      }
+      const changedPositions = reorderedArtworks.flatMap((artwork, index) =>
+        artwork.orderIndex === index ? [] : [{ id: artwork.id, orderIndex: index }],
+      );
+      const latestProject = await adapter.reorderArtworks(currentProject, changedPositions);
 
       setCurrentProject(latestProject);
-      setSaveMessage("Redosljed radova je sacuvan.");
+      setSaveMessage(isMemoryEditor ? "Redosljed važi samo u otvorenoj stranici." : "Redosljed radova je sacuvan.");
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : "Redosljed nije mogao biti sacuvan.");
     } finally {
@@ -437,16 +557,19 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
   }
 
   async function generatePdfVersion() {
+    if (isMemoryGuest) return;
     setIsGeneratingPdf(true);
     setSaveMessage(null);
     setSaveError(null);
 
     try {
-      const generatedProject = await generatePublicPortfolioPdf(currentProject.id);
+      const generatedProject = await generatePublicPortfolioPdf(currentProject.id, exportKey());
+      exportAttempt.current = null;
 
       setCurrentProject(generatedProject);
       setSaveMessage("Nova PDF verzija je generisana i sacuvana.");
     } catch (error) {
+      if (error instanceof ApiError && error.status < 500) exportAttempt.current = null;
       setSaveError(error instanceof Error ? error.message : "PDF nije mogao biti generisan.");
     } finally {
       setIsGeneratingPdf(false);
@@ -454,28 +577,56 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
   }
 
   async function generateAndOpenCleanPdf() {
+    if (isMemoryGuest) return;
     setIsGeneratingPdf(true);
     setSaveMessage(null);
     setSaveError(null);
 
     try {
-      const generatedProject = await generatePublicPortfolioPdf(currentProject.id);
+      const generatedProject = await generatePublicPortfolioPdf(currentProject.id, exportKey());
+      exportAttempt.current = null;
 
       setCurrentProject(generatedProject);
       router.push(`/portfolio-builder/${currentProject.id}/download`);
       router.refresh();
     } catch (error) {
+      if (error instanceof ApiError && error.status < 500) exportAttempt.current = null;
       setSaveError(error instanceof Error ? error.message : "PDF nije mogao biti generisan.");
     } finally {
       setIsGeneratingPdf(false);
     }
   }
 
+  async function downloadEditorPdf(clean: boolean) {
+    setIsGeneratingPdf(true); setSaveError(null); setSaveMessage(null);
+    try {
+      if (parseBirthDateInput(birthDateInput) === null) throw Error("Unesi ispravan datum ro\u0111enja.");
+      const response = await editorRequest(clean ? "test-export" : "preview", { ...currentProject, ...liveDraft, artworks: artworksWithDrafts } as PortfolioProject);
+      const url = URL.createObjectURL(await response.blob());
+      const link = document.createElement("a"); link.href = url;
+      link.download = `${clean ? "test-" : "preview-"}portfolio.pdf`;
+      document.body.append(link); link.click(); link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      if (clean) setSaveMessage("Testni PDF je preuzet. Kvota, draft i istorija verzija nijesu promijenjeni.");
+    } catch (error) { setSaveError(error instanceof Error ? error.message : "PDF nije dostupan."); }
+    finally { setIsGeneratingPdf(false); }
+  }
+
+  function changeDocumentSelection(payload: UpdatePortfolioProjectPayload) {
+    if (payload.includeCv !== undefined) setIncludeCv(payload.includeCv);
+    if (isMemoryEditor) void adapter.updateProject(currentProject.id, payload).then(setCurrentProject)
+      .catch(error => setSaveError(error instanceof Error ? error.message : "Izbor nije primijenjen."));
+    else void saveProject(payload);
+  }
+
   function openPreviewPage() {
+    if (isMemoryProfile) { void downloadEditorPdf(false); return; }
+    if (isMemoryGuest) return;
     router.push(`/portfolio-builder/${currentProject.id}/preview`);
   }
 
   function openPaymentPage() {
+    if (isMemoryGuest) return;
     router.push(`/portfolio-builder/${currentProject.id}/payment`);
   }
 
@@ -483,24 +634,28 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
     setSelectedTemplate(template);
 
     if (designConfig.mode === "PRESET") {
-      setDesignConfig(createPresetDesignConfig(template));
+      setDesignConfig(createPresetDesignConfig(template, designConfig.minimal));
     }
   }
 
-  function changeStudioTheme(theme: StudioTheme) {
-    setStudioTheme(theme);
-    window.localStorage.setItem("artboard-portfolio-studio-theme", theme);
-  }
 
   return (
-    <main className={styles.studio} data-theme={studioTheme}>
+    <main className={styles.studio} data-theme={studioTheme} inert={isMemoryProfile && isSaving ? true : undefined}>
+      {themeError ? <p role="alert">{themeError}</p> : null}
       <StudioTopbar
+        isMemoryProfile={isMemoryProfile}
+        isMemoryGuest={isMemoryGuest}
         isSaving={isSaving}
+        cvIsTemporary={isMemoryGuest && (activeStep === "cv" || cvEdited)}
+        cvHasChanges={cvEdited || includeCv !== currentProject.includeCv}
+        designIsTemporary={designPreviewEdited}
         onOpenPreview={openPreviewPage}
         onSave={() => void saveProject()}
         onThemeChange={changeStudioTheme}
         project={currentProject}
         template={selectedTemplate}
+        designLabel={selectedTemplate === "INSTITUTIONAL_MINIMAL" ? getMinimalDesignLabel({ designConfig }) : templateLabels[selectedTemplate]}
+        hasUnsavedChanges={isMemoryProfile || hasUnsavedMetadata}
         theme={studioTheme}
       />
 
@@ -508,64 +663,106 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
         <StudioSidebar
           activeStep={activeStep}
           project={currentProject}
-          selectedArtworks={selectedArtworks.length}
+          selectedArtworks={activeStep === "export" && !documentPlan.pages.some(page => ["artwork", "featured", "collection"].includes(page.kind)) ? 0 : selectedArtworks.length}
+          actualPages={currentProject.collectionSchemaVersion === 2 ? pdfPageCount ?? undefined : undefined}
+          plannedPages={currentProject.collectionSchemaVersion === 2 ? documentPlan.pageCount : undefined}
           setActiveStep={setActiveStep}
         />
 
         <section className={styles.editorColumn}>
-          <MobileSteps activeStep={activeStep} setActiveStep={setActiveStep} />
+          <MobileSteps activeStep={activeStep} setActiveStep={setActiveStep} project={currentProject} />
 
-          <div className={styles.editorContent}>
-            <SaveNotice error={saveError} message={saveMessage} />
+          <div className={`${styles.editorContent} ${activeStep === "profile" || activeStep === "collections" || activeStep === "works" || activeStep === "cv" || activeStep === "design" ? styles.profileEditorContent : ""}`}>
+            <SaveNotice error={saveError} message={saveMessage ?? (isMemoryGuest
+              ? "Privremeni rad u otvorenoj stranici. Refresh briše nezavršeni rad. PDF pregled i priprema narudžbine dostupni su u Izvozu."
+              : null)} />
 
+            {!isMemoryProfile && collectionsMode && currentProject.collectionSchemaVersion === 2 ? <PortfolioSourceChanges project={currentProject} theme={studioTheme} onProject={adoptReviewedProject}
+              onPrepare={() => hasUnsavedMetadata ? saveProject() : Promise.resolve(currentProject)} /> : null}
+            {activeStep === "collections" && collectionsMode ? <PortfolioCollectionsWorkspace project={currentProject} onProject={adoptCollectionsProject} theme={studioTheme} /> : null}
             {activeStep === "profile" ? (
               <ProfileWorkspace
+                totalSteps={getBuilderSteps(currentProject).length}
+                isMemoryGuest={isMemoryGuest}
                 artistName={artistName}
+                artistStatement={artistStatement}
                 bio={bio}
-                collectionCoverUrl={collectionCoverUrl}
-                collectionDescription={collectionDescription}
-                collectionName={collectionName}
-                collectionYear={collectionYear}
+                coverImageUrl={currentProject.coverImageUrl ?? ""}
                 discipline={discipline}
                 email={email}
+                phone={phone}
+                birthDateInput={birthDateInput}
+                behanceUrl={behanceUrl}
+                motto={motto}
+                mottoAuthor={mottoAuthor}
+                onBirthDateChange={setBirthDateInput}
+                onBehanceChange={setBehanceUrl}
+                onMottoChange={setMotto}
+                onMottoAuthorChange={setMottoAuthor}
+                language={language}
                 instagramUrl={instagramUrl}
-                isUploadingCollectionCover={isUploadingCollectionCover}
+                isUploadingCoverImage={isUploadingCoverImage}
                 isUploadingProfileImage={isUploadingProfileImage}
                 location={location}
                 onArtistNameChange={setArtistName}
+                onArtistStatementChange={setArtistStatement}
                 onBioChange={setBio}
-                onCollectionCoverUpload={uploadCollectionCover}
-                onCollectionDescriptionChange={setCollectionDescription}
-                onCollectionNameChange={setCollectionName}
-                onCollectionYearChange={setCollectionYear}
+                onCoverImageUpload={uploadCoverImage}
                 onDisciplineChange={setDiscipline}
                 onEmailChange={setEmail}
+                onPhoneChange={setPhone}
+                onLanguageChange={setLanguage}
                 onInstagramUrlChange={setInstagramUrl}
                 onLocationChange={setLocation}
                 onProfileImageUpload={uploadProfileImage}
-                onWebsiteUrlChange={setWebsiteUrl}
                 profileImageUrl={profileImageUrl}
-                websiteUrl={websiteUrl}
               />
             ) : null}
 
             {activeStep === "works" ? (
-              <WorksWorkspace
-                artworks={currentProject.artworks}
-                coverImageUrl={currentProject.coverImageUrl}
+              <PortfolioWorksWorkspace
+                collectionsMode={collectionsMode}
+                isMemoryGuest={isMemoryGuest}
+                artworks={currentProject.collectionSchemaVersion === 2 ? [...(currentProject.collections ?? []).flatMap(c => artworksWithDrafts.filter(w => w.portfolioCollectionId === c.id).sort((a,b)=>(a.collectionOrderIndex??a.orderIndex)-(b.collectionOrderIndex??b.orderIndex))), ...artworksWithDrafts.filter(w=>!w.portfolioCollectionId).sort((a,b)=>a.orderIndex-b.orderIndex)] : [...artworksWithDrafts].sort((a,b)=>a.orderIndex-b.orderIndex)}
                 isBusy={isSaving || isUploadingArtwork}
                 isUploadingArtwork={isUploadingArtwork}
                 onReorderArtwork={reorderArtwork}
-                onSetCoverArtwork={setCoverArtwork}
+                onChooseArtworks={() => setActiveStep("collections")}
+                onPrevious={() => setActiveStep(collectionsMode ? "collections" : "profile")}
+                onNext={() => setActiveStep(collectionsMode || isMemoryGuest ? "cv" : "design")}
+                nextStepLabel={collectionsMode || isMemoryGuest ? "CV" : "Dizajn"}
                 onUploadArtworks={uploadArtworks}
                 onToggleArtwork={saveArtworkSelection}
                 onUpdateArtwork={saveArtworkDetails}
-                selectedArtworks={selectedArtworks.length}
+                selectedArtworks={selectedArtworks}
               />
             ) : null}
 
+            {activeStep === "cv" ? <PortfolioCvWorkspace value={cvDraft}
+              onChange={value => { cvEditVersion.current++; setCvDraft(value); setCvEdited(true); setSaveMessage(null); }}
+              previousCv={currentProject.cvSections}
+              includeInPdf={includeCv} onIncludeChange={setIncludeCv} isMemoryGuest={isMemoryGuest}
+              isBusy={isSaving}
+              replaceLegacy={replaceLegacyCv} onReplaceLegacy={setReplaceLegacyCv}
+              onPrevious={() => setActiveStep("works")} onNext={() => setActiveStep("design")} /> : null}
+
             {activeStep === "design" ? (
-              <DesignWorkspace
+              <PortfolioDesignWorkspace value={designPreview} onChange={value => {
+                setDesignPreview(value); setSaveMessage(null);
+                const activeMinimal = (value.look === "Minimal" || value.look === "Rounded" || value.look === "Gradient" || value.look === "Editorial" || value.look === "Cards" || value.look === "Blocks") && value.mode === "single";
+                setDesignPreviewEdited(!activeMinimal);
+                if (activeMinimal) { setSelectedTemplate("INSTITUTIONAL_MINIMAL"); setDesignConfig(createPresetDesignConfig("INSTITUTIONAL_MINIMAL", { version: 1, cover: value.cover, ...(value.look === "Blocks" ? { style: "BLOCKS" } : value.look === "Cards" ? { style: "CARDS" } : value.look === "Editorial" ? { style: "EDITORIAL" } : value.look === "Gradient" ? { style: "GRADIENT" } : value.look === "Rounded" ? { style: "ROUNDED" } : {}) })); }
+              }}
+                isSaving={isSaving} isMemoryGuest={isMemoryGuest}
+                hasChanges={isMemoryProfile || selectedTemplate !== currentProject.template || comparableJson(designConfig) !== comparableJson(normalizeDesignConfig(currentProject, currentProject.template))}
+                onSave={() => void saveProject()}
+                isPremium={isPremiumProject(currentProject)} collectionsMode={collectionsMode}
+                data={{ artistName, discipline, coverImage, profileImage: profileImageUrl, artworkCount: selectedArtworks.length, qrTarget: currentProject.artboardProfileUrl || websiteUrl || behanceUrl || instagramUrl, location, year: new Date(currentProject.updatedAt).getFullYear(), includeBranding }}
+                onPrevious={() => setActiveStep(collectionsMode || isMemoryGuest ? "cv" : "works")} onNext={() => setActiveStep("export")}
+                settings={<DesignWorkspace
+                hideHeader
+                collectionsMode={collectionsMode}
+                isMemoryGuest={isMemoryGuest}
                 designConfig={designConfig}
                 fontStyle={fontStyle}
                 includeBranding={includeBranding}
@@ -581,25 +778,40 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
                 pageFormat={pageFormat}
                 selectedTemplate={selectedTemplate}
                 onTemplateChange={changePresetTemplate}
-              />
+              />} />
             ) : null}
 
             {activeStep === "export" ? (
-              <ExportWorkspace
+              <PortfolioExportWorkspace
+                isMemoryProfile={isMemoryProfile}
+                onTestExport={() => void downloadEditorPdf(true)}
+                guestAdapter={isMemoryGuest ? adapter as GuestPortfolioMemoryAdapter : undefined}
+                onPageCount={setPdfPageCount}
+                isSaving={isSaving}
+                hasUnsavedChanges={hasUnsavedMetadata || parseBirthDateInput(birthDateInput) === null}
+                temporaryContent={designPreviewEdited}
+                onIncludeCvChange={value => changeDocumentSelection({ includeCv: value })}
+                onDocumentSelectionChange={selection => changeDocumentSelection({ documentSelection: selection, includeCv: selection.scope === "CV" || selection.sections.cv })}
+                onSave={() => void saveProject()}
+                onPrevious={() => setActiveStep("design")}
+                collectionsMode={collectionsMode}
+                isMemoryGuest={isMemoryGuest}
                 isGeneratingPdf={isGeneratingPdf}
                 onGeneratePdf={() => void generatePdfVersion()}
                 onOpenCleanPdf={() => void generateAndOpenCleanPdf()}
                 onOpenPayment={openPaymentPage}
                 onOpenPreview={openPreviewPage}
-                project={currentProject}
+                project={isMemoryEditor ? { ...currentProject, ...liveDraft, artworks: artworksWithDrafts } as PortfolioProject : currentProject}
               />
             ) : null}
 
-            <StepNavigation activeStep={activeStep} setActiveStep={setActiveStep} />
+            {activeStep !== "works" && activeStep !== "cv" && activeStep !== "design" && activeStep !== "export" ? <StepNavigation activeStep={activeStep} setActiveStep={setActiveStep} project={currentProject} /> : null}
           </div>
         </section>
 
-        <StudioPreviewPanel
+        {activeStep !== "export" ? (currentProject.collectionSchemaVersion === 2 && !isMemoryGuest ? <PortfolioLivePdfPreview renderDocument={isMemoryProfile ? profileMemoryPreview : undefined} project={isMemoryProfile ? { ...currentProject, artworks: artworksWithDrafts } : currentProject} draft={liveDraft} valid={parseBirthDateInput(birthDateInput) !== null} onPageCount={setPdfPageCount}
+          onSave={() => void saveProject()} onOpenPreview={openPreviewPage} isSaving={isSaving}
+          saveStatus={saveMessage ?? (isMemoryProfile ? "Portfolio nije sačuvan." : hasUnsavedMetadata ? "Imaš nesačuvane izmjene." : "Draft je sačuvan.")} /> : <StudioPreviewPanel
           artistName={artistName}
           bio={bio}
           collectionCoverUrl={collectionCoverUrl}
@@ -610,19 +822,27 @@ export function PortfolioBuilderEditorShell({ project }: PortfolioBuilderEditorS
           discipline={discipline}
           email={email}
           profileImageUrl={profileImageUrl}
-          project={currentProject}
+          project={{ ...currentProject, phone, artistStatement }}
           designConfig={designConfig}
           selectedArtworks={selectedArtworks.length}
           selectedArtworkItems={selectedArtworks}
           template={selectedTemplate}
-        />
+        />) : null}
       </div>
     </main>
   );
 }
 
 function StudioTopbar({
+  isMemoryProfile = false,
+  isMemoryGuest = false,
   isSaving,
+  saveDisabled = false,
+  cvIsTemporary = false,
+  cvHasChanges = false,
+  designIsTemporary = false,
+  designLabel,
+  hasUnsavedChanges = false,
   onOpenPreview,
   onSave,
   onThemeChange,
@@ -630,7 +850,15 @@ function StudioTopbar({
   template,
   theme,
 }: {
+  isMemoryProfile?: boolean;
+  isMemoryGuest?: boolean;
   isSaving: boolean;
+  saveDisabled?: boolean;
+  cvIsTemporary?: boolean;
+  cvHasChanges?: boolean;
+  designIsTemporary?: boolean;
+  designLabel?: string;
+  hasUnsavedChanges?: boolean;
   onOpenPreview: () => void;
   onSave: () => void;
   onThemeChange: (theme: StudioTheme) => void;
@@ -640,67 +868,74 @@ function StudioTopbar({
 }) {
   return (
     <header className={styles.topbar}>
-      <div className={styles.topbarProject}>
-        <Link className={styles.topbarLogo} href="/portfolio-builder" aria-label="Portfolio Builder početna">
-          <Image
-            alt="ArtBoard"
-            height={32}
-            priority
-            src={
-              theme === "dark"
-                ? "/artboard-logo/ArtBoard-Horizontal-Gradient-Mark-White-Text.svg"
-                : "/artboard-logo/ArtBoard-Horizontal-Gradient-Mark-Black-Text.svg"
-            }
-            width={148}
-          />
-        </Link>
-        <span className={styles.topbarDivider} aria-hidden="true" />
-        <div className={styles.projectMeta}>
-          <div className={styles.projectTitleRow}>
-            <strong>{project.artistName} - Portfolio</strong>
-            <span className={styles.savedBadge}>
-              <i aria-hidden="true" />
-              {isSaving ? "Čuvanje..." : "Sačuvano"}
-            </span>
+      <div className={styles.topbarInner}>
+          <div className={styles.topbarProject}>
+            <Link className={styles.topbarLogo} href="/portfolio-builder" aria-label="Portfolio Builder početna">
+              <Image
+                alt="ArtBoard"
+                height={32}
+                priority
+                src={
+                  theme === "dark"
+                    ? "/artboard-logo/ArtBoard-Horizontal-Gradient-Mark-White-Text.svg"
+                    : "/artboard-logo/ArtBoard-Horizontal-Gradient-Mark-Black-Text.svg"
+                }
+                width={148}
+              />
+            </Link>
+            <span className={styles.topbarDivider} aria-hidden="true" />
+            <div className={styles.projectMeta}>
+              <div className={styles.projectTitleRow}>
+                <strong title={`${project.artistName} - Portfolio`}>Portfolio Builder</strong>
+                <span className={styles.savedBadge}>
+                  <i aria-hidden="true" />
+                  {isSaving ? "Čuvanje..." : isMemoryProfile ? "Nije sa\u010duvano" : cvIsTemporary ? "CV · privremeno" : cvHasChanges ? "CV · izmijenjeno" : designIsTemporary ? "Dizajn · prikaz" : isMemoryGuest ? "Privremeno" : hasUnsavedChanges ? "Nesačuvano" : "Sačuvano"}
+                </span>
+              </div>
+              <span className={styles.projectSubtitle}>
+                {designLabel ?? templateLabels[template]} <b>{isMemoryGuest ? "Gost" : isMemoryProfile ? "Novi portfolio" : project.status === "DRAFT" ? "Draft" : project.status}</b>
+              </span>
+            </div>
           </div>
-          <span className={styles.projectSubtitle}>
-            {templateLabels[template]} <b>{project.status === "DRAFT" ? "Draft" : project.status}</b>
-          </span>
-        </div>
-      </div>
 
-      <div className={styles.topbarActions}>
-        <div aria-label="Tema Portfolio Studija" className={styles.themeToggle} role="group">
-          <button
-            aria-label="Svijetla tema"
-            aria-pressed={theme === "light"}
-            className={theme === "light" ? styles.activeThemeButton : undefined}
-            onClick={() => onThemeChange("light")}
-            title="Svijetla tema"
-            type="button"
-          >
-            <Sun aria-hidden="true" size={16} strokeWidth={2.2} />
-          </button>
-          <button
-            aria-label="Tamna tema"
-            aria-pressed={theme === "dark"}
-            className={theme === "dark" ? styles.activeThemeButton : undefined}
-            onClick={() => onThemeChange("dark")}
-            title="Tamna tema"
-            type="button"
-          >
-            <Moon aria-hidden="true" size={16} strokeWidth={2.2} />
-          </button>
-        </div>
-        <Link className={styles.studioLink} href="/portfolio-builder">
-          Portfolio Studio
-        </Link>
-        <button className={styles.outlineButton} disabled={isSaving} onClick={onSave} type="button">
-          {isSaving ? "Čuvam..." : "Sačuvaj draft"}
-        </button>
-        <button className={styles.gradientButton} onClick={onOpenPreview} type="button">
-          Otvori pregled
-        </button>
+          <div className={styles.topbarActions}>
+            <Link className={styles.mobileAccountLink} href="/nalog" aria-label="Nazad na nalog"><ArrowLeft aria-hidden="true" size={18} /></Link>
+            <button className={styles.mobileThemeButton} type="button" aria-label={theme === "light" ? "Tamna tema" : "Svijetla tema"}
+              onClick={() => onThemeChange(theme === "light" ? "dark" : "light")}>{theme === "light" ? <Moon aria-hidden="true" size={17} /> : <Sun aria-hidden="true" size={17} />}</button>
+            <div aria-label="Tema Portfolio Studija" className={styles.themeToggle} role="group">
+              <button
+                aria-label="Svijetla tema"
+                aria-pressed={theme === "light"}
+                className={theme === "light" ? styles.activeThemeButton : undefined}
+                onClick={() => onThemeChange("light")}
+                title="Svijetla tema"
+                type="button"
+              >
+                <Sun aria-hidden="true" size={16} strokeWidth={2.2} />
+              </button>
+              <button
+                aria-label="Tamna tema"
+                aria-pressed={theme === "dark"}
+                className={theme === "dark" ? styles.activeThemeButton : undefined}
+                onClick={() => onThemeChange("dark")}
+                title="Tamna tema"
+                type="button"
+              >
+                <Moon aria-hidden="true" size={16} strokeWidth={2.2} />
+              </button>
+            </div>
+            <Link className={styles.studioLink} href="/portfolio-builder">
+              Portfolio Studio
+            </Link>
+            {!isMemoryGuest ? <button className={styles.outlineButton} disabled={isSaving || saveDisabled}
+              title={saveDisabled ? "CV unos je privremen. Serversko čuvanje CV-a još nije povezano." : undefined} onClick={onSave} type="button">
+              {isSaving ? "Čuvam..." : "Sačuvaj draft"}
+            </button> : null}
+            <button aria-label="Otvori pregled" className={styles.gradientButton} disabled={isMemoryGuest}
+              title={isMemoryGuest ? "Guest PDF pregled je u koraku Izvoz." : undefined} onClick={onOpenPreview} type="button">
+              Otvori pregled
+            </button>
+          </div>
       </div>
     </header>
   );
@@ -710,40 +945,77 @@ function StudioSidebar({
   activeStep,
   project,
   selectedArtworks,
+  actualPages,
+  plannedPages,
   setActiveStep,
 }: {
   activeStep: BuilderStep;
   project: PortfolioProject;
   selectedArtworks: number;
+  actualPages?: number;
+  plannedPages?: number;
   setActiveStep: (step: BuilderStep) => void;
 }) {
-  const estimatedPages = Math.max(4, selectedArtworks + 4);
+  const navSteps = getBuilderSteps(project);
+  const navRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const reveal = () => {
+      if (!window.matchMedia("(max-width: 640px)").matches) return;
+      const nav = navRef.current, active = nav?.querySelector<HTMLElement>('[aria-current="step"]');
+      if (!nav || !active) return;
+      const bounds = nav.getBoundingClientRect(), item = active.getBoundingClientRect();
+      nav.scrollTo({ left: nav.scrollLeft + item.left - bounds.left - (bounds.width - item.width) / 2 });
+    };
+    reveal(); window.addEventListener("resize", reveal);
+    return () => window.removeEventListener("resize", reveal);
+  }, [activeStep]);
+  const estimatedPages = actualPages ?? plannedPages ?? Math.max(4, selectedArtworks + 4);
+  const nameParts = project.artistName.trim().split(/\s+/);
+  const nextStep = navSteps[navSteps.findIndex((step) => step.id === activeStep) + 1];
+  const isPremium = isPremiumProject(project);
+  const accessLabel = isPremium
+    ? "Premium nalog"
+    : project.access.reason === "PAID"
+      ? "PDF otključan"
+      : project.source === "GUEST" ? "Gost" : "Free korisnik";
 
   return (
     <aside className={styles.sidebar}>
       <div className={styles.profileSummary}>
-        <div className={styles.sourceLabel}>
+        <div className={`${styles.sourceLabel} sr-only`}>
           {project.source === "ARTBOARD_PROFILE" ? "Iz ArtBoard profila" : "Portfolio bez profila"}
         </div>
-        <div className={styles.sidebarAvatar}>
-          {project.profileImageUrl ? <img alt="" src={project.profileImageUrl} /> : <span>AB</span>}
+        <div className={styles.profileIdentity}>
+          <div className={styles.sidebarAvatar}>
+            {project.profileImageUrl ? <img alt="" src={project.profileImageUrl} /> : <span>{nameParts.slice(0, 2).map((part) => part.charAt(0)).join("").toUpperCase()}</span>}
+          </div>
+          <h1 aria-label={project.artistName}>
+            <span>{nameParts[0]}</span>
+            {nameParts.length > 1 ? <> <span>{nameParts.slice(1).join(" ")}</span></> : null}
+          </h1>
         </div>
-        <h1>{project.artistName}</h1>
         <div className={styles.planBadges}>
-          <span>Free korisnik</span>
-          <strong>
-            <i>✓</i>
-            {project.access.reason === "PREMIUM" ? "Premium korisnik" : project.access.reason === "PAID" ? "PDF otključan" : "Basic korisnik"}
-          </strong>
+          <span className={isPremium ? styles.premiumBadge : styles.planBadge}>
+            <strong>
+              {isPremium ? (
+                <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 12.5l4.2 4.2L19 7" />
+                </svg>
+              ) : null}
+              {accessLabel}
+            </strong>
+          </span>
         </div>
       </div>
 
-      <nav className={styles.stepNav} aria-label="Koraci izrade portfolija">
-        {steps.map((step, index) => {
+      <nav ref={navRef} className={styles.stepNav} aria-label="Koraci izrade portfolija">
+        {navSteps.map((step, index) => {
           const isActive = activeStep === step.id;
           return (
             <button
+              aria-current={isActive ? "step" : undefined}
               className={isActive ? styles.activeStep : undefined}
+              style={navSteps.length === 6 ? { order: stepNumber(step.id, project) } : undefined}
               data-step={step.id}
               key={step.id}
               onClick={() => setActiveStep(step.id)}
@@ -751,8 +1023,8 @@ function StudioSidebar({
             >
               <span className={styles.stepIcon}><BuilderStepIcon step={step.id} /></span>
               <span className={styles.stepCopy}>
-                <strong><i>{String(index + 1).padStart(2, "0")}</i>{step.label}</strong>
-                <small>{step.helper}</small>
+                <strong><i>{String(stepNumber(step.id, project)).padStart(2, "0")}</i>{step.label}</strong>
+                <small className="sr-only">{step.helper}</small>
               </span>
             </button>
           );
@@ -760,22 +1032,26 @@ function StudioSidebar({
       </nav>
 
       <div className={styles.sidebarMetrics}>
-        <div><strong>{selectedArtworks}<span>/{project.artworks.length}</span></strong><small>Radova iz ArtBoard profila</small></div>
-        <div><strong>{estimatedPages}</strong><small>Strana ima tvoj portfolio</small></div>
+        <div><strong>{selectedArtworks}<span>/{project.artworks.length}</span></strong><small>Radova u PDF‑u</small></div>
+        <div><strong>{estimatedPages}</strong><small>Strana u PDF‑u <span>({actualPages == null ? "procjena" : "PDF pregled"})</span></small></div>
       </div>
-      <button className={styles.sidebarPreviewButton} onClick={() => setActiveStep("export")} type="button">
-        Pregled PDF-a
-      </button>
+      {nextStep ? (
+        <button className={styles.sidebarPreviewButton} onClick={() => setActiveStep(nextStep.id)} type="button">
+          Dalje: {nextStep.label} →
+        </button>
+      ) : null}
     </aside>
   );
 }
 
 function BuilderStepIcon({ step }: { step: BuilderStep }) {
+  if (step === "cv") return <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v5h4M9 11h6M9 14h6M9 17h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+  if (step === "collections") return <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24"><path d="M3 7h18v14H3zM5 3h14M4 5h16M8 11h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>;
   if (step === "profile") {
     return (
       <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
         <path
-          d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm7 8a7 7 0 0 0-14 0"
+          d="M12 11.4a3.7 3.7 0 1 0 0-7.4 3.7 3.7 0 0 0 0 7.4zM4.6 20.2c.9-3.7 3.8-5.7 7.4-5.7s6.5 2 7.4 5.7"
           stroke="currentColor"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -789,7 +1065,7 @@ function BuilderStepIcon({ step }: { step: BuilderStep }) {
     return (
       <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
         <path
-          d="M4 6h16v12H4V6Zm3 9 3-3 2 2 3-4 2 5"
+          d="M5.4 4.2h13.2a1.8 1.8 0 0 1 1.8 1.8v12a1.8 1.8 0 0 1-1.8 1.8H5.4A1.8 1.8 0 0 1 3.6 18V6a1.8 1.8 0 0 1 1.8-1.8zM3.8 16.2l4.6-4.4 3.6 3.4 2.6-2.4 5.6 5M15.6 9.2a1.2 1.2 0 1 0 0-.01"
           stroke="currentColor"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -803,7 +1079,7 @@ function BuilderStepIcon({ step }: { step: BuilderStep }) {
     return (
       <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
         <path
-          d="M4 5h16M7 5v14m10-14v14M4 19h16"
+          d="M5.4 3.8h13.2a1.8 1.8 0 0 1 1.8 1.8v12.8a1.8 1.8 0 0 1-1.8 1.8H5.4a1.8 1.8 0 0 1-1.8-1.8V5.6a1.8 1.8 0 0 1 1.8-1.8zM3.6 9.2h16.8M9.6 9.2v11"
           stroke="currentColor"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -816,7 +1092,7 @@ function BuilderStepIcon({ step }: { step: BuilderStep }) {
   return (
     <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
       <path
-        d="M7 4h8l4 4v12H7V4Zm8 0v4h4M10 14h6M10 17h4"
+        d="M12 3.8v11M7.6 10.6 12 15l4.4-4.4M4.4 16.4v1.8a2 2 0 0 0 2 2h11.2a2 2 0 0 0 2-2v-1.8"
         stroke="currentColor"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -840,14 +1116,17 @@ function CollapsedMetric({ label, value }: { label: string; value: string }) {
 function MobileSteps({
   activeStep,
   setActiveStep,
+  project,
 }: {
+  project?: PortfolioProject;
   activeStep: BuilderStep;
   setActiveStep: (step: BuilderStep) => void;
 }) {
+  const navSteps = getBuilderSteps(project);
   return (
-    <div className="border-b border-white/[0.08] bg-[#07080d]/95 px-3 py-2 backdrop-blur-xl xl:hidden">
+    <div className={`${styles.mobileSteps} border-b border-white/[0.08] bg-[#07080d]/95 px-3 py-2 backdrop-blur-xl xl:hidden`}>
       <div className="flex gap-2 overflow-x-auto">
-        {steps.map((step, index) => (
+        {navSteps.map((step, index) => (
           <button
             className={`shrink-0 rounded-full px-3 py-2 text-[11px] font-bold ${
               activeStep === step.id
@@ -855,10 +1134,11 @@ function MobileSteps({
                 : "border border-white/[0.1] bg-white/[0.04] text-[#8d93a5]"
             }`}
             key={step.id}
+            style={navSteps.length === 6 ? { order: stepNumber(step.id, project) } : undefined}
             onClick={() => setActiveStep(step.id)}
             type="button"
           >
-            {index + 1}. {step.label}
+            {stepNumber(step.id, project)}. {step.label}
           </button>
         ))}
       </div>
@@ -869,13 +1149,16 @@ function MobileSteps({
 function StepNavigation({
   activeStep,
   setActiveStep,
+  project,
 }: {
+  project?: PortfolioProject;
   activeStep: BuilderStep;
   setActiveStep: (step: BuilderStep) => void;
 }) {
-  const currentIndex = steps.findIndex((step) => step.id === activeStep);
-  const previousStep = currentIndex > 0 ? steps[currentIndex - 1] : null;
-  const nextStep = currentIndex < steps.length - 1 ? steps[currentIndex + 1] : null;
+  const navSteps = getBuilderSteps(project);
+  const currentIndex = navSteps.findIndex((step) => step.id === activeStep);
+  const previousStep = currentIndex > 0 ? navSteps[currentIndex - 1] : null;
+  const nextStep = currentIndex < navSteps.length - 1 ? navSteps[currentIndex + 1] : null;
 
   return (
     <nav className={styles.stepNavigation} aria-label="Navigacija kroz korake">
@@ -894,141 +1177,143 @@ function StepNavigation({
 }
 
 function ProfileWorkspace({
+  totalSteps = 4,
+  isMemoryGuest = false,
   artistName,
+  artistStatement,
   bio,
-  collectionCoverUrl,
-  collectionDescription,
-  collectionName,
-  collectionYear,
   discipline,
   email,
+  phone,
+  birthDateInput, behanceUrl, motto, mottoAuthor,
+  onBirthDateChange, onBehanceChange, onMottoChange, onMottoAuthorChange,
+  coverImageUrl,
+  language,
   instagramUrl,
-  isUploadingCollectionCover,
+  isUploadingCoverImage,
   isUploadingProfileImage,
   location,
   onArtistNameChange,
+  onArtistStatementChange,
   onBioChange,
-  onCollectionCoverUpload,
-  onCollectionDescriptionChange,
-  onCollectionNameChange,
-  onCollectionYearChange,
+  onCoverImageUpload,
   onDisciplineChange,
   onEmailChange,
+  onPhoneChange,
+  onLanguageChange,
   onInstagramUrlChange,
   onLocationChange,
   onProfileImageUpload,
-  onWebsiteUrlChange,
   profileImageUrl,
-  websiteUrl,
 }: {
+  totalSteps?: number;
+  isMemoryGuest?: boolean;
   artistName: string;
+  artistStatement: string;
   bio: string;
-  collectionCoverUrl: string;
-  collectionDescription: string;
-  collectionName: string;
-  collectionYear: string;
   discipline: string;
   email: string;
+  phone: string;
+  birthDateInput: string; behanceUrl: string; motto: string; mottoAuthor: string;
+  onBirthDateChange: (value: string) => void; onBehanceChange: (value: string) => void;
+  onMottoChange: (value: string) => void; onMottoAuthorChange: (value: string) => void;
+  coverImageUrl: string;
+  language: PortfolioLanguage;
   instagramUrl: string;
-  isUploadingCollectionCover: boolean;
+  isUploadingCoverImage: boolean;
   isUploadingProfileImage: boolean;
   location: string;
   onArtistNameChange: (value: string) => void;
+  onArtistStatementChange: (value: string) => void;
   onBioChange: (value: string) => void;
-  onCollectionCoverUpload: (files: FileList | null) => void;
-  onCollectionDescriptionChange: (value: string) => void;
-  onCollectionNameChange: (value: string) => void;
-  onCollectionYearChange: (value: string) => void;
+  onCoverImageUpload: (files: FileList | null) => void;
   onDisciplineChange: (value: string) => void;
   onEmailChange: (value: string) => void;
+  onPhoneChange: (value: string) => void;
+  onLanguageChange: (value: PortfolioLanguage) => void;
   onInstagramUrlChange: (value: string) => void;
   onLocationChange: (value: string) => void;
   onProfileImageUpload: (files: FileList | null) => void;
-  onWebsiteUrlChange: (value: string) => void;
   profileImageUrl: string;
-  websiteUrl: string;
 }) {
   const profileImageInputRef = useRef<HTMLInputElement>(null);
-  const collectionCoverInputRef = useRef<HTMLInputElement>(null);
-  const checks = [
-    { label: "Ime", done: artistName.trim().length > 2 },
-    { label: "Disciplina", done: discipline.trim().length > 2 },
-    { label: "Email", done: email.includes("@") },
-    { label: "Bio 80+ karaktera", done: bio.trim().length >= 80 },
-    { label: "Kolekcija", done: collectionName.trim().length > 2 },
-  ];
+  const coverInputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <>
-      <WorkspaceHeader
-        label="Korak 1 od 4"
-        title="Uredi podatke za PDF"
-        description="Povukli smo podatke sa tvog ArtBoard profila. Provjeri ih i dopuni — sve izmjene se odmah vide u pregledu."
-      />
-
-      <section className={`${studioCardClassName} flex flex-wrap items-center gap-3 px-5 py-3`}>
-        <strong className="text-[13px] text-[#f3f4f7]">Spremno za pregled</strong>
-        <strong className="text-[12px] text-[#199653]">{checks.filter((check) => check.done).length}/5</strong>
-        <span className="h-[18px] w-px bg-white/[0.12]" />
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          {checks.map((check) => (
-            <div
-              className={`flex items-center gap-1.5 text-[12px] font-semibold ${check.done ? "text-[#c4c8d4]" : "text-[#6b7184]"}`}
-              key={check.label}
-            >
-              <span className={check.done ? "text-[#35d07f]" : "text-[#6b7184]"}>{check.done ? "✓" : "○"}</span>
-              <span>{check.label}</span>
-            </div>
-          ))}
+    <div className={styles.profileWorkspace}>
+      <header className={styles.profileHeader}>
+        <div>
+          <span>Korak 1 od {totalSteps}</span>
+          <h1>Uredi podatke za PDF</h1>
+          <p>{isMemoryGuest ? "Unesi podatke za privremeni portfolio — izmjene se odmah vide u pregledu."
+            : "Podatke povlačimo sa tvog ArtBoard profila. Provjeri ih i dopuni, izmjene se odmah vide u pregledu."}</p>
         </div>
-      </section>
+      </header>
 
-      <div className="grid gap-[18px]">
-        <Panel title="Osnovni podaci">
-          <div className="grid grid-cols-1 gap-x-[18px] gap-y-4 md:grid-cols-2 lg:grid-cols-3">
-            <BuilderInput label="Ime i prezime" value={artistName} onChange={onArtistNameChange} />
-            <BuilderInput label="Email" value={email} onChange={onEmailChange} />
-            <BuilderInput
+      <div className={styles.profileSections}>
+        <section className={styles.profileBasics} aria-labelledby="profile-basics-title">
+          <div className={styles.profileBasicsHeader}>
+            <h2 id="profile-basics-title">Osnovni podaci</h2>
+            <div className={styles.profileLanguage} role="group" aria-label="Jezik PDF-a">
+              <span>Jezik PDF-a</span>
+              <div>
+                {([{value: "ME", label: "Crnogorski"}, {value: "EN", label: "English"}] as const).map((option) => (
+                  <button aria-pressed={language === option.value} key={option.value}
+                    onClick={() => onLanguageChange(option.value)} type="button">{option.label}</button>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className={styles.profileFieldGrid}>
+            <ProfileTextInput label="Ime i prezime" value={artistName} onChange={onArtistNameChange} />
+            <ProfileTextInput label="E-mail" type="email" value={email} onChange={onEmailChange} />
+            <ProfileTextInput label="Telefon" type="tel" placeholder="npr. +382 67 123 456" value={phone} onChange={onPhoneChange} />
+            <ProfileTextInput label="Datum rođenja" placeholder="DD.MM.GGGG."
+              value={birthDateInput} onChange={onBirthDateChange} />
+            <ProfileTextInput
               label="Lokacija"
               placeholder="npr. Podgorica, Crna Gora"
               value={location}
               onChange={onLocationChange}
             />
-            <BuilderInput
-              label="Website"
-              placeholder="npr. ivonamedenica.com"
-              value={websiteUrl}
-              onChange={onWebsiteUrlChange}
-            />
-            <BuilderInput label="Instagram" value={instagramUrl} onChange={onInstagramUrlChange} />
+            <ProfileTextInput label="Behance" placeholder="behance.net/imeprezime"
+              value={behanceUrl} onChange={onBehanceChange} maxLength={500} />
+            <ProfileTextInput label="Instagram" placeholder="instagram.com/imeprezime" value={instagramUrl} onChange={onInstagramUrlChange} />
           </div>
 
-          <div className="mt-[22px]">
-            <BuilderMultiSelect
-              label="Discipline"
-              onToggle={(value) => {
-                const nextValues = toggleDisciplineValue(parseDisciplineList(discipline), value);
-                onDisciplineChange(formatDisciplineList(nextValues));
-              }}
-              options={getPortfolioDisciplineOptions(discipline)}
-              selectedValues={parseDisciplineList(discipline)}
-            />
-          </div>
+          <ProfileDisciplines value={discipline} onChange={onDisciplineChange} />
 
-          <label className="mt-[22px] grid gap-2 text-[12px] font-bold text-[#c4c8d4]">
-            <span className="flex items-center justify-between gap-3">
-              <span>Biografija i umjetniÄki iskaz</span>
-              <span className="font-semibold text-[#8d93a5]">{bio.length} / 1200</span>
+          <label className={styles.profileField}>
+            <span className={styles.profileTextHeading}>
+              <span>Biografija</span>
+              <span>{bio.length} / 1200 karaktera</span>
             </span>
             <textarea
-              className={`${studioTextareaClassName} min-h-[210px] text-[14px] font-medium leading-[1.65]`}
+              aria-label="Biografija"
+              className={styles.profileTextarea}
               maxLength={1200}
               onChange={(event) => onBioChange(event.target.value)}
               rows={6}
               value={bio}
             />
           </label>
-        </Panel>
+          <label className={styles.profileField}>
+            <span className={styles.profileTextHeading}>
+              <span>Umjetnički iskaz <small>· opciono</small></span>
+              <span>{artistStatement.trim().split(/\s+/).filter(Boolean).length} riječi</span>
+            </span>
+            <textarea aria-label="Umjetnički iskaz" className={styles.profileTextarea} rows={3}
+              placeholder="Kratko o tvom radu: teme, tehnike i pristup."
+              value={artistStatement} onChange={(event) => onArtistStatementChange(event.target.value)} />
+            <span className={styles.profileHint}>Biografija govori o tebi, a iskaz o tvom radu.</span>
+          </label>
+          <div className={styles.profileFieldGrid}>
+            <ProfileTextInput label="Moto" optional placeholder="Citat koji predstavlja tvoj rad"
+              value={motto} onChange={onMottoChange} maxLength={1000} />
+            <ProfileTextInput label="Autor citata" optional placeholder="npr. ime autora citata"
+              value={mottoAuthor} onChange={onMottoAuthorChange} maxLength={160} />
+          </div>
+        </section>
 
         <div className={styles.profileBottomRow}>
           <section className={styles.profileImageCard}>
@@ -1060,164 +1345,70 @@ function ProfileWorkspace({
                 onClick={() => profileImageInputRef.current?.click()}
                 type="button"
               >
-                <Pencil aria-hidden="true" size={12} strokeWidth={2.2} />
+                <ProfilePhotoIcon />
                 {isUploadingProfileImage ? "Upload..." : "Izmijeni fotografiju"}
               </button>
             </div>
           </section>
 
-          <section className={styles.collectionCard}>
-            <input
-              accept="image/jpeg,image/png,image/webp,image/avif"
-              className="hidden"
-              onChange={(event) => {
-                onCollectionCoverUpload(event.target.files);
-                event.target.value = "";
-              }}
-              ref={collectionCoverInputRef}
-              type="file"
-            />
-            <button
-              className={styles.collectionCoverButton}
-              disabled={isUploadingCollectionCover}
-              onClick={() => collectionCoverInputRef.current?.click()}
-              title="Izmijeni cover kolekcije"
-              type="button"
-            >
-              {collectionCoverUrl ? (
-                <img alt="Cover kolekcije" src={collectionCoverUrl} />
-              ) : (
-                <span>Cover kolekcije</span>
-              )}
+          <section className={styles.profileImageCard}>
+            <input accept="image/jpeg,image/png,image/webp,image/avif" className="hidden"
+              onChange={(event) => { onCoverImageUpload(event.target.files); event.target.value = ""; }}
+              ref={coverInputRef} type="file" />
+            <button className={styles.profileCoverButton} disabled={isUploadingCoverImage}
+              onClick={() => coverInputRef.current?.click()} aria-label="Izmijeni naslovnu fotografiju" type="button">
+              {coverImageUrl ? <img alt="Naslovna fotografija" src={coverImageUrl} /> : <span>Naslovna</span>}
             </button>
-            <div className={styles.collectionFields}>
-              <h2>Kolekcija</h2>
-              <div className={styles.collectionFieldRow}>
-                <input
-                  aria-label="Ime kolekcije"
-                  onChange={(event) => onCollectionNameChange(event.target.value)}
-                  value={collectionName}
-                />
-                <input
-                  aria-label="Godina kolekcije"
-                  onChange={(event) => onCollectionYearChange(event.target.value)}
-                  value={collectionYear}
-                />
-              </div>
-              <textarea
-                aria-label="Opis kolekcije"
-                onChange={(event) => onCollectionDescriptionChange(event.target.value)}
-                placeholder="Kratak opis kolekcije za uvodnu stranu (opciono)"
-                rows={3}
-                value={collectionDescription}
-              />
+            <div className={styles.profileCardCopy}>
+              <h2>Naslovna fotografija</h2>
+              <p>Velika slika na naslovnoj strani portfolija, nezavisna od izabranih radova.</p>
+              <button className={styles.changeProfileImageButton} disabled={isUploadingCoverImage}
+                onClick={() => coverInputRef.current?.click()} type="button">
+                <ProfilePhotoIcon />{isUploadingCoverImage ? "Upload..." : "Izmijeni fotografiju"}
+              </button>
             </div>
           </section>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
-function WorksWorkspace({
-  artworks,
-  coverImageUrl,
-  isBusy,
-  isUploadingArtwork,
-  onReorderArtwork,
-  onSetCoverArtwork,
-  onUploadArtworks,
-  onToggleArtwork,
-  onUpdateArtwork,
-  selectedArtworks,
-}: {
-  artworks: PortfolioProject["artworks"];
-  coverImageUrl?: string | null;
-  isBusy: boolean;
-  isUploadingArtwork: boolean;
-  onReorderArtwork: (draggedArtworkId: string, targetArtworkId: string) => void;
-  onSetCoverArtwork: (artwork: PortfolioProject["artworks"][number]) => void;
-  onUploadArtworks: (files: FileList | null) => void;
-  onToggleArtwork: (artworkId: string, isSelected: boolean) => void;
-  onUpdateArtwork: (artworkId: string, payload: UpdatePortfolioArtworkPayload) => void;
-  selectedArtworks: number;
+function ProfileTextInput({ label, onChange, placeholder, type = "text", value, optional = false, maxLength }: {
+  label: string; onChange: (value: string) => void; placeholder?: string;
+  type?: "text" | "email" | "tel"; value: string;
+  optional?: boolean; maxLength?: number;
 }) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [draggedArtworkId, setDraggedArtworkId] = useState<string | null>(null);
-  const [dragOverArtworkId, setDragOverArtworkId] = useState<string | null>(null);
-  const orderedArtworks = useMemo(
-    () => [...artworks].sort((a, b) => a.orderIndex - b.orderIndex),
-    [artworks],
-  );
+  return <label className={styles.profileField}><span>{label}{optional ? <small> · opciono</small> : null}</span>
+    <input aria-label={label} maxLength={maxLength} className={styles.profileInput} onChange={(event) => onChange(event.target.value)}
+      placeholder={placeholder} type={type} value={value} />
+  </label>;
+}
 
-  return (
-    <>
-      <WorkspaceHeader
-        label="Korak 2 od 4"
-        title="Izbor radova i redosljed"
-        description="Uključi radove koji ulaze u PDF i poređaj ih prevlačenjem. Prvi rad se koristi kao naslovna slika."
-      />
+function ProfilePhotoIcon() {
+  return <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4" />
+  </svg>;
+}
 
-      <section>
-        <input
-          accept="image/jpeg,image/png,image/webp,image/avif"
-          className="hidden"
-          multiple
-          onChange={(event) => {
-            onUploadArtworks(event.target.files);
-            event.target.value = "";
-          }}
-          ref={fileInputRef}
-          type="file"
-        />
-        <div className="mb-5 flex flex-wrap items-center gap-4 rounded-[20px] border border-white/[0.1] bg-[#0b0d15]/90 px-5 py-4 text-[12px] font-semibold leading-5 text-[#8d93a5]">
-          <strong className="text-[#f3f4f7]">{selectedArtworks} radova u PDF-u</strong>
-          <span className="h-1 w-40 overflow-hidden rounded-full bg-white/[0.1]">
-            <i className="block h-full rounded-full bg-[#f3f4f7]" style={{ width: `${Math.min(100, selectedArtworks * 5)}%` }} />
-          </span>
-          <span className="min-w-[220px] flex-1">Preporuka 10–30 · prevuci karticu za redoslijed</span>
-          <SecondaryStudioButton disabled={isBusy} onClick={() => fileInputRef.current?.click()}>
-            {isUploadingArtwork ? "Dodajem..." : "+ Dodaj rad"}
-          </SecondaryStudioButton>
-        </div>
-        {orderedArtworks.length > 0 ? (
-          <div className="-mx-1 pb-3">
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(190px,1fr))] gap-4 px-1">
-              {orderedArtworks.map((artwork) => (
-                <ArtworkEditorCard
-                  artwork={artwork}
-                  isCoverArtwork={coverImageUrl === artwork.imageUrl}
-                  isDragTarget={dragOverArtworkId === artwork.id && draggedArtworkId !== artwork.id}
-                  isDragging={draggedArtworkId === artwork.id}
-                  isBusy={isBusy}
-                  key={artwork.id}
-                  onDragEnd={() => {
-                    setDraggedArtworkId(null);
-                    setDragOverArtworkId(null);
-                  }}
-                  onDragOver={() => setDragOverArtworkId(artwork.id)}
-                  onDragStart={() => setDraggedArtworkId(artwork.id)}
-                  onDrop={() => {
-                    if (draggedArtworkId) {
-                      onReorderArtwork(draggedArtworkId, artwork.id);
-                    }
-
-                    setDraggedArtworkId(null);
-                    setDragOverArtworkId(null);
-                  }}
-                  onToggle={onToggleArtwork}
-                  onSetCover={onSetCoverArtwork}
-                  onUpdate={onUpdateArtwork}
-                />
-              ))}
-            </div>
-          </div>
-        ) : (
-          <EmptyState text="Jos nema radova u ovom draftu." />
-        )}
-      </section>
-    </>
-  );
+function ProfileDisciplines({value, onChange}: {value: string; onChange: (value: string) => void}) {
+  const [expanded, setExpanded] = useState(false);
+  const selected = parseDisciplineList(value);
+  const options = getPortfolioDisciplineOptions(value);
+  const toggle = (option: string) => onChange(formatDisciplineList(toggleDisciplineValue(selected, option)));
+  return <div className={styles.profileDisciplines}>
+    <div><span>Discipline</span><span>Tvoje discipline · {selected.length}</span></div>
+    <div className={styles.profileDisciplineChips}>
+      {selected.map((option) => <button aria-pressed="true" key={option} onClick={() => toggle(option)} type="button">{option}</button>)}
+      <button aria-expanded={expanded} aria-controls="profile-discipline-options" className={styles.profileMoreDisciplines}
+        onClick={() => setExpanded((current) => !current)} type="button">{expanded ? "− Sakrij" : "+ Pogledaj sve"} ({options.length})</button>
+    </div>
+    {expanded ? <div id="profile-discipline-options" className={styles.profileDisciplineOptions}>
+      {options.map((option) => <button aria-pressed={selected.includes(option)} key={option}
+        onClick={() => toggle(option)} type="button">{option}</button>)}
+    </div> : null}
+  </div>;
 }
 
 const artworkAvailabilityOptions: Array<{
@@ -1578,6 +1769,9 @@ function ArtworkEditModal({
 }
 
 function DesignWorkspace({
+  collectionsMode = false,
+  isMemoryGuest = false,
+  hideHeader = false,
   designConfig,
   fontStyle,
   includeBranding,
@@ -1594,6 +1788,9 @@ function DesignWorkspace({
   selectedTemplate,
   onTemplateChange,
 }: {
+  collectionsMode?: boolean;
+  isMemoryGuest?: boolean;
+  hideHeader?: boolean;
   designConfig: PortfolioDesignConfig;
   fontStyle: PortfolioFontStyle;
   includeBranding: boolean;
@@ -1637,7 +1834,7 @@ function DesignWorkspace({
       return;
     }
 
-    onDesignConfigChange(mode === "CUSTOM" ? { ...designConfig, mode } : createPresetDesignConfig(selectedTemplate));
+    onDesignConfigChange(mode === "CUSTOM" ? { ...designConfig, mode } : createPresetDesignConfig(selectedTemplate, designConfig.minimal));
   }
 
   function updatePageTemplate(page: PortfolioDesignPageKey, template: PortfolioTemplate) {
@@ -1661,11 +1858,11 @@ function DesignWorkspace({
 
   return (
     <>
-      <WorkspaceHeader
-        label="Korak 3 od 4"
+      {!hideHeader ? <WorkspaceHeader
+        label={collectionsMode ? "Korak 5 od 6" : "Korak 3 od 4"}
         title="Izaberi dizajn PDF-a"
         description="Šablon određuje izgled svih strana. Format, jezik i font možeš promijeniti bilo kad."
-      />
+      /> : null}
 
       <div className={styles.designTemplateGrid}>
         {templates.map((template) => (
@@ -1736,11 +1933,11 @@ function DesignWorkspace({
             options={[{ label: "Uključen", value: "on" }, { label: "Isključen", value: "off" }]}
             value={includeBranding ? "on" : "off"}
           />
-          <div className={styles.designSaveAction}>
+          {!isMemoryGuest ? <div className={styles.designSaveAction}>
             <SecondaryStudioButton disabled={isSaving} onClick={onSave}>
               {isSaving ? "Čuvam..." : "Sačuvaj podešavanja"}
             </SecondaryStudioButton>
-          </div>
+          </div> : null}
         </div>
       </Panel>
 
@@ -1841,206 +2038,6 @@ function DesignWorkspace({
   );
 }
 
-function ExportWorkspace({
-  isGeneratingPdf,
-  onGeneratePdf,
-  onOpenCleanPdf,
-  onOpenPayment,
-  onOpenPreview,
-  project,
-}: {
-  isGeneratingPdf: boolean;
-  onGeneratePdf: () => void;
-  onOpenCleanPdf: () => void;
-  onOpenPayment: () => void;
-  onOpenPreview: () => void;
-  project: PortfolioProject;
-}) {
-  const [linkCopied, setLinkCopied] = useState(false);
-  const canGenerateCleanPdf = project.access.canDownloadCleanPdf;
-  const isPremium = project.access.reason === "PREMIUM";
-  const accessLabel = canGenerateCleanPdf
-    ? "Čist PDF bez vodenog žiga je uključen."
-    : "Otključaj čist PDF bez vodenog žiga.";
-
-  async function copyShareLink() {
-    await navigator.clipboard.writeText(
-      `${window.location.origin}/portfolio-builder/${project.id}/preview`,
-    );
-    setLinkCopied(true);
-    window.setTimeout(() => setLinkCopied(false), 1800);
-  }
-
-  function downloadLatestPdf() {
-    if (project.latestPdfUrl) {
-      window.open(project.latestPdfUrl, "_blank", "noopener,noreferrer");
-      return;
-    }
-
-    onOpenCleanPdf();
-  }
-
-  return (
-    <>
-      <WorkspaceHeader
-        label="Korak 4 od 4"
-        title="Izvoz i dijeljenje"
-        description="Otvori pregled, generiši čist PDF ili pošalji privatni link galeriji i kupcima."
-      />
-
-      <div className={styles.exportContent}>
-        <section className={styles.exportHero}>
-          <div className={styles.exportHeroCopy}>
-            <span className={styles.exportStatus}>
-              <i aria-hidden="true" />
-              {isPremium ? "Premium članstvo" : canGenerateCleanPdf ? "PDF je otključan" : "PDF izvoz"}
-            </span>
-            <h2>{accessLabel}</h2>
-            <p>
-              Pregled uvijek ima ArtBoard vodeni žig. Svaki put kad generišeš čist PDF, čuvamo ga kao novu verziju.
-            </p>
-          </div>
-          <button
-            className={styles.exportPrimaryButton}
-            disabled={isGeneratingPdf}
-            onClick={canGenerateCleanPdf ? onGeneratePdf : onOpenPayment}
-            type="button"
-          >
-            {isGeneratingPdf ? "Generišem..." : canGenerateCleanPdf ? "Generiši PDF" : "Otključaj PDF"}
-          </button>
-        </section>
-
-        <div className={styles.exportActionGrid}>
-          <ExportActionCard
-            action="Otvori pregled"
-            onClick={onOpenPreview}
-            text="Pogledaj cijeli portfolio sa ArtBoard vodenim žigom."
-            title="Pregled"
-          />
-          <ExportActionCard
-            action={linkCopied ? "Link kopiran" : "Kopiraj link"}
-            onClick={() => void copyShareLink()}
-            text="Privatni link za galerije, kupce i saradnike."
-            title="Link za dijeljenje"
-          />
-          <ExportActionCard
-            action={canGenerateCleanPdf ? (isGeneratingPdf ? "Generišem..." : "Preuzmi") : "Otključaj"}
-            disabled={isGeneratingPdf}
-            onClick={canGenerateCleanPdf ? downloadLatestPdf : onOpenPayment}
-            text={
-              canGenerateCleanPdf
-                ? "Čist PDF bez vodenog žiga, spreman za slanje."
-                : "Otključaj čist PDF spreman za slanje."
-            }
-            title="Preuzmi PDF"
-          />
-        </div>
-
-        <div className={styles.exportHistoryGrid}>
-          <section className={styles.exportHistoryCard}>
-            <h2>Verzije PDF-a</h2>
-            {project.versions.length > 0 ? (
-              <div className={styles.exportHistoryList}>
-                {project.versions.map((version) => (
-                  <button
-                    className={styles.exportHistoryItem}
-                    key={version.id}
-                    onClick={() => window.open(version.pdfUrl, "_blank", "noopener,noreferrer")}
-                    type="button"
-                  >
-                    <span>
-                      <strong>Verzija {version.versionNumber}</strong>
-                      <small>
-                        {formatBuilderDate(version.createdAt)} · {templateLabels[version.template]}
-                      </small>
-                    </span>
-                    <b>PDF</b>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <p className={styles.exportEmptyState}>
-                Još nema verzija. Prva će se pojaviti ovdje nakon što generišeš PDF.
-              </p>
-            )}
-          </section>
-
-          <section className={styles.exportHistoryCard}>
-            <h2>Plaćanje</h2>
-            {isPremium ? (
-              <p className={styles.exportEmptyState}>Nije potrebno — izvoz je uključen u Premium članstvo.</p>
-            ) : project.payments.length > 0 ? (
-              <div className={styles.exportHistoryList}>
-                {project.payments.map((payment) => (
-                  <div className={styles.exportPaymentItem} key={payment.id}>
-                    <span>
-                      <strong>{formatBuilderEnum(payment.status)}</strong>
-                      <small>
-                        {payment.paidAt
-                          ? `Plaćeno: ${formatBuilderDate(payment.paidAt)}`
-                          : `Kreirano: ${formatBuilderDate(payment.createdAt)}`}
-                      </small>
-                    </span>
-                    <b>{formatBuilderMoney(payment.amountCents, payment.currency)}</b>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className={styles.exportEmptyState}>Nema evidentiranih uplata za ovaj portfolio.</p>
-            )}
-          </section>
-        </div>
-      </div>
-    </>
-  );
-}
-
-function ExportActionCard({
-  action,
-  disabled = false,
-  onClick,
-  text,
-  title,
-}: {
-  action: string;
-  disabled?: boolean;
-  onClick: () => void;
-  text: string;
-  title: string;
-}) {
-  return (
-    <article className={styles.exportActionCard}>
-      <h2>{title}</h2>
-      <p>{text}</p>
-      <button disabled={disabled} onClick={onClick} type="button">
-        {action}
-      </button>
-    </article>
-  );
-}
-
-function formatBuilderEnum(value: string) {
-  return value
-    .toLowerCase()
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
-
-function formatBuilderDate(value: string) {
-  return new Intl.DateTimeFormat("sr-Latn-ME", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
-
-function formatBuilderMoney(amountCents: number, currency: string) {
-  return new Intl.NumberFormat("de-DE", {
-    currency,
-    style: "currency",
-  }).format(amountCents / 100);
-}
-
 function StudioPreviewPanel(props: React.ComponentProps<typeof PreviewPanel>) {
   const {
     artistName,
@@ -2058,7 +2055,7 @@ function StudioPreviewPanel(props: React.ComponentProps<typeof PreviewPanel>) {
     .slice()
     .sort((a, b) => a.orderIndex - b.orderIndex)
     .filter((artwork) => artwork.isSelected);
-  const previewTemplateLabel = designConfig.mode === "CUSTOM" ? "Custom mix" : templateLabels[template];
+  const previewTemplateLabel = designConfig.mode === "CUSTOM" ? "Custom mix" : template === "INSTITUTIONAL_MINIMAL" ? getMinimalDesignLabel({ designConfig }) : templateLabels[template];
   const estimatedPages = Math.max(4, selectedItems.length + 4);
   const mainImage = coverImage || selectedItems[0]?.imageUrl || profileImageUrl;
   const collectionImage = collectionCoverUrl || selectedItems[0]?.imageUrl;
@@ -2075,7 +2072,8 @@ function StudioPreviewPanel(props: React.ComponentProps<typeof PreviewPanel>) {
       </div>
 
       <div className={`${styles.previewScroll} portfolio-builder-scroll`}>
-        <PreviewThumbnail label="01 · Naslovna" large>
+        <PreviewThumbnail label="01 · Naslovna" large flush={template === "INSTITUTIONAL_MINIMAL"}>
+          {template === "INSTITUTIONAL_MINIMAL" ? <MinimalCoverPreview printStyle={getMinimalDesign({ designConfig }).style} cover={getMinimalDesign({ designConfig }).cover} data={{ artistName, discipline, coverImage: mainImage, profileImage: profileImageUrl, artworkCount: selectedItems.length, qrTarget: project.artboardProfileUrl || project.websiteUrl || project.behanceUrl || project.instagramUrl, location: project.location, year: new Date(project.updatedAt).getFullYear(), includeBranding: project.includeBranding }} /> : <>
           <div className={styles.previewCoverImage}>
             {mainImage ? <img alt="" src={mainImage} /> : null}
           </div>
@@ -2086,6 +2084,7 @@ function StudioPreviewPanel(props: React.ComponentProps<typeof PreviewPanel>) {
             </div>
             {profileImageUrl ? <img alt="" src={profileImageUrl} /> : null}
           </div>
+          </>}
         </PreviewThumbnail>
 
         <div className={styles.previewGrid}>
@@ -2123,15 +2122,17 @@ function PreviewThumbnail({
   children,
   label,
   large = false,
+  flush = false,
 }: {
   children: React.ReactNode;
   label: string;
   large?: boolean;
+  flush?: boolean;
 }) {
   return (
     <section className={large ? styles.previewThumbnailLarge : styles.previewThumbnail}>
       <span>{label}</span>
-      <div>{children}</div>
+      <div style={flush ? { padding: 0 } : undefined}>{children}</div>
     </section>
   );
 }

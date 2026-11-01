@@ -15,6 +15,12 @@ coverage/
 dev.db
 dev.db-journal
 
+# Local database backups contain private application data.
+.backups/
+.tmp/
+
 # Operating system noise
 .DS_Store
 Thumbs.db
+# Local private exports and user-generated artifacts must never be published.
+.data/

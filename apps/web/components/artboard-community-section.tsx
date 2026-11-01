@@ -1,11 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, ImageOff, Search } from "lucide-react";
-import type { PointerEvent as ReactPointerEvent } from "react";
+import { ImageOff, Search } from "lucide-react";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
-
-import { siteRoutes } from "@/lib/site-routes";
 
 export type CommunityArtist = {
   id: string;
@@ -16,19 +13,17 @@ export type CommunityArtist = {
   disciplines: string[];
 };
 
-const MAX_SHOWCASE_ARTISTS = 25;
-const GALLERY_EDGE_CLONES = 5;
-
 type CommunityColumn = {
   key: string;
   kind: "large" | "small";
   artists: CommunityArtist[];
 };
 
+const MAX_SHOWCASE_ARTISTS = 25;
+const AUTO_SCROLL_SPEED = 0.035;
+
 function buildCommunityColumns(artists: CommunityArtist[]) {
   const showcaseArtists = artists.slice(0, MAX_SHOWCASE_ARTISTS);
-  if (showcaseArtists.length === 0) return [];
-
   const columns: CommunityColumn[] = [];
   let artistIndex = 0;
 
@@ -36,377 +31,201 @@ function buildCommunityColumns(artists: CommunityArtist[]) {
     const cycle = Math.floor(artistIndex / 5);
     const largeArtist = showcaseArtists[artistIndex++];
     if (!largeArtist) break;
-
     columns.push({ key: `${cycle}-large-${largeArtist.id}`, kind: "large", artists: [largeArtist] });
 
-    const firstSmallPair = showcaseArtists.slice(artistIndex, artistIndex + 2);
-    artistIndex += firstSmallPair.length;
-    if (firstSmallPair.length > 0) {
-      columns.push({
-        key: `${cycle}-small-a-${firstSmallPair[0]!.id}`,
-        kind: "small",
-        artists: firstSmallPair,
-      });
-    }
-
-    const secondSmallPair = showcaseArtists.slice(artistIndex, artistIndex + 2);
-    artistIndex += secondSmallPair.length;
-    if (secondSmallPair.length > 0) {
-      columns.push({
-        key: `${cycle}-small-b-${secondSmallPair[0]!.id}`,
-        kind: "small",
-        artists: secondSmallPair,
-      });
+    for (const pairName of ["a", "b"]) {
+      const pair = showcaseArtists.slice(artistIndex, artistIndex + 2);
+      artistIndex += pair.length;
+      if (pair.length > 0) columns.push({ key: `${cycle}-small-${pairName}-${pair[0]!.id}`, kind: "small", artists: pair });
     }
   }
 
   return columns;
 }
 
-const CommunityArtistCard = memo(function CommunityArtistCard({ artist }: { artist: CommunityArtist }) {
+const CommunityArtistCard = memo(function CommunityArtistCard({
+  artist,
+  isClone,
+  kind,
+}: {
+  artist: CommunityArtist;
+  isClone: boolean;
+  kind: CommunityColumn["kind"];
+}) {
   const [isActive, setIsActive] = useState(false);
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [activeSlide, setActiveSlide] = useState<number | null>(null);
   const [failedImageUrls, setFailedImageUrls] = useState<string[]>([]);
   const [avatarFailed, setAvatarFailed] = useState(false);
-  const rotationImages = artist.artworks.filter((artwork) => !failedImageUrls.includes(artwork.url));
-  const visibleImageIndex = rotationImages.length > 0 ? activeImageIndex % rotationImages.length : 0;
-  const visibleArtwork = rotationImages[visibleImageIndex];
+  const galleryImages = artist.artworks.filter((artwork) => !failedImageUrls.includes(artwork.url)).slice(0, 3);
+  const baseArtwork = galleryImages[0];
 
   useEffect(() => {
-    if (!isActive || rotationImages.length <= 1) {
-      setActiveImageIndex(0);
-      return;
-    }
-
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-    const startTimeout = window.setTimeout(() => {
-      setActiveImageIndex((index) => (index + 1) % rotationImages.length);
-    }, 450);
+    if (!isActive || galleryImages.length <= 1 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const interval = window.setInterval(() => {
-      setActiveImageIndex((index) => (index + 1) % rotationImages.length);
-    }, 1800);
+      setActiveSlide((current) => ((current ?? 0) + 1) % galleryImages.length);
+    }, 900);
+    return () => window.clearInterval(interval);
+  }, [galleryImages.length, isActive]);
 
-    return () => {
-      window.clearTimeout(startTimeout);
-      window.clearInterval(interval);
-    };
-  }, [isActive, rotationImages.length]);
+  function startGallery() {
+    setActiveSlide(0);
+    setIsActive(true);
+  }
+
+  function stopGallery() {
+    setIsActive(false);
+    setActiveSlide(null);
+  }
+
+  const [firstName, ...remainingName] = artist.name.trim().split(/\s+/);
+  const lastName = remainingName.join(" ");
 
   return (
-    <Link
-      className="artboard-community__card"
-      href={`${siteRoutes.artistProfileBase}/${artist.slug}`}
-      onBlur={() => setIsActive(false)}
-      onFocus={() => setIsActive(true)}
-      onMouseEnter={() => setIsActive(true)}
-      onMouseLeave={() => setIsActive(false)}
-    >
-      <span className="artboard-community__image-wrap">
-        {!visibleArtwork ? (
-          <span className="artboard-community__image-fallback">
-            <ImageOff size={22} strokeWidth={1.5} aria-hidden="true" />
-            Rad trenutno nije dostupan
-          </span>
+    <article className={`artboard-community__card artboard-community__card--${kind}`} data-ab-artist="" data-community-reveal="" data-reveal="" onMouseEnter={startGallery} onMouseLeave={stopGallery}>
+      <Link aria-label={`${artist.name}, umjetnički profil`} className="artboard-community__card-link" href={`/umjetnik/${artist.slug}`} onBlur={stopGallery} onFocus={startGallery} tabIndex={isClone ? -1 : undefined} />
+      <div className="artboard-community__image-wrap">
+        {baseArtwork ? (
+          <img alt={baseArtwork.alt} className="artboard-community__base-image" decoding="async" loading="lazy" onError={() => setFailedImageUrls((current) => current.includes(baseArtwork.url) ? current : [...current, baseArtwork.url])} src={baseArtwork.url} />
         ) : (
-          <img
-            alt={visibleArtwork.alt}
-            className="artboard-community__image is-visible"
-            decoding="async"
-            key={visibleArtwork.url}
-            loading="lazy"
-            onError={() => setFailedImageUrls((current) => current.includes(visibleArtwork.url) ? current : [...current, visibleArtwork.url])}
-            src={visibleArtwork.url}
-          />
+          <span className="artboard-community__image-fallback"><ImageOff size={22} strokeWidth={1.5} aria-hidden="true" />Rad trenutno nije dostupan</span>
         )}
-      </span>
-      <span className="artboard-community__card-info">
-        <span className="artboard-community__card-top">
-          <strong>{artist.name}</strong>
-          <span className="artboard-community__avatar" aria-hidden="true">
-            {artist.avatarUrl && !avatarFailed ? (
-              <img alt="" decoding="async" loading="lazy" onError={() => setAvatarFailed(true)} src={artist.avatarUrl} />
-            ) : null}
+        {galleryImages.map((artwork, index) => (
+          <img alt="" className={`ab-cv${activeSlide === index ? " on" : ""}`} decoding="async" key={artwork.url} loading="lazy" onError={() => setFailedImageUrls((current) => current.includes(artwork.url) ? current : [...current, artwork.url])} src={artwork.url} />
+        ))}
+        {galleryImages.length > 1 ? (
+          <span className="ab-cbars" aria-hidden="true">
+            {galleryImages.map((artwork, index) => <i className={activeSlide === index ? "run" : activeSlide !== null && index < activeSlide ? "done" : ""} key={artwork.url} />)}
           </span>
-        </span>
-        <span className="artboard-community__disciplines">
-          {artist.disciplines.length > 0 ? artist.disciplines.slice(0, 2).join(" · ") : "Umjetnost"}
-        </span>
-      </span>
-    </Link>
+        ) : null}
+      </div>
+      <div className="artboard-community__card-info">
+        <div className="artboard-community__card-top">
+          <strong><span>{firstName || artist.name}</span>{lastName ? <><br />{lastName}</> : null}</strong>
+          <span className="artboard-community__avatar" aria-hidden="true">{artist.avatarUrl && !avatarFailed ? <img alt="" decoding="async" loading="lazy" onError={() => setAvatarFailed(true)} src={artist.avatarUrl} /> : null}</span>
+        </div>
+        <span className="artboard-community__line" aria-hidden="true" />
+        <span className="artboard-community__disciplines">{artist.disciplines.length > 0 ? artist.disciplines.slice(0, 2).join(" · ") : "Umjetnost"}</span>
+      </div>
+    </article>
   );
 });
 
 export function ArtBoardCommunitySection({ artists }: { artists: CommunityArtist[] }) {
   const sectionRef = useRef<HTMLElement>(null);
+  const catalogRef = useRef<HTMLDivElement>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isSearchInviting, setIsSearchInviting] = useState(false);
-  const [isVisible, setIsVisible] = useState(true);
-  const [isGalleryOverflowing, setIsGalleryOverflowing] = useState(false);
   const normalizedSearch = searchTerm.trim().toLocaleLowerCase();
   const filteredArtists = useMemo(
-    () => artists.filter((artist) =>
-      normalizedSearch.length === 0 ||
-      artist.name.toLocaleLowerCase().includes(normalizedSearch) ||
-      artist.disciplines.some((discipline) => discipline.toLocaleLowerCase().includes(normalizedSearch)),
-    ),
+    () => artists.filter((artist) => normalizedSearch.length === 0 || artist.name.toLocaleLowerCase().includes(normalizedSearch) || artist.disciplines.some((discipline) => discipline.toLocaleLowerCase().includes(normalizedSearch))),
     [artists, normalizedSearch],
   );
-  const communityColumns = useMemo(() => buildCommunityColumns(filteredArtists), [filteredArtists]);
-  const shouldLoopGallery = normalizedSearch.length === 0 && filteredArtists.length > 1;
-  const edgeCloneCount = shouldLoopGallery
-    ? Math.min(GALLERY_EDGE_CLONES, communityColumns.length)
-    : 0;
-  const loopedColumns = useMemo(
-    () => shouldLoopGallery
-      ? [
-          ...communityColumns.slice(-edgeCloneCount).map((column) => ({ ...column, copy: -1 })),
-          ...communityColumns.map((column) => ({ ...column, copy: 0 })),
-          ...communityColumns.slice(0, edgeCloneCount).map((column) => ({ ...column, copy: 1 })),
-        ]
-      : communityColumns.map((column) => ({ ...column, copy: 0 })),
-    [communityColumns, edgeCloneCount, shouldLoopGallery],
+  const columns = useMemo(() => buildCommunityColumns(filteredArtists), [filteredArtists]);
+  const shouldLoop = columns.length > 1;
+  const renderedColumns = useMemo(
+    () => shouldLoop ? [...columns.map((column) => ({ ...column, isClone: false })), ...columns.map((column) => ({ ...column, isClone: true }))] : columns.map((column) => ({ ...column, isClone: false })),
+    [columns, shouldLoop],
   );
-  const hasScrollableGallery = shouldLoopGallery || isGalleryOverflowing;
-  const galleryViewportRef = useRef<HTMLDivElement>(null);
-  const galleryTrackRef = useRef<HTMLDivElement>(null);
-  const searchBoxRef = useRef<HTMLLabelElement>(null);
-  const activeColumnRef = useRef(0);
-  const isShiftingRef = useRef(false);
-  const shiftTimeoutRef = useRef<number | null>(null);
-  const swipeStartRef = useRef<{ pointerId: number; x: number; y: number } | null>(null);
-  const suppressSwipeClickRef = useRef(false);
+  const pointerInsideRef = useRef(false);
+  const pauseUntilRef = useRef(0);
 
   useEffect(() => {
     const section = sectionRef.current;
-    if (!section || typeof IntersectionObserver === "undefined") return;
+    if (!section || !("IntersectionObserver" in window) || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const elements = section.querySelectorAll<HTMLElement>("[data-community-reveal]");
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("is-revealed");
+        observer.unobserve(entry.target);
+      });
+    }, { threshold: 0.08, rootMargin: "0px 0px -12% 0px" });
 
-    const observer = new IntersectionObserver(
-      ([entry]) => setIsVisible(Boolean(entry?.isIntersecting)),
-      { rootMargin: "240px 0px" },
-    );
-
-    observer.observe(section);
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    const searchBox = searchBoxRef.current;
-    if (!searchBox || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-    const observer = new IntersectionObserver(([entry]) => {
-      if (!entry?.isIntersecting) return;
-      setIsSearchInviting(true);
-      observer.disconnect();
-    }, { threshold: 0.7 });
-
-    observer.observe(searchBox);
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    const viewport = galleryViewportRef.current;
-    const track = galleryTrackRef.current;
-    if (!viewport || !track || communityColumns.length === 0) return;
-
-    activeColumnRef.current = shouldLoopGallery ? edgeCloneCount : 0;
-    isShiftingRef.current = false;
-
-    const placeAtActiveColumn = () => {
-      const activeColumn = track.children.item(activeColumnRef.current);
-      if (!(activeColumn instanceof HTMLElement)) return;
-
-      track.classList.remove("is-animated");
-      track.style.transform = `translate3d(-${activeColumn.offsetLeft}px, 0, 0)`;
-      setIsGalleryOverflowing(track.scrollWidth > viewport.clientWidth + 1);
-    };
-    const frame = window.requestAnimationFrame(placeAtActiveColumn);
-    const resizeObserver = new ResizeObserver(() => {
-      if (!isShiftingRef.current) placeAtActiveColumn();
+    elements.forEach((element) => {
+      const siblings = element.parentElement ? Array.from(element.parentElement.children) : [];
+      element.style.setProperty("--community-delay", `${(Math.max(0, siblings.indexOf(element)) % 6) * 0.07}s`);
+      observer.observe(element);
     });
-    resizeObserver.observe(viewport);
+    return () => observer.disconnect();
+  }, [renderedColumns]);
 
-    return () => {
-      window.cancelAnimationFrame(frame);
-      resizeObserver.disconnect();
-      if (shiftTimeoutRef.current !== null) window.clearTimeout(shiftTimeoutRef.current);
+  useEffect(() => {
+    const catalog = catalogRef.current;
+    if (!catalog || !shouldLoop || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    let frame = 0;
+    let lastTime: number | null = null;
+    let remainder = 0;
+    let isVisible = false;
+    const half = () => catalog.scrollWidth / 2;
+    const normalizeScroll = () => {
+      const midpoint = half();
+      if (midpoint <= 0) return;
+      if (catalog.scrollLeft >= midpoint) catalog.scrollLeft -= midpoint;
+      else if (catalog.scrollLeft <= 0) catalog.scrollLeft += midpoint;
     };
-  }, [communityColumns, edgeCloneCount, shouldLoopGallery]);
-
-  function shiftArtists(direction: -1 | 1) {
-    const viewport = galleryViewportRef.current;
-    const track = galleryTrackRef.current;
-    if (!hasScrollableGallery || isShiftingRef.current || !viewport || !track) return;
-
-    const nextColumnIndex = activeColumnRef.current + direction;
-    const nextColumn = track.children.item(nextColumnIndex);
-    if (!(nextColumn instanceof HTMLElement)) return;
-
-    isShiftingRef.current = true;
-    activeColumnRef.current = nextColumnIndex;
-
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    track.classList.toggle("is-animated", !prefersReducedMotion);
-    track.style.transform = `translate3d(-${nextColumn.offsetLeft}px, 0, 0)`;
-
-    shiftTimeoutRef.current = window.setTimeout(() => {
-      let normalizedIndex = activeColumnRef.current;
-      const columnCount = communityColumns.length;
-
-      if (shouldLoopGallery) {
-        if (normalizedIndex < edgeCloneCount) normalizedIndex += columnCount;
-        if (normalizedIndex >= edgeCloneCount + columnCount) normalizedIndex -= columnCount;
-      }
-
-      if (normalizedIndex !== activeColumnRef.current) {
-        const normalizedColumn = track.children.item(normalizedIndex);
-        if (normalizedColumn instanceof HTMLElement) {
-          track.classList.remove("is-animated");
-          track.style.transform = `translate3d(-${normalizedColumn.offsetLeft}px, 0, 0)`;
+    const observer = new IntersectionObserver(([entry]) => {
+      isVisible = Boolean(entry?.isIntersecting && entry.intersectionRatio >= 0.3);
+      lastTime = null;
+    }, { threshold: 0.3 });
+    const tick = (time: number) => {
+      if (lastTime === null) lastTime = time;
+      const delta = Math.min(time - lastTime, 48);
+      lastTime = time;
+      if (isVisible && !pointerInsideRef.current && time >= pauseUntilRef.current) {
+        remainder += delta * AUTO_SCROLL_SPEED;
+        const pixels = Math.floor(remainder);
+        if (pixels >= 1) {
+          remainder -= pixels;
+          catalog.scrollLeft += pixels;
         }
-        activeColumnRef.current = normalizedIndex;
       }
-
-      isShiftingRef.current = false;
-      shiftTimeoutRef.current = null;
-    }, prefersReducedMotion ? 0 : 560);
-  }
-
-  function startGallerySwipe(event: ReactPointerEvent<HTMLDivElement>) {
-    if (event.pointerType !== "touch" && event.pointerType !== "pen") return;
-
-    suppressSwipeClickRef.current = false;
-    swipeStartRef.current = {
-      pointerId: event.pointerId,
-      x: event.clientX,
-      y: event.clientY,
+      frame = window.requestAnimationFrame(tick);
     };
-    event.currentTarget.setPointerCapture(event.pointerId);
-  }
 
-  function finishGallerySwipe(event: ReactPointerEvent<HTMLDivElement>) {
-    const start = swipeStartRef.current;
-    swipeStartRef.current = null;
-    if (!start || start.pointerId !== event.pointerId) return;
+    catalog.addEventListener("scroll", normalizeScroll, { passive: true });
+    observer.observe(catalog);
+    frame = window.requestAnimationFrame(tick);
+    return () => {
+      catalog.removeEventListener("scroll", normalizeScroll);
+      observer.disconnect();
+      window.cancelAnimationFrame(frame);
+    };
+  }, [renderedColumns, shouldLoop]);
 
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-
-    const deltaX = event.clientX - start.x;
-    const deltaY = event.clientY - start.y;
-    if (Math.abs(deltaX) < 42 || Math.abs(deltaX) <= Math.abs(deltaY) * 1.15) return;
-
-    suppressSwipeClickRef.current = true;
-    shiftArtists(deltaX < 0 ? 1 : -1);
-    window.setTimeout(() => {
-      suppressSwipeClickRef.current = false;
-    }, 400);
+  function pauseFor(milliseconds: number) {
+    pauseUntilRef.current = Math.max(pauseUntilRef.current, performance.now() + milliseconds);
   }
 
   return (
-    <section
-      ref={sectionRef}
-      className={`artboard-community${isVisible ? "" : " artboard-community--paused"}`}
-      id="artboard-zajednica"
-      aria-labelledby="artboard-community-title"
-    >
+    <section className="artboard-community" id="umjetnici" ref={sectionRef} aria-labelledby="artboard-community-title">
       <div className="artboard-community__inner">
-        <div className="artboard-community__header">
-          <div>
-            <p className="artboard-community__eyebrow"><span aria-hidden="true" />ArtBoard zajednica</p>
-            <h2 className="artboard-community__title" id="artboard-community-title">
-              <span data-text="Zajednica umjetnika">Zajednica umjetnika</span>
-              koja svakodnevno raste.
-            </h2>
-            <p className="artboard-community__intro">
-              Istraži autore i otkrij radove koji oblikuju umjetničku scenu Crne Gore i regiona.
-            </p>
-          </div>
-          <div className="artboard-community__logo" aria-hidden="true">
-            <img alt="" src="/artboard-logo/ArtBoard-Gradient.svg" />
-          </div>
-        </div>
+        <header className="artboard-community__header">
+          <p className="artboard-community__eyebrow" data-community-reveal="" data-reveal="">ArtBoard zajednica</p>
+          <h2 className="artboard-community__title" data-community-reveal="" data-reveal="" id="artboard-community-title"><span>Zajednica umjetnika</span> koja svakodnevno raste.</h2>
+          <p className="artboard-community__intro" data-community-reveal="" data-reveal="">Istraži autore i otkrij radove koji oblikuju umjetničku scenu Crne Gore i regiona.</p>
+        </header>
 
-        <label
-          className={`artboard-community__search${isSearchInviting ? " is-inviting" : ""}`}
-          ref={searchBoxRef}
-        >
-          <Search size={20} strokeWidth={1.8} aria-hidden="true" />
+        <label className="artboard-community__search" data-community-reveal="" data-reveal="">
+          <Search aria-hidden="true" />
           <span className="sr-only">Pretraži umjetnike po imenu, disciplini ili lokaciji</span>
-          <span aria-hidden="true" className="artboard-community__search-mobile-placeholder">Pretraži umjetnike</span>
-          <input
-            onChange={(event) => setSearchTerm(event.target.value)}
-            placeholder="Pretraži umjetnike po imenu, disciplini ili lokaciji"
-            type="search"
-            value={searchTerm}
-          />
+          <input onChange={(event) => setSearchTerm(event.target.value)} placeholder="Pretraži umjetnike po imenu, disciplini ili lokaciji" type="search" value={searchTerm} />
         </label>
 
-        {filteredArtists.length > 0 ? (
+        {renderedColumns.length > 0 ? (
           <div className="artboard-community__gallery-shell">
-            <div
-              className="artboard-community__gallery-viewport"
-              ref={galleryViewportRef}
-              onClickCapture={(event) => {
-                if (!suppressSwipeClickRef.current) return;
-                suppressSwipeClickRef.current = false;
-                event.preventDefault();
-                event.stopPropagation();
-              }}
-              onPointerCancel={() => { swipeStartRef.current = null; }}
-              onPointerDown={startGallerySwipe}
-              onPointerUp={finishGallerySwipe}
-            >
-              <div className="artboard-community__gallery-track" ref={galleryTrackRef}>
-                {loopedColumns.map((column) => (
-                  <div
-                    className={`artboard-community__gallery-column artboard-community__gallery-column--${column.kind}`}
-                    key={`${column.copy}-${column.key}`}
-                  >
-                    {column.artists.map((artist, artistIndex) => (
-                      <CommunityArtistCard
-                        artist={artist}
-                        key={`${column.copy}-${column.key}-${artist.id}-${artistIndex}`}
-                      />
-                    ))}
-                  </div>
-                ))}
-              </div>
+            <div className="artboard-community__gallery-viewport" data-loop="" id="ab-catalog" onFocusCapture={() => pauseFor(4000)} onPointerDown={() => pauseFor(4000)} onPointerEnter={(event) => { if (event.pointerType === "mouse") pointerInsideRef.current = true; }} onPointerLeave={(event) => { if (event.pointerType !== "mouse") return; pointerInsideRef.current = false; pauseFor(1200); }} onTouchStart={() => pauseFor(4000)} onWheel={() => pauseFor(4000)} ref={catalogRef}>
+              {renderedColumns.map((column, columnIndex) => (
+                <div aria-hidden={column.isClone ? "true" : undefined} className={`artboard-community__gallery-column artboard-community__gallery-column--${column.kind}`} key={`${column.isClone ? "clone" : "source"}-${column.key}-${columnIndex}`}>
+                  {column.artists.map((artist) => <CommunityArtistCard artist={artist} isClone={column.isClone} key={`${column.isClone ? "clone" : "source"}-${column.key}-${artist.id}`} kind={column.kind} />)}
+                </div>
+              ))}
             </div>
-
-            <button
-              className="artboard-community__gallery-arrow artboard-community__gallery-arrow--previous"
-              type="button"
-              aria-label="Prikaži prethodne umjetnike"
-              disabled={!hasScrollableGallery}
-              onClick={() => shiftArtists(-1)}
-            >
-              <ChevronLeft size={25} strokeWidth={2.1} aria-hidden="true" />
-            </button>
-            <button
-              className="artboard-community__gallery-arrow artboard-community__gallery-arrow--next"
-              type="button"
-              aria-label="Prikaži sljedeće umjetnike"
-              disabled={!hasScrollableGallery}
-              onClick={() => shiftArtists(1)}
-            >
-              <ChevronRight size={25} strokeWidth={2.1} aria-hidden="true" />
-            </button>
           </div>
-        ) : (
-          <p className="artboard-community__empty">
-            {searchTerm.trim() ? "Nema umjetnika za ovu pretragu." : "Radovi umjetnika trenutno nisu dostupni."}
-          </p>
-        )}
+        ) : <p className="artboard-community__empty">{searchTerm.trim() ? "Nema umjetnika za ovu pretragu." : "Radovi umjetnika trenutno nisu dostupni."}</p>}
 
-        <div className="artboard-community__actions">
-          <Link className="artboard-community__button artboard-community__button--primary" href={siteRoutes.artists}>
-            <span>Istraži umjetnike</span>
-          </Link>
-          <Link className="artboard-community__button artboard-community__button--secondary" href={siteRoutes.artistApplication}>
-            <span>Postani dio ArtBoard zajednice</span>
-          </Link>
+        <div className="artboard-community__actions" data-community-reveal="" data-reveal="">
+          <Link className="artboard-community__button artboard-community__button--primary" href="/umjetnici">Pogledaj sve umjetnike</Link>
+          <Link className="artboard-community__button artboard-community__button--secondary" href="/prijava">Prijavi se besplatno</Link>
         </div>
       </div>
     </section>

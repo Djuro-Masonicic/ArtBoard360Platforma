@@ -3,7 +3,6 @@ import { notFound, redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { NavigationButton } from "@/components/navigation-button";
-import { PortfolioGeneratePdfButton } from "@/components/portfolio-generate-pdf-button";
 import { PortfolioPdfPreview } from "@/components/portfolio-pdf-preview";
 import { getAdminSessionToken } from "@/lib/admin-session";
 import { getAdminPortfolioProject } from "@/services/portfolio-projects";
@@ -130,11 +129,6 @@ export default async function AdminPortfolioDetailPage({ params }: AdminPortfoli
               <h2 className="mt-1 text-[26px] font-bold text-[#2f3138]">PDF pregled</h2>
             </div>
             <div className="flex flex-wrap gap-2">
-              <PortfolioGeneratePdfButton
-                className="inline-flex h-10 items-center justify-center rounded-full border border-[#dc1735] bg-[#dc1735] px-4 text-[14px] font-semibold text-white transition hover:bg-[#bf102a] disabled:cursor-not-allowed disabled:opacity-60"
-                mode="admin"
-                portfolioId={project.id}
-              />
               {project.latestPdfUrl ? (
                 <NavigationButton
                   className="inline-flex h-10 items-center justify-center rounded-full border border-[#ffc41d] bg-[#fff7d9] px-4 text-[14px] font-semibold text-[#8a5c00] transition hover:bg-[#ffc41d]"
@@ -315,6 +309,7 @@ function formatSource(source: string) {
 
 function formatAccessReason(reason: PortfolioProject["access"]["reason"]) {
   const labels = {
+    FREE: "Besplatan izvoz",
     PAID: "Placeno",
     PREMIUM: "Premium korisnik",
     PAYMENT_REQUIRED: "Potrebno placanje",

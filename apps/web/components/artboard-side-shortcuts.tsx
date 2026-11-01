@@ -21,7 +21,7 @@ const sectionShortcuts: {
   },
   {
     color: "#0875ff",
-    href: "#alati",
+    href: "#artboard-alati",
     icon: "tools",
     label: "Alati",
     position: "left",

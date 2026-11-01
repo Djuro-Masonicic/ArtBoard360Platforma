@@ -4,7 +4,7 @@ import { getArtistSessionToken, getArtistSessionUser } from "@/lib/artist-sessio
 import { serverEnv } from "@/lib/env";
 
 type RouteContext = {
-  params: Promise<{ id: string }> | { id: string };
+  params: Promise<{ id: string }>;
 };
 
 /**

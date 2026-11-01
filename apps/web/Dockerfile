@@ -6,6 +6,9 @@ WORKDIR /app
 COPY package.json package-lock.json tsconfig.base.json ./
 COPY apps/api/package.json apps/api/package.json
 COPY apps/web/package.json apps/web/package.json
+COPY packages/portfolio-document-plan/package.json packages/portfolio-document-plan/package.json
+COPY packages/qr-card-renderer/package.json packages/qr-card-renderer/package.json
+COPY packages/promotion-renderer/package.json packages/promotion-renderer/package.json
 
 RUN npm ci
 

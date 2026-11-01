@@ -1,10 +1,12 @@
 import { ArtistSubscriptionPanel } from "@/components/artist-subscription-panel";
 import { requireArtistSession } from "@/lib/artist-session";
-import { getArtistSubscription } from "@/services/artist-subscriptions";
+import { getSubscriptionOverview } from "@/services/artist-subscriptions";
+
+export const metadata = { title: "Upravljanje pretplatom | ArtBoard" };
 
 export default async function ArtistSubscriptionPage() {
   const session = await requireArtistSession();
-  const subscription = await getArtistSubscription(session.token);
+  const subscription = await getSubscriptionOverview(session.token);
 
-  return <ArtistSubscriptionPanel initialSubscription={subscription} mode="manage" />;
+  return <ArtistSubscriptionPanel initialOverview={subscription} />;
 }

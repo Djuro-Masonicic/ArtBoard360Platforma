@@ -1,6 +1,9 @@
 import { Type, Transform } from "class-transformer";
 import {
   IsArray,
+  ArrayMaxSize,
+  ArrayUnique,
+  IsIn,
   IsBoolean,
   IsEmail,
   IsEnum,
@@ -9,6 +12,7 @@ import {
   IsUrl,
   MaxLength,
   ValidateNested,
+  ValidateIf,
 } from "class-validator";
 import { SocialPlatform } from "@prisma/client";
 
@@ -33,7 +37,7 @@ export class ArtistSocialLinkInputDto {
   @IsEnum(SocialPlatform)
   platform!: SocialPlatform;
 
-  @IsUrl()
+  @IsUrl({ protocols: ["http", "https"], require_protocol: true })
   url!: string;
 }
 
@@ -118,61 +122,71 @@ export class CreateArtistDto {
 }
 
 export class UpdateArtistDto {
-  @IsOptional()
+  @ValidateIf((_object, value) => value !== undefined) @IsString() @MaxLength(6000)
+  artistStatement?: string;
+
+  @ValidateIf((_object, value) => value !== undefined) @IsIn(["FEMININE", "MASCULINE", "NEUTRAL"])
+  presentationForm?: "FEMININE" | "MASCULINE" | "NEUTRAL";
+  @ValidateIf((_object, value) => value !== undefined)
   @IsString()
   @MaxLength(160)
   name?: string;
 
-  @IsOptional()
+  @ValidateIf((_object, value) => value !== undefined)
   @IsString()
   @MaxLength(180)
   slug?: string;
 
-  @IsOptional()
+  @ValidateIf((_object, value) => value !== undefined)
   @IsString()
+  @MaxLength(20000)
   bio?: string;
 
-  @IsOptional()
+  @ValidateIf((_object, value) => value !== undefined)
   @IsString()
+  @MaxLength(2000)
   quote?: string;
 
-  @IsOptional()
+  @ValidateIf((_object, value) => value !== undefined)
   @IsEmail()
   email?: string;
 
-  @IsOptional()
+  @ValidateIf((_object, value) => value !== undefined)
   @IsUrl()
   profileImageUrl?: string;
 
-  @IsOptional()
+  @ValidateIf((_object, value) => value !== undefined)
   @IsUrl()
   profileThumbnailUrl?: string;
 
-  @IsOptional()
+  @ValidateIf((_object, value) => value !== undefined)
   @IsUrl()
   coverImageUrl?: string;
 
-  @IsOptional()
+  @ValidateIf((_object, value) => value !== undefined)
   @IsUrl()
   thumbnailUrl?: string;
 
-  @IsOptional()
+  @ValidateIf((_object, value) => value !== undefined)
   @Transform(({ value }) => transformBoolean(value))
   @IsBoolean()
   isNsfw?: boolean;
 
-  @IsOptional()
+  @ValidateIf((_object, value) => value !== undefined)
   @Transform(({ value }) => transformBoolean(value))
   @IsBoolean()
   darkenCoverOverlay?: boolean;
 
-  @IsOptional()
+  @ValidateIf((_object, value) => value !== undefined)
   @IsArray()
+  @ArrayMaxSize(3)
+  @ArrayUnique()
   @IsString({ each: true })
   disciplines?: string[];
 
-  @IsOptional()
+  @ValidateIf((_object, value) => value !== undefined)
   @IsArray()
+  @ArrayUnique((link: ArtistSocialLinkInputDto) => link.platform)
   @ValidateNested({ each: true })
   @Type(() => ArtistSocialLinkInputDto)
   socialLinks?: ArtistSocialLinkInputDto[];

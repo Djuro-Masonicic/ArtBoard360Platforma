@@ -9,13 +9,19 @@ import {
   Post,
   Query,
   Req,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { memoryStorage } from "multer";
 
+import { env } from "../../config/env";
 import { AdminAuthGuard } from "../auth/admin-auth.guard";
 import { ArtistAuthGuard, ArtistRequest } from "../auth/artist-auth.guard";
 import {
   CreateOpportunityDto,
+  CreatePublicOpportunitySubmissionDto,
   ListOpportunitiesQueryDto,
   UpdateOpportunityDto,
 } from "./opportunities.dto";
@@ -36,6 +42,16 @@ export class OpportunitiesController {
     return this.opportunitiesService.listAdminOpportunities(query);
   }
 
+  @Get("public/:identifier")
+  getPublicOpportunity(@Param("identifier") identifier: string) {
+    return this.opportunitiesService.getPublicOpportunity(identifier);
+  }
+
+  @Post(":id/view")
+  recordPublicView(@Param("id", ParseUUIDPipe) id: string) {
+    return this.opportunitiesService.recordPublicView(id);
+  }
+
   @UseGuards(AdminAuthGuard)
   @Get(":id")
   getOpportunity(@Param("id", ParseUUIDPipe) id: string) {
@@ -49,6 +65,22 @@ export class OpportunitiesController {
     @Req() request: ArtistRequest,
   ) {
     return this.opportunitiesService.applyToOpportunity(id, request.artistUser!.id);
+  }
+
+  @Post("submit")
+  @UseInterceptors(
+    FileInterceptor("coverImage", {
+      storage: memoryStorage(),
+      limits: {
+        fileSize: Math.min(env.maxUploadFileSizeBytes, 5 * 1024 * 1024),
+      },
+    }),
+  )
+  submitOpportunity(
+    @UploadedFile() coverImage: Express.Multer.File | undefined,
+    @Body() dto: CreatePublicOpportunitySubmissionDto,
+  ) {
+    return this.opportunitiesService.createPublicSubmission(dto, coverImage);
   }
 
   @UseGuards(AdminAuthGuard)

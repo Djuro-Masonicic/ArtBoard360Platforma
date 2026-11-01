@@ -1,15 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Check } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 import {
   ArtBoardVerificationSideOrbits,
   type VerificationArtworkPreview,
 } from "@/components/artboard-verification-side-orbits";
-import { siteRoutes } from "@/lib/site-routes";
-
 const checks = [
   {
     title: "Autorska prava",
@@ -20,7 +17,6 @@ const checks = [
         <path d="M14.8 9.6a3.8 3.8 0 100 4.8" />
       </svg>
     ),
-    tone: "blue",
   },
   {
     title: "Ispravnost informacija",
@@ -34,7 +30,6 @@ const checks = [
         <line x1="14.6" y1="13.6" x2="18" y2="13.6" />
       </svg>
     ),
-    tone: "purple",
   },
   {
     title: "Uslovi korišćenja",
@@ -46,7 +41,6 @@ const checks = [
         <path d="M9 13.6l2 2 4-4.4" />
       </svg>
     ),
-    tone: "orange",
   },
 ] as const;
 
@@ -75,26 +69,29 @@ export function ArtBoardVerificationSection({ artworks }: { artworks: Verificati
   }, []);
 
   return (
-    <section ref={sectionRef} className="artboard-verification" id="verifikacija-profila" aria-labelledby="artboard-verification-title">
+    <section ref={sectionRef} className="artboard-verification" id="prijava" aria-labelledby="artboard-verification-title">
       <ArtBoardVerificationSideOrbits artworks={artworks} />
 
-      <div className="artboard-verification__frame" data-verification-reveal>
+      <div className="artboard-verification__frame" data-reveal="" data-verification-reveal>
         <div className="artboard-verification__panel">
           <span className="artboard-verification__badge" aria-hidden="true">
-            <Check size={30} strokeWidth={4} />
+            <svg viewBox="0 0 24 24">
+              <defs><linearGradient id="abSeal" x1="3" y1="3" x2="21" y2="21" gradientUnits="userSpaceOnUse"><stop offset="0" stopColor="#1877f2" /><stop offset="1" stopColor="#1877f2" /></linearGradient></defs>
+              <path d="M12 2.6l2.7 1.6 3.1-.2 1.1 2.9 2.4 2-1.2 2.9 1.2 2.9-2.4 2-1.1 2.9-3.1-.2L12 21.4l-2.7-1.6-3.1.2-1.1-2.9-2.4-2 1.2-2.9L2.7 9.3l2.4-2 1.1-2.9 3.1.2z" fill="url(#abSeal)" />
+              <path d="M8.6 12.3l2.4 2.4 4.4-4.9" fill="none" stroke="#fff" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </span>
           <p className="artboard-verification__eyebrow">Verifikacija profila</p>
           <h2 className="artboard-verification__title" id="artboard-verification-title">
-            Svaki profil prolazi kroz
-            <span><span>proces verifikacije</span>.</span>
+            Svaki profil prolazi kroz <span>proces verifikacije</span>.
           </h2>
           <p className="artboard-verification__intro">
             Prije objave provjeravamo osnovne podatke i radove. Na taj način ArtBoard ostaje mjesto kojem umjetnici, publika i organizacije vjeruju.
           </p>
 
           <div className="artboard-verification__checks">
-            {checks.map(({ title, description, icon, tone }) => (
-              <div className={`artboard-verification__check artboard-verification__check--${tone}`} key={title}>
+            {checks.map(({ title, description, icon }) => (
+              <div className="artboard-verification__check" key={title}>
                 <div className="artboard-verification__check-heading">
                   <span className="artboard-verification__check-icon" aria-hidden="true">{icon}</span>
                   <h3>{title}</h3>
@@ -105,10 +102,10 @@ export function ArtBoardVerificationSection({ artworks }: { artworks: Verificati
           </div>
 
           <div className="artboard-verification__actions">
-            <Link className="artboard-verification__button artboard-verification__button--primary" href={siteRoutes.artistApplication}>
-              Pridruži se
+            <Link className="artboard-verification__button artboard-verification__button--primary ab-hdr-cta" href="/prijava">
+              Prijavi se besplatno
             </Link>
-            <Link className="artboard-verification__button artboard-verification__button--secondary" href="#faq">
+            <Link className="artboard-verification__button artboard-verification__button--secondary ab-cta-s" href="#faq">
               Kako ide pregled
             </Link>
           </div>

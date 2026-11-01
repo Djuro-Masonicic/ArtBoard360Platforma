@@ -25,7 +25,13 @@ export async function completeArtistSetupAction(
 
   if (!password || password.length < 8) {
     return {
-      error: "Lozinka mora imati najmanje 8 karaktera.",
+      error: "Lozinka mora imati najmanje 8 znakova.",
+    };
+  }
+
+  if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) {
+    return {
+      error: "Lozinka mora sadržati bar jedno slovo i jedan broj.",
     };
   }
 
@@ -46,7 +52,7 @@ export async function completeArtistSetupAction(
     }
 
     return {
-      error: "Postavljanje lozinke trenutno nije dostupno. Pokusaj ponovo.",
+      error: "Postavljanje lozinke trenutno nije dostupno. Pokušaj ponovo.",
     };
   }
 

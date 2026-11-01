@@ -1,0 +1,116 @@
+@font-face{font-family:'Alcyone';src:url('/generator-fonts/Alcyone-Regular.woff2');font-weight:400;font-display:swap}
+@font-face{font-family:'Alcyone';src:url('/generator-fonts/Alcyone-Medium.woff2');font-weight:500;font-display:swap}
+@font-face{font-family:'Alcyone';src:url('/generator-fonts/Alcyone-SemiBold.woff2');font-weight:600;font-display:swap}
+@font-face{font-family:'Alcyone';src:url('/generator-fonts/Alcyone-Bold.woff2');font-weight:700;font-display:swap}
+@font-face{font-family:'Alcyone';src:url('/generator-fonts/Alcyone-Black.woff2');font-weight:800 900;font-display:swap}
+@font-face{font-family:'Alcyone UI';src:url('/generator-fonts/Alcyone-Regular.woff2');font-weight:400;font-display:swap}
+@font-face{font-family:'Alcyone UI';src:url('/generator-fonts/Alcyone-Medium.woff2');font-weight:500;font-display:swap}
+@font-face{font-family:'Alcyone UI';src:url('/generator-fonts/Alcyone-SemiBold.woff2');font-weight:600;font-display:swap}
+@font-face{font-family:'Alcyone UI';src:url('/generator-fonts/Alcyone-Bold.woff2');font-weight:700 900;font-display:swap}
+.promotion-root{min-height:100vh;isolation:isolate;font-family:'Alcyone UI',Alcyone,system-ui,sans-serif;font-size:16px;line-height:normal;-webkit-font-smoothing:antialiased}
+.promotion-root[data-theme="light"]{background:#f7f7f9;color:#111318}
+.promotion-root[data-theme="dark"]{background:#07080d;color:#f3f4f7}
+.promotion-root *{box-sizing:border-box}
+.promotion-root button:disabled{cursor:wait;opacity:.55}
+.promotion-root [data-ab-name]{white-space:normal;overflow-wrap:anywhere}
+.promotion-root [data-ab-name]::first-line{line-height:1.12}
+.promotion-root[data-status="error"] [data-ab="promo-saved"]{color:#c8213d!important}
+.promotion-root[data-status="success"] [data-ab="promo-gen"]{background:#1a8a4a!important;color:#fff!important}
+.promotion-root [data-ab="promo-gen"]{white-space:normal!important;text-align:center;line-height:1.2!important}
+.promotion-root [data-ab="promo-swipe"]{width:100%;min-width:0;touch-action:pan-y;outline-offset:4px}
+.promotion-root .promotion-work-library{min-width:0}
+.promotion-root [data-ab="promo-work-card"]{min-width:0;max-width:100%;border-radius:12px;outline-offset:5px}
+.promotion-root [data-ab="promo-work-card"]>span:last-child{min-width:0;width:100%}
+.promotion-root [data-ab="promo-work-card"]>span:last-child>span{display:-webkit-box!important;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere;line-height:1.35;min-height:2.7em}
+.promotion-root [data-ab="promo-work-card"]:focus-visible{outline:2px solid #1673f2}
+.promotion-root .promotion-library-tools{display:flex;flex-direction:column;gap:12px;min-width:0}
+.promotion-root .promotion-library-filters{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:14px}
+.promotion-root .promotion-library-filters label{display:flex;flex-direction:column;gap:8px;min-width:0;font-size:12px;font-weight:700;color:#4a5061}
+.promotion-root .promotion-library-filters label>div{display:flex;align-items:center;gap:10px;min-height:46px;padding:0 12px;border:1px solid #e3e6ee;border-radius:13px;background:#f7f7f9;color:#6b7184;transition:border-color .15s,box-shadow .15s}
+.promotion-root .promotion-library-filters label>div:focus-within{border-color:#1673f2;box-shadow:0 0 0 3px #1673f214}
+.promotion-root .promotion-library-filters svg{flex-shrink:0}
+.promotion-root .promotion-library-filters input,.promotion-root .promotion-library-filters select{width:100%;min-width:0;height:44px;border:0;outline:0;background:transparent;color:#111318;font:500 13px 'Alcyone UI',sans-serif}
+.promotion-root .promotion-library-filters input{padding:0;appearance:none}
+.promotion-root .promotion-library-filters :is(input,select):focus{box-shadow:none!important;outline:none!important}
+.promotion-root .promotion-library-filters select{cursor:pointer}
+.promotion-root .promotion-library-filters option{background:#fff;color:#111318}
+.promotion-root .promotion-library-search input::-webkit-search-cancel-button{display:none}
+.promotion-root .promotion-library-search button{display:flex;align-items:center;justify-content:center;width:26px;height:26px;padding:0;border:0;background:transparent;color:inherit;border-radius:50%;cursor:pointer}
+.promotion-root .promotion-library-results{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:24px;color:#6b7184;font-size:12px}
+.promotion-root .promotion-library-results button{padding:0;border:0;background:transparent;color:#1665d8;font:600 12px 'Alcyone UI',sans-serif;cursor:pointer}
+.promotion-root .promotion-library-empty{display:flex;flex-direction:column;align-items:center;gap:10px;padding:28px 18px;border:1px dashed #dfe2ea;border-radius:14px;text-align:center;color:#6b7184;font-size:13px;line-height:1.5}
+.promotion-root .promotion-library-empty strong{color:#111318;font-size:15px}
+.promotion-root[data-theme="dark"] .promotion-library-filters label,.promotion-root[data-theme="dark"] .promotion-library-results{color:#a8adbd}
+.promotion-root[data-theme="dark"] .promotion-library-filters label>div{background:#171a24;border-color:#3b4050;color:#a8adbd}
+.promotion-root[data-theme="dark"] .promotion-library-filters input,.promotion-root[data-theme="dark"] .promotion-library-filters select,.promotion-root[data-theme="dark"] .promotion-library-empty strong{color:#f3f4f7}
+.promotion-root[data-theme="dark"] .promotion-library-filters option{background:#171a24;color:#f3f4f7}
+.promotion-root[data-theme="dark"] .promotion-library-results button{color:#78aaff}
+.promotion-root[data-theme="dark"] .promotion-library-empty{border-color:#3b4050;color:#a8adbd}
+@media(max-width:540px){.promotion-root .promotion-library-filters{grid-template-columns:minmax(0,1fr);gap:12px}}
+.promotion-root .promotion-slide-navigation{display:flex;align-items:center;justify-content:center;gap:18px;padding:2px 4px}
+.promotion-root .promotion-slide-navigation button{display:inline-flex;align-items:center;justify-content:center;flex:0 0 36px;width:36px;height:36px;min-height:36px;border:1px solid #dfe2ea;border-radius:50%;background:transparent;color:inherit;cursor:pointer;padding:0}
+.promotion-root .promotion-slide-navigation button:disabled{opacity:.35;cursor:default}
+.promotion-root .promotion-slide-navigation span{min-width:96px;text-align:center;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+.promotion-root[data-theme="dark"] .promotion-slide-navigation button{border-color:#3b4050}
+.promotion-root .promotion-carousel-overview{display:flex;flex-direction:column;gap:8px;padding:2px 4px 0;min-width:0}
+.promotion-root .promotion-overview-heading{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 10px;color:#6b7184}
+.promotion-root .promotion-overview-heading strong{font-size:11.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#3b4050}
+.promotion-root .promotion-overview-heading span{font-size:12px;font-weight:600}
+.promotion-root .promotion-overview-mat{padding:10px;border-radius:14px;background:#f4f5f8}
+.promotion-root .promotion-overview-slides{display:flex;gap:0;overflow:hidden;border-radius:4px;box-shadow:0 6px 16px rgba(17,19,24,.1)}
+.promotion-root .promotion-overview-frame{position:relative;flex:1 1 0;min-width:0}
+.promotion-root .promotion-overview-frame [data-ab-stage]{border-radius:0!important;box-shadow:none!important}
+.promotion-root[data-theme="dark"] .promotion-overview-heading{color:#969cad}
+.promotion-root[data-theme="dark"] .promotion-overview-heading strong{color:#dce0ec}
+.promotion-root[data-theme="dark"] .promotion-overview-mat{background:#171a24}
+.promotion-root .promotion-collection-title{display:flex;flex-direction:column;gap:8px;font-size:12px;font-weight:700}
+.promotion-root .promotion-collection-title input{height:46px;width:100%;padding:0 16px;border:1px solid #e3e6ee;border-radius:12px;background:#f7f7f9;color:#111318;font:600 14px 'Alcyone UI',Alcyone,sans-serif}
+.promotion-root[data-theme="dark"] .promotion-collection-title input{border-color:#3b4050;background:#171a24;color:#f3f4f7}
+.promotion-root .promotion-controls{display:flex;flex-direction:column;gap:14px;padding:28px;background:#fff;border:1px solid #e3e6ee;border-radius:24px;min-width:0}
+.promotion-root .promotion-controls h2{font-size:20px;margin:0;font-weight:700}
+.promotion-root .promotion-controls p{font-size:14px;line-height:1.5;margin:0;color:#6b7184}
+.promotion-root .promotion-controls label{display:flex;flex-direction:column;gap:8px;font-size:13px;font-weight:700;min-width:0}
+.promotion-root .promotion-controls select{width:100%;min-width:0;max-width:100%;padding:12px;border:1px solid #e3e6ee;border-radius:12px;background:#f7f7f9;color:inherit;font:inherit}
+.promotion-root .promotion-controls input[type="range"]{width:100%;accent-color:#1673f2}
+.promotion-root .promotion-controls button{padding:8px 14px;border:1px solid #e3e6ee;background:transparent;color:inherit;border-radius:16px;font:600 13px 'Alcyone UI',sans-serif;cursor:pointer}
+.promotion-root .promotion-controls button:disabled{cursor:default;opacity:.35}
+.promotion-root .promotion-controls [role="alert"]{color:#c8213d}
+.promotion-root .promotion-selection-order{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
+.promotion-root .promotion-selection-order li{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px}
+.promotion-root .promotion-selection-order li>span{min-width:0;overflow-wrap:anywhere}
+.promotion-root .promotion-selection-order li>div{flex-shrink:0;display:flex;gap:4px}
+.promotion-root .promotion-selection-order li>div button{display:inline-flex;align-items:center;justify-content:center;width:32px;height:34px;padding:0;border-radius:50%}
+.promotion-root .promotion-selection-order .promotion-remove-work{color:#6b7184}
+.promotion-root .promotion-selection-order .promotion-remove-work:hover{background:#fff0f3;border-color:#edc1ca;color:#be2545}
+.promotion-root .promotion-collage-hint{font-size:12px;font-weight:500;line-height:1.5;color:#6b7184}
+.promotion-root[data-theme="dark"] .promotion-collage-hint,.promotion-root[data-theme="dark"] .promotion-selection-order .promotion-remove-work{color:#a8adbd}
+.promotion-root[data-theme="dark"] .promotion-selection-order .promotion-remove-work:hover{background:#39202b;color:#ffc1d0;border-color:#6e3447}
+@media(max-width:540px){.promotion-root .promotion-selection-order li{gap:7px;padding:6px 0}.promotion-root .promotion-order-thumbnail{width:36px;height:36px;flex-basis:36px}.promotion-root .promotion-drag-handle{padding:5px 7px!important}.promotion-root .promotion-selection-order li>span{font-size:12px}.promotion-root .promotion-selection-order li>div button{width:28px;height:30px}}
+.promotion-root .promotion-crop-ranges{display:grid;gap:16px}
+.promotion-root[data-theme="dark"] .promotion-controls{background:#11151f;border-color:#3b4050}
+.promotion-root[data-theme="dark"] .promotion-controls select{background:#171a24;border-color:#3b4050}
+.promotion-root[data-theme="dark"] .promotion-controls p{color:#a8adbd}
+.promotion-root .promotion-controls-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.promotion-root .promotion-controls-body{display:flex;flex-direction:column;gap:14px}
+.promotion-root .promotion-controls-body[hidden]{display:none}
+.promotion-root .promotion-drag-handle{touch-action:none;cursor:grab!important;padding:6px 10px!important;font-size:22px!important;flex-shrink:0}
+.promotion-root .promotion-selection-order li>span{flex:1}
+.promotion-root .promotion-selection-order li[data-dragging="true"]{opacity:.5}
+.promotion-root .promotion-selection-order li[data-drop-target="true"]{outline:2px solid #1673f2;border-radius:12px}
+.promotion-root .promotion-controls input:not([type="range"]){width:100%;padding:12px;border:1px solid #e3e6ee;border-radius:12px;background:transparent;color:inherit;font:inherit}
+.promotion-root .promotion-header-summary{display:block;color:#6b7184;font-size:11px;font-weight:600;letter-spacing:0;line-height:1.6;overflow-wrap:anywhere}
+.promotion-root[data-theme="dark"] .promotion-header-summary{color:#a8adbd}
+.promotion-root [data-ab="promo-preview"]{max-height:calc(100dvh - var(--promotion-header-height,68px) - 32px);overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:contain;scrollbar-gutter:stable;top:calc(var(--promotion-header-height,68px) + 16px)!important}
+.promotion-root [data-ab="promo-preview"]{scrollbar-width:none;-ms-overflow-style:none;scrollbar-gutter:auto}
+.promotion-root [data-ab="promo-preview"]::-webkit-scrollbar{display:none;width:0;height:0}
+.promotion-root .promotion-order-thumbnail{width:44px;height:44px;flex:0 0 44px;object-fit:cover;border-radius:9px;pointer-events:none}
+.promotion-root .promotion-selection-order li{padding:6px 8px;border-radius:12px;transition:box-shadow .18s ease,background-color .18s ease,opacity .18s ease}
+.promotion-root .promotion-selection-order li[data-dragging="true"]{opacity:.4;background:#e8edf8;box-shadow:0 8px 22px rgba(17,19,24,.15);transform:scale(1.025)}
+.promotion-root .promotion-drag-preview{position:fixed;z-index:100;display:flex;align-items:center;gap:12px;max-width:260px;padding:10px 14px;background:#fff;color:#111318;border:1px solid #1673f2;border-radius:14px;box-shadow:0 16px 40px rgba(17,19,24,.28);transform:rotate(-2deg) scale(1.03);pointer-events:none}
+.promotion-root .promotion-drag-preview img{width:48px;height:48px;object-fit:cover;border-radius:8px}
+.promotion-root .promotion-drag-preview span{font-size:13px;font-weight:700;overflow-wrap:anywhere}
+.promotion-root[data-theme="dark"] .promotion-drag-preview{background:#171a24;color:#f3f4f7}
+.promotion-root[data-theme="dark"] .promotion-selection-order li[data-dragging="true"]{background:#222a3c}
+@media(prefers-reduced-motion:reduce){.promotion-root .promotion-selection-order li{transition:none}.promotion-root .promotion-drag-preview{transform:none}}
+@media(max-width:900px){.promotion-root [data-ab="promo-preview"]{max-height:75dvh!important;overflow-y:auto!important;top:auto!important}}
+@media(max-width:900px){.promotion-root{max-width:100%;overflow-x:clip}.promotion-root [data-ab="promo-actions"]{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr)}}

@@ -48,6 +48,20 @@ interface OpportunityApplicationMailData {
   artworkUrls: string[];
 }
 
+interface OpportunitySubmissionMailData {
+  submissionId: string;
+  title: string;
+  organization: string;
+  contactEmail: string;
+}
+
+interface OpportunityReviewMailData {
+  recipientEmail: string;
+  title: string;
+  approved: boolean;
+  reviewNotes?: string | null;
+}
+
 /**
  * We keep the existing service name so the rest of the application does not
  * need to change, but the transport is the Resend API.
@@ -80,6 +94,33 @@ export class ResendMailService {
     );
   }
 
+  async sendArtistDeletionAcknowledgement(data: { requestId: string; email: string; name: string; dueAt: Date }) {
+    const response = await this.sendWithLogging({ mailType: "artist deletion acknowledgement", recipients: [data.email], html: `<p>${escapeHtml(data.name)}, zahtjev za brisanje je evidentiran.</p><p>Nalog ostaje aktivan do pregleda. Rok za odgovor: ${data.dueAt.toISOString().slice(0,10)}.</p><p>info@artstudio360.me</p>`,
+      idempotencyKey: `artist-deletion:${data.requestId}:ack`, subject: "ArtBoard — zahtjev za brisanje naloga je evidentiran",
+      text: `${data.name}, zahtjev ${data.requestId} je evidentiran. Nalog ostaje aktivan dok tim ne pregleda zahtjev. Odgovorićemo najkasnije do ${data.dueAt.toISOString().slice(0,10)}. Kontakt: info@artstudio360.me.` });
+    if (!response.data?.id) throw new InternalServerErrorException("Mail was not accepted.");
+  }
+  async sendArtistDeletionNotification(data: { requestId: string; email: string; name: string; dueAt: Date }) {
+    const response = await this.sendWithLogging({ mailType: "artist deletion notification", recipients: this.getAdminRecipients(), html: `<p>Novi zahtjev za brisanje: ${escapeHtml(data.name)} (${escapeHtml(data.email)}).</p><p>Zahtjev: ${data.requestId}. Rok: ${data.dueAt.toISOString().slice(0,10)}.</p>`,
+      idempotencyKey: `artist-deletion:${data.requestId}:admin`, subject: "ArtBoard — novi zahtjev za brisanje naloga",
+      text: `Zahtjev: ${data.requestId}\nUmjetnik: ${data.name}\nE-mail: ${data.email}\nRok za odgovor: ${data.dueAt.toISOString()}\nPregled: ${env.siteBaseUrl}/admin/artist-deletion-requests\nOvo obavještenje ne pokreće brisanje.` });
+    if (!response.data?.id) throw new InternalServerErrorException("Mail was not accepted.");
+  }
+
+  async sendContactMessage(data: { fullName: string; email: string; topic: "services" | "support" | "other"; message: string; receivedAt: Date; operationKey: string }) {
+    const topic = { services: "Usluge", support: "Podrška", other: "Ostalo" }[data.topic];
+    const receivedAt = data.receivedAt.toISOString();
+    const response = await this.sendWithLogging({
+      mailType: "contact message", recipients: ["info@artstudio360.me"], replyTo: data.email,
+      idempotencyKey: `artboard-contact:${data.operationKey}`,
+      subject: `[ArtBoard Kontakt] ${topic} — ${data.fullName}`,
+      text: [`Ime i prezime: ${data.fullName}`, `E-mail: ${data.email}`, `Tema: ${topic}`, `Vrijeme prijema: ${receivedAt}`, "", data.message].join("\n"),
+      html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2430"><p><strong>Ime i prezime:</strong> ${escapeHtml(data.fullName)}</p><p><strong>E-mail:</strong> ${escapeHtml(data.email)}</p><p><strong>Tema:</strong> ${escapeHtml(topic)}</p><p><strong>Vrijeme prijema:</strong> ${receivedAt}</p><div style="white-space:pre-wrap">${escapeHtml(data.message)}</div></div>`,
+    });
+    if (!response.data?.id) throw new InternalServerErrorException("Contact delivery was not accepted.");
+    return { providerMessageId: response.data.id };
+  }
+
   async sendArtistSubmissionNotification(data: SubmissionMailData) {
     this.assertConfigured();
 
@@ -107,6 +148,64 @@ export class ResendMailService {
       mailType: "artist submission notification",
       recipients: this.getAdminRecipients(),
       subject,
+      text,
+      html,
+    });
+  }
+
+  async sendOpportunitySubmissionNotification(data: OpportunitySubmissionMailData) {
+    this.assertConfigured();
+
+    const adminUrl = `${env.siteBaseUrl.replace(/\/$/, "")}/admin/opportunities/${data.submissionId}`;
+    const subject = `Novi oglas za provjeru: ${data.title}`;
+    const text = [
+      "Primljen je novi oglas za ArtBoard Oglasnu tablu.",
+      `Naslov: ${data.title}`,
+      `Organizator: ${data.organization}`,
+      `Kontakt: ${data.contactEmail}`,
+      `Pregled: ${adminUrl}`,
+    ].join("\n");
+    const html = `
+      <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2430">
+        <p>Primljen je novi oglas za ArtBoard Oglasnu tablu.</p>
+        <p><strong>Naslov:</strong> ${escapeHtml(data.title)}</p>
+        <p><strong>Organizator:</strong> ${escapeHtml(data.organization)}</p>
+        <p><strong>Kontakt:</strong> ${escapeHtml(data.contactEmail)}</p>
+        <p><a href="${escapeHtml(adminUrl)}">Pregledaj oglas u administraciji</a></p>
+      </div>
+    `;
+
+    await this.sendWithLogging({
+      mailType: "opportunity submission notification",
+      recipients: this.getAdminRecipients(),
+      subject,
+      text,
+      html,
+    });
+
+    await this.sendWithLogging({
+      mailType: "opportunity submission confirmation",
+      recipients: [data.contactEmail],
+      subject: `Primili smo tvoj oglas: ${data.title}`,
+      text: `Hvala! Primili smo oglas "${data.title}". ArtBoard tim će ga pregledati i obavijestiti te o odluci.`,
+      html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2430"><p>Hvala!</p><p>Primili smo oglas <strong>${escapeHtml(data.title)}</strong>. ArtBoard tim će ga pregledati i obavijestiti te o odluci.</p></div>`,
+    });
+  }
+
+  async sendOpportunityReviewNotification(data: OpportunityReviewMailData) {
+    this.assertConfigured();
+    const decision = data.approved ? "odobren" : "odbijen";
+    const notes = data.reviewNotes?.trim();
+    const text = [
+      `Tvoj oglas "${data.title}" je ${decision}.`,
+      notes ? `Napomena ArtBoard tima: ${notes}` : null,
+    ].filter(Boolean).join("\n\n");
+    const html = `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2430"><p>Tvoj oglas <strong>${escapeHtml(data.title)}</strong> je ${decision}.</p>${notes ? `<p><strong>Napomena ArtBoard tima:</strong> ${escapeHtml(notes)}</p>` : ""}</div>`;
+
+    await this.sendWithLogging({
+      mailType: "opportunity review notification",
+      recipients: [data.recipientEmail],
+      subject: `ArtBoard oglas je ${decision}: ${data.title}`,
       text,
       html,
     });
@@ -269,6 +368,8 @@ export class ResendMailService {
     subject: string;
     text: string;
     html: string;
+    replyTo?: string;
+    idempotencyKey?: string;
   }) {
     this.assertConfigured();
 
@@ -303,7 +404,8 @@ export class ResendMailService {
         subject,
         text: `${testNoticeText}${input.text}`,
         html: `${testNoticeHtml}${input.html}`,
-      });
+        ...(input.replyTo ? { replyTo: input.replyTo } : {}),
+      }, input.idempotencyKey ? { idempotencyKey: input.idempotencyKey } : undefined);
 
       if (response.error) {
         console.error(`[mail] Resend returned an error for ${input.mailType}.`, response.error);

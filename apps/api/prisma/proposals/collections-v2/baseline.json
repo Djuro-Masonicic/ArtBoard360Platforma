@@ -1,0 +1,8 @@
+{
+  "activeSchemaSha256": "d366ac076e241de53ab74c78100b4756aa09715a0d0415cf8e962e7ed6097693",
+  "activeMigration": "20261026193000_portfolio_profile_fields",
+  "collectionSchemaVersion": {
+    "legacy": 1,
+    "collections": 2
+  }
+}

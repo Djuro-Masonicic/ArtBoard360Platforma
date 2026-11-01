@@ -17,7 +17,7 @@
   left: 0;
   z-index: 3;
   height: 2px;
-  background: linear-gradient(90deg, #287cff 0%, #7f61e8 30%, #ef3b82 56%, #ff4a5e 73%, #ff9f32 100%);
+  background: #ff2d55;
   content: "";
   pointer-events: none;
 }
@@ -25,6 +25,14 @@
 .frameMenuOpen {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
+}
+
+.submissionFrame {
+  background: #f7f7f9;
+}
+
+.submissionFrame::after {
+  background: linear-gradient(90deg, #ff174b, #a037ff, #167aff, #ffd128, #ff174b);
 }
 
 .shell {
@@ -37,6 +45,11 @@
   align-items: center;
   gap: 24px;
   margin: 0 auto;
+}
+
+.submissionShell {
+  width: min(84vw, 1360px);
+  grid-template-columns: 135px minmax(0, 1fr) 330px;
 }
 
 .brand {
@@ -170,9 +183,53 @@
   transform: translateY(-1px);
 }
 
+.submitOpportunityLink {
+  width: 220px;
+  white-space: nowrap;
+  font-size: 12px;
+}
+
 .menuButton,
 .mobileMenu {
   display: none;
+}
+
+.portfolioMobileAction { display: none; }
+
+.portfolioFrame {
+  border-top: 0;
+  background: rgba(247, 247, 249, .82);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+}
+
+.portfolioFrame::after {
+  height: 1.5px;
+  background: linear-gradient(90deg, #0d74ff, #0d74ff 12%, #8a3bf2 32%, #fe171d 52%, #ff8a1f 76%, #ffd31b);
+  background-size: 200% 100%;
+  animation: portfolioGradient 16s cubic-bezier(.45, .05, .55, .95) infinite alternate;
+}
+
+.portfolioFrame .shell {
+  width: 100%;
+  max-width: 1280px;
+  height: 68px;
+  grid-template-columns: 140px minmax(0, 1fr) 226px;
+  gap: clamp(16px, 3vw, 40px);
+  padding: 14px clamp(20px, 4vw, 56px);
+}
+
+.portfolioFrame .navigation { gap: clamp(12px, 1.8vw, 26px); }
+.portfolioFrame .navigationLink { gap: 7px; font-size: 14px; font-weight: 800; }
+.portfolioFrame .navigationDot { width: 6px; height: 6px; }
+.portfolioFrame .navigationLink.active { color: #111318; }
+.portfolioFrame .actions { gap: 18px; }
+.portfolioFrame .loginLink { color: #111318; font-size: 12.5px; font-weight: 800; }
+.portfolioFrame .signupLink { width: 130px; height: 38px; background: #111318; font-size: 12px; font-weight: 800; }
+
+@keyframes portfolioGradient {
+  from { background-position: 0% 50%; }
+  to { background-position: 100% 50%; }
 }
 
 @keyframes logoLineDraw {
@@ -375,4 +432,33 @@
   .shell:has(.navigationLink:is(:hover, :focus-visible)) .logo :global(.artboard-logo__dot) {
     animation: none;
   }
+}
+@media (max-width: 1279px) {
+  .portfolioFrame .shell { height: 68px; gap: 12px; padding-block: 10px; }
+  .portfolioFrame .brand { width: 140px; }
+  .portfolioFrame .portfolioMobileAction {
+    display: inline-flex;
+    width: 130px;
+    min-height: 38px;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-left: auto;
+    border-radius: 999px;
+    background: #111318;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+  .portfolioFrame .menuButton { width: 38px; height: 38px; flex-shrink: 0; border: 1px solid #e3e5eb; border-radius: 50%; }
+  .portfolioFrame .menuButton svg { width: 19px; height: 19px; }
+}
+@media (max-width: 359px) {
+  .portfolioFrame .shell { gap: 8px; padding-inline: 16px; }
+  .portfolioFrame .brand { width: 110px; }
+  .portfolioFrame .portfolioMobileAction { width: 105px; font-size: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .portfolioFrame::after { animation: none; }
 }

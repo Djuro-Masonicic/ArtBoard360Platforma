@@ -8,7 +8,7 @@ import styles from "@/app/usluge/services-page.module.css";
 
 const avatarRoot = "https://cdn.prod.website-files.com/682769f4e1ebd752d0c3e3ec";
 
-type Testimonial = {
+export type SharedTestimonial = {
   author: string;
   company: string;
   content: string;
@@ -21,7 +21,7 @@ type ArtistAvatar = {
   avatarUrl: string;
 };
 
-const testimonials: Testimonial[] = [
+export const sharedTestimonials: SharedTestimonial[] = [
   {
     author: "Anita Grgurević",
     company: "Umjetnica",
@@ -262,7 +262,7 @@ export function ServicesTestimonialRail({
     return (
       <div className={`${styles.testimonialRailShell} ${styles.artboardVariant}`}>
         <div className={styles.artboardGrid}>
-          {testimonials.slice(0, 6).map((testimonial, index) => (
+          {sharedTestimonials.slice(0, 6).map((testimonial, index) => (
             <article
               className={styles.testimonialCard}
               data-testimonial-card-reveal
@@ -291,7 +291,7 @@ export function ServicesTestimonialRail({
   }
 
   if (variant === "home") {
-    const rows = [testimonials.slice(0, 9), testimonials.slice(9)];
+    const rows = [sharedTestimonials.slice(0, 9), sharedTestimonials.slice(9)];
 
     return (
       <div className={`${styles.testimonialRailShell} ${styles.homeVariant}`}>
@@ -368,7 +368,7 @@ export function ServicesTestimonialRail({
         role="region"
       >
         {[0, 1].flatMap((groupIndex) =>
-          testimonials.map((testimonial, testimonialIndex) => (
+          sharedTestimonials.map((testimonial, testimonialIndex) => (
             <article
               aria-hidden={groupIndex === 1}
               className={styles.testimonialCard}

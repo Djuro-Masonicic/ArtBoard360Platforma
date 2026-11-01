@@ -64,6 +64,7 @@ export function ArtBoardPlatformHero({ artworks }: { artworks: HeroArtworkPrevie
   return (
     <section
       ref={sectionRef}
+      id="hero"
       className={`artboard-redesign-hero ${isReady ? "artboard-redesign-hero--ready" : ""}`}
     >
       <div className="artboard-redesign-hero__ambient" aria-hidden="true" />

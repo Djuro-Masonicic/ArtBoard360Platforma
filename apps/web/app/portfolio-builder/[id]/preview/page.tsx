@@ -1,5 +1,5 @@
 import { PortfolioPdfPreview } from "@/components/portfolio-pdf-preview";
-import { getPublicPortfolioProject } from "@/services/portfolio-projects";
+import { getPortfolioForPage } from "@/lib/portfolio-project-access";
 
 type Props = {
   params: Promise<{
@@ -9,7 +9,7 @@ type Props = {
 
 export default async function PortfolioBuilderPreviewPage({ params }: Props) {
   const { id } = await params;
-  const project = await getPublicPortfolioProject(id);
+  const project = await getPortfolioForPage(id, true);
 
   return <PortfolioPdfPreview mode="preview" project={project} />;
 }

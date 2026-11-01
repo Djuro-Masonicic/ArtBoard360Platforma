@@ -45,6 +45,7 @@ export default async function AdminPortfoliosPage({ searchParams }: AdminPortfol
       </section>
 
       <section className="rounded-[28px] border border-[#dde4ef] bg-white/95 px-6 py-6 shadow-[0_16px_44px_rgba(31,46,86,0.05)]">
+        <NavigationButton href="/admin/portfolio-purchases" className="mb-5 inline-flex rounded-full border px-5 py-2">Kupovine i isporuka PDF-a</NavigationButton>
         <form className="grid gap-4 md:grid-cols-[minmax(0,1fr)_160px]" method="GET">
           <input
             className="h-12 rounded-full border border-[#d7dee9] bg-white px-5 text-[16px] text-[#2f3138] outline-none transition focus:border-[#182fc7]"

@@ -1,8 +1,9 @@
-import { Body, Controller, Delete, Param, ParseUUIDPipe, Patch, Post, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { Body, Controller, Delete, Param, ParseUUIDPipe, Patch, Post, Req, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { memoryStorage } from "multer";
 
 import { env } from "../../config/env";
+import { ArtistAuthGuard, type ArtistRequest } from "../auth/artist-auth.guard";
 import { ArtworksService } from "./artworks.service";
 import {
   CreateArtworkDto,
@@ -23,11 +24,13 @@ export class ArtworksController {
   constructor(private readonly artworksService: ArtworksService) {}
 
   @Post("upload-url")
-  requestUploadUrl(@Body() dto: RequestUploadUrlDto) {
-    return this.artworksService.requestUploadUrl(dto);
+  @UseGuards(ArtistAuthGuard)
+  requestUploadUrl(@Req() request: ArtistRequest, @Body() dto: RequestUploadUrlDto) {
+    return this.artworksService.requestUploadUrl(request.artistUser!.artistId, dto);
   }
 
   @Post("upload")
+  @UseGuards(ArtistAuthGuard)
   @UseInterceptors(
     FileInterceptor("file", {
       storage: memoryStorage(),
@@ -37,35 +40,48 @@ export class ArtworksController {
     }),
   )
   uploadArtwork(
+    @Req() request: ArtistRequest,
     @UploadedFile() file: Express.Multer.File | undefined,
     @Body() dto: UploadArtworkFileDto,
   ) {
-    return this.artworksService.uploadArtworkFile(file, dto);
+    return this.artworksService.uploadArtworkFile(request.artistUser!.artistId, file, dto);
   }
 
   @Post()
-  createArtwork(@Body() dto: CreateArtworkDto) {
-    return this.artworksService.createArtwork(dto);
+  @UseGuards(ArtistAuthGuard)
+  createArtwork(@Req() request: ArtistRequest, @Body() dto: CreateArtworkDto) {
+    return this.artworksService.createArtwork(request.artistUser!.artistId, dto);
   }
 
   @Post("reorder")
-  reorderArtworks(@Body() dto: ReorderArtworksDto) {
-    return this.artworksService.reorderArtworks(dto);
+  @UseGuards(ArtistAuthGuard)
+  reorderArtworks(@Req() request: ArtistRequest, @Body() dto: ReorderArtworksDto) {
+    return this.artworksService.reorderArtworks(request.artistUser!.artistId, dto);
   }
 
   @Patch(":id")
+  @UseGuards(ArtistAuthGuard)
   updateArtwork(
+    @Req() request: ArtistRequest,
     @Param("id", new ParseUUIDPipe({ version: "4" })) id: string,
     @Body() dto: UpdateArtworkDto,
   ) {
-    return this.artworksService.updateArtwork(id, dto);
+    return this.artworksService.updateArtwork(request.artistUser!.artistId, id, dto);
+  }
+
+  @Post(":id/image") @UseGuards(ArtistAuthGuard)
+  @UseInterceptors(FileInterceptor("file", { storage: memoryStorage(), limits: { fileSize: env.maxUploadFileSizeBytes } }))
+  replaceImage(@Req() request: ArtistRequest, @Param("id", new ParseUUIDPipe({ version: "4" })) id: string, @UploadedFile() file?: Express.Multer.File) {
+    return this.artworksService.replaceImage(request.artistUser!.artistId, id, file);
   }
 
   @Delete(":id")
+  @UseGuards(ArtistAuthGuard)
   deleteArtwork(
+    @Req() request: ArtistRequest,
     @Param("id", new ParseUUIDPipe({ version: "4" })) id: string,
     @Body() dto: DeleteArtworkDto,
   ) {
-    return this.artworksService.deleteArtwork(id, dto);
+    return this.artworksService.deleteArtwork(request.artistUser!.artistId, id, dto);
   }
 }
