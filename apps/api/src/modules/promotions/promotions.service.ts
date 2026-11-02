@@ -10,6 +10,7 @@ import { PromotionStorage } from './promotion.storage';
 import { PromotionGenerator,type PromotionSnapshot } from './promotion.generator';
 import { promotionUsage } from './promotion.access';
 import { qrBundle } from '../qr-cards/qr-card.zip';
+import { joinPromotionSlides } from './promotion-slide-strip';
 import { GeneratePromotionDto,SavePromotionDto } from './promotions.dto';
 const json=(v:unknown)=>JSON.parse(JSON.stringify(v)) as Prisma.InputJsonValue;
 const hash=(v:unknown)=>createHash('sha256').update(typeof v==='string'||Buffer.isBuffer(v)?v:JSON.stringify(v)).digest('hex');
@@ -131,9 +132,15 @@ export class PromotionsService implements OnModuleInit,OnModuleDestroy {
     const contents=[];
     for(const f of files){if(!f)throw new NotFoundException();const body=await this.storage.read(id,f.storagePath);if(hash(body)!==f.contentHash)throw new ServiceUnavailableException('Provjera datoteke nije uspjela.');contents.push({name:`ArtBoard-objava-${row.versionNumber}-${String(f.slide+1).padStart(2,'0')}.png`,body});}
     if(format==='thumbnail')return {body:await sharp(contents[0]!.body).resize(180,240).png().toBuffer(),mime:'image/png',name:'thumbnail.png'};
+    const snapshot=row.snapshot as unknown as PromotionSnapshot;
+    if(format==='bundle'&&contents.length>1&&[3,6,8,9].includes(snapshot.config.template)){
+      if(files.length!==selected(snapshot.config,snapshot.rendererVersion).slides||files.some((f,index)=>f?.slide!==index))throw new ServiceUnavailableException('Nijesu dostupni svi slajdovi objave.');
+      contents.push({name:`ArtBoard-objava-${row.versionNumber}-svi-slajdovi.png`,body:await joinPromotionSlides(contents.map(file=>file.body))});
+    }
+    const file=format==='bundle'&&contents.length>1?{body:qrBundle(contents),mime:'application/zip',name:`ArtBoard-objava-${row.versionNumber}.zip`}:{...contents[0]!,mime:'image/png'};
     // A read failure never increments the successful delivery counter.
     await this.prisma.promotionGeneration.update({where:{id},data:{downloadCount:{increment:1},lastDownloadedAt:new Date()}});
-    return format==='bundle'&&contents.length>1?{body:qrBundle(contents),mime:'application/zip',name:`ArtBoard-objava-${row.versionNumber}.zip`}:{...contents[0]!,mime:'image/png'};
+    return file;
   }
   async tick(){
     if(this.running||this.stopped||!this.generator.available||!this.storage.available||!await this.ready())return;

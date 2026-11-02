@@ -7,7 +7,27 @@ const generate=(a,c,key=randomUUID())=>h.request('/generations',a,'POST',{config
 async function sliderConfig(a){const c=await config(a),w=await h.prisma.artwork.create({data:{artistId:a.id,title:'Second',description:'Second description',imageUrl:'https://storage.invalid/second-'+randomUUID()+'.png'}});return {...c,template:6,publicationTitle:'Test publication',artworkIds:[a.work.id,w.id]};}
 
 async function work(){h.service.stopped=false;try{for(let i=0;i<60;i++){await h.service.tick();if(!await h.prisma.promotionGeneration.count({where:{OR:[{status:'QUEUED'},{status:'PROCESSING',leaseUntil:{lt:new Date()}}]}}))return;}throw Error('Test queue did not drain');}finally{h.service.stopped=true;}}
-async function fastRenderer(){const real=h.generator.generate.bind(h.generator);h.generator.generate=async(s,onSlide)=>{for(let i=0;i<selected(s.config,s.rendererVersion).slides;i++)await onSlide(h.image,i);};return ()=>h.generator.generate=real;}
+async function fastRenderer(){const real=h.generator.generate.bind(h.generator),image=await require('sharp')(h.image).resize(1080,1440).png().toBuffer();h.generator.generate=async(s,onSlide)=>{for(let i=0;i<selected(s.config,s.rendererVersion).slides;i++)await onSlide(image,i);};return ()=>h.generator.generate=real;}
+
+function zipEntries(bytes){
+  const files=new Map();let offset=0;
+  while(bytes.readUInt32LE(offset)===0x04034b50){
+    assert.equal(bytes.readUInt16LE(offset+8),0);
+    const size=bytes.readUInt32LE(offset+18),nameLength=bytes.readUInt16LE(offset+26),extraLength=bytes.readUInt16LE(offset+28),start=offset+30+nameLength+extraLength;
+    files.set(bytes.subarray(offset+30,offset+30+nameLength).toString(),bytes.subarray(start,start+size));offset=start+size;
+  }
+  return files;
+}
+async function assertJoinedArchive(zip,row){
+  const sharp=require('sharp'),files=zipEntries(zip),joined=files.get(`ArtBoard-objava-${row.versionNumber}-svi-slajdovi.png`);
+  assert(joined);assert.equal(files.size,row.files.length+1);
+  const meta=await sharp(joined).metadata();assert.equal(meta.width,1080*row.files.length);assert.equal(meta.height,1440);assert.equal(meta.format,'png');
+  for(const file of row.files){
+    const original=h.storage.objects.get(file.storagePath);
+    assert.deepEqual(files.get(`ArtBoard-objava-${row.versionNumber}-${String(file.slide+1).padStart(2,'0')}.png`),original);
+    assert.deepEqual(await sharp(joined).extract({left:file.slide*1080,top:0,width:1080,height:1440}).ensureAlpha().raw().toBuffer(),await sharp(original).ensureAlpha().raw().toBuffer());
+  }
+}
 
 test('authenticated reads do not create drafts; anonymous writes and forged identities are rejected',async()=>{
   const a=await h.artist(),c=await config(a);
@@ -214,7 +234,8 @@ test('real Chrome output is native 1080×1440 PNG and carousel bundle contains o
   assert.equal(row.status,'READY');assert.equal(row.files.length,5);assert.equal(row.snapshot.rendererVersion,8);
   const sharp=require('sharp'),hashes=[];for(const f of row.files){const body=h.storage.objects.get(f.storagePath),meta=await sharp(body).metadata();assert.equal(meta.width,1080);assert.equal(meta.height,1440);assert.equal(meta.format,'png');hashes.push(createHash('sha256').update(body).digest('hex'));}
   assert.equal(new Set(hashes).size,5);
-  const zip=await h.request(`/generations/${row.id}/download/bundle`,a);assert.equal(zip.data.readUInt32LE(0),0x04034b50);assert.equal(zip.data.readUInt16LE(zip.data.length-12),5);assert(zip.data.indexOf(Buffer.from('-03.png'))<zip.data.indexOf(Buffer.from('-04.png')));
+  const zip=await h.request(`/generations/${row.id}/download/bundle`,a);assert.equal(zip.data.readUInt32LE(0),0x04034b50);assert.equal(zip.data.readUInt16LE(zip.data.length-12),6);assert(zip.data.indexOf(Buffer.from('-03.png'))<zip.data.indexOf(Buffer.from('-04.png')));
+  await assertJoinedArchive(zip.data,row);
 });
 
 test('Panorama generates three private PNGs and one ordered ZIP for a single quota charge',async()=>{
@@ -231,11 +252,42 @@ test('Panorama generates three private PNGs and one ordered ZIP for a single quo
     // The isolated source image is a flat color. Its first two filled crops
     // may be identical; the signed closing crop is distinct.
     assert(new Set(hashes).size>=(version===0?2:3));
-    const zip=await h.request(`/generations/${row.id}/download/bundle`,a);assert.equal(zip.status,200);assert.equal(zip.data.readUInt16LE(zip.data.length-12),3);
+    const zip=await h.request(`/generations/${row.id}/download/bundle`,a);assert.equal(zip.status,200);assert.equal(zip.data.readUInt16LE(zip.data.length-12),4);
+    await assertJoinedArchive(zip.data,row);
     assert(zip.data.indexOf(Buffer.from('-01.png'))<zip.data.indexOf(Buffer.from('-02.png')));assert(zip.data.indexOf(Buffer.from('-02.png'))<zip.data.indexOf(Buffer.from('-03.png')));
     assert.equal((await h.service.get(a.account.id)).usage.used,1);
     assert.equal((await generate(a,c)).data.id,row.id);assert.equal((await h.request(`/generations/${row.id}/download/bundle`,a)).status,200);assert.equal((await h.service.get(a.account.id)).usage.used,1);
   }
+});
+
+test('Grid, Gallery and the maximum eleven-slide Slider include a strip when downloaded from history without storage writes or new quota',async()=>{
+  const restore=await fastRenderer();try{
+    for(const template of [3,6,8]){
+      const a=await h.artist(),c={...await config(a),template,publicationTitle:'Saved collection',collectionTitle:'Collection snapshot'};
+      for(let i=1;i<(template===6?9:4);i++)c.artworkIds.push((await h.prisma.artwork.create({data:{artistId:a.id,title:'Rad '+i,imageUrl:`https://storage.invalid/extra-${i}.png`,orderIndex:i}})).id);
+      const job=await generate(a,c);assert.equal(job.status,201);await work();
+      const row=await h.prisma.promotionGeneration.findUnique({where:{id:job.data.id},include:{files:{orderBy:{slide:'asc'}}}}),writes=h.storage.calls;
+      await h.prisma.artwork.update({where:{id:a.work.id},data:{title:'Changed after generation',imageUrl:'https://storage.invalid/changed.png'}});
+      const first=await h.request(`/generations/${row.id}/download/bundle`,a);assert.equal(first.status,200);await assertJoinedArchive(first.data,row);
+      const second=await h.request(`/generations/${row.id}/download/bundle`,a);assert.deepEqual(second.data,first.data);
+      assert.equal(h.storage.calls,writes);assert.equal((await h.service.get(a.account.id)).usage.used,1);
+      assert.equal(await h.prisma.promotionGeneration.count({where:{artistAccountId:a.account.id}}),1);
+      const individual=await h.request(`/generations/${row.id}/download/0`,a);assert.deepEqual(individual.data,h.storage.objects.get(row.files[0].storagePath));
+    }
+  }finally{restore();}
+});
+
+test('Failed combined delivery never changes its successful download counter, quota or saved files',async()=>{
+  const restore=await fastRenderer();try{
+    const a=await h.artist(),c=await sliderConfig(a),job=await generate(a,c);await work();
+    const row=await h.prisma.promotionGeneration.findUnique({where:{id:job.data.id},include:{files:{orderBy:{slide:'asc'}}}}),path=row.files[1].storagePath,original=h.storage.objects.get(path),writes=h.storage.calls;
+    assert.equal((await h.request(`/generations/${row.id}/download/bundle`,await h.artist())).status,404);
+    h.storage.objects.set(path,Buffer.from('Corrupt isolated PNG'));
+    try{assert.equal((await h.request(`/generations/${row.id}/download/bundle`,a)).status,503);}finally{h.storage.objects.set(path,original);}
+    assert.equal((await h.prisma.promotionGeneration.findUnique({where:{id:row.id}})).downloadCount,0);
+    assert.equal((await h.service.get(a.account.id)).usage.used,1);assert.equal(h.storage.calls,writes);
+    assert.equal((await h.request(`/generations/${row.id}/download/bundle`,a)).status,200);
+  }finally{restore();}
 });
 test('two different simultaneous Free configurations cannot reserve the same entitlement',async()=>{
   const restore=await fastRenderer();try{const a=await h.artist(),c=await config(a),r=await Promise.all([generate(a,{...c,title:'A'}),generate(a,{...c,title:'B'})]);assert.deepEqual(r.map(x=>x.status).sort(),[201,403]);await work();assert.equal((await h.service.get(a.account.id)).usage.used,1);}finally{restore();}

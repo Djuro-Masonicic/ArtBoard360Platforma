@@ -125,6 +125,7 @@ export function PromotionEditor({initial}:{initial:PromotionData}){
           {renderGraphic(theme,view(theme,{...state,slide:i},data.source,()=>{},{history:[]},data.usage),createElement,Fragment)}
         </div>)}
       </div></div>
+      <p className="promotion-overview-note">ZIP sadrži pojedinačne slajdove i spojenu PNG sliku svih slajdova u punoj rezoluciji.</p>
     </section>;
   }
   if(!data.available){v.hasFlash=true;v.flashText='Generisanje nije dostupno dok se ne podese privatni storage i Chrome. Draft i pregled su dostupni.';}
