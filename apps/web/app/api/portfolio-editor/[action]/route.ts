@@ -8,7 +8,7 @@ async function proxy(request: Request, context: { params: Promise<{ action: stri
   const headers = new Headers({ Authorization: `Bearer ${token}` }); const type = request.headers.get("content-type"); if (type) headers.set("Content-Type", type);
   const result = await fetch(`${serverEnv.apiBaseUrl}/portfolio-projects/editor/${action}`, { method: request.method, headers, cache: "no-store", ...(request.method === "POST" ? { body: await request.arrayBuffer() } : {}) });
   const out = new Headers({ "Cache-Control": "no-store" }); for (const key of ["Content-Type", "Content-Disposition", "X-Portfolio-Page-Count", "X-Content-Type-Options"]) { const value = result.headers.get(key); if (value) out.set(key, value); }
-  return new Response(await result.arrayBuffer(), { status: result.status, headers: out });
+  return new Response(result.body, { status: result.status, headers: out });
 }
 export const GET = proxy;
 export const POST = proxy;

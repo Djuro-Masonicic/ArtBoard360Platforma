@@ -5,13 +5,15 @@ type PortfolioBuilderDraftPageProps = {
   params: Promise<{
     id: string;
   }>;
+  searchParams: Promise<{ step?: string | string[] }>;
 };
 
 export default async function PortfolioBuilderDraftPage({
   params,
+  searchParams,
 }: PortfolioBuilderDraftPageProps) {
-  const { id } = await params;
+  const [{ id }, query] = await Promise.all([params, searchParams]);
   const project = await getPortfolioForPage(id);
 
-  return <PortfolioBuilderEditorShell project={project} />;
+  return <PortfolioBuilderEditorShell project={project} initialStep={typeof query.step === "string" ? query.step : undefined} />;
 }

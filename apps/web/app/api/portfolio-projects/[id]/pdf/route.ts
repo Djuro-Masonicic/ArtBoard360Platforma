@@ -40,9 +40,7 @@ export async function GET(request: NextRequest, { params }: Props) {
     });
   }
 
-  const pdfBuffer = await pdfResponse.arrayBuffer();
-
-  return new Response(pdfBuffer, {
+  return new Response(pdfResponse.body, {
     headers: {
       "Cache-Control": "no-store",
       "Content-Disposition": `inline; filename="portfolio-${id}.pdf"`,

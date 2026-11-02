@@ -16,7 +16,7 @@ import { commandPortfolioCollections } from "@/services/portfolio-collections";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Moon, Sun } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import styles from "@/components/portfolio-builder-editor-shell.module.css";
@@ -44,6 +44,7 @@ import type {
 type PortfolioBuilderEditorShellProps = {
   project: PortfolioProject;
   adapter?: PortfolioEditorAdapter;
+  initialStep?: string;
 };
 
 type BuilderStep = "profile" | "collections" | "works" | "cv" | "design" | "export";
@@ -179,7 +180,7 @@ function toggleDisciplineValue(values: string[], value: string) {
   return values.includes(value) ? values.filter((item) => item !== value) : [...values, value];
 }
 
-export function PortfolioBuilderEditorShell({ project, adapter = backendPortfolioEditorAdapter }: PortfolioBuilderEditorShellProps) {
+export function PortfolioBuilderEditorShell({ project, adapter = backendPortfolioEditorAdapter, initialStep }: PortfolioBuilderEditorShellProps) {
   const router = useRouter();
   const isMemoryGuest = adapter.kind === "guest-memory";
   const isMemoryProfile = adapter.kind === "profile-memory";
@@ -196,7 +197,13 @@ export function PortfolioBuilderEditorShell({ project, adapter = backendPortfoli
   }, [currentProject.cvSections, cvEdited]);
   const [designPreview, setDesignPreview] = useState<PortfolioDesignPreview>(() => ({ ...createPortfolioDesignPreview(), look: getMinimalDesign(project).style === "BLOCKS" ? "Blocks" : getMinimalDesign(project).style === "CARDS" ? "Cards" : getMinimalDesign(project).style === "EDITORIAL" ? "Editorial" : getMinimalDesign(project).style === "GRADIENT" ? "Gradient" : getMinimalDesign(project).style === "ROUNDED" ? "Rounded" : "Minimal", cover: getMinimalDesign(project).cover }));
   const [designPreviewEdited, setDesignPreviewEdited] = useState(false);
-  const [activeStep, setActiveStep] = useState<BuilderStep>("profile");
+  const [activeStep, setActiveStep] = useState<BuilderStep>(() => getBuilderSteps(project).find(step => step.id === initialStep)?.id ?? "profile");
+  const previousStep = useRef(activeStep);
+  useLayoutEffect(() => {
+    if (previousStep.current === activeStep) return;
+    previousStep.current = activeStep;
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [activeStep]);
   const [pdfPageCount, setPdfPageCount] = useState<number | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<PortfolioTemplate>(project.template);
   const [designConfig, setDesignConfig] = useState<PortfolioDesignConfig>(() =>
@@ -340,8 +347,7 @@ export function PortfolioBuilderEditorShell({ project, adapter = backendPortfoli
 
       if (isMemoryProfile) {
         savedProject = await (adapter as ProfileMemoryAdapter).save(savedProject);
-        router.replace(`/portfolio-builder/${savedProject.id}`);
-        router.refresh();
+        router.replace(`/portfolio-builder/${savedProject.id}?step=${activeStep}`, { scroll: false });
         return savedProject;
       }
       setCurrentProject(savedProject);

@@ -42,7 +42,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ ope
   }
   const headers = new Headers({ "Cache-Control": "no-store" });
   for (const name of ["Content-Type", "Content-Disposition", "X-Portfolio-Page-Count", "X-Content-Type-Options"]) { const value = response.headers.get(name); if (value) headers.set(name, value); }
-  return new Response(await response.arrayBuffer(), { status: response.status, headers });
+  return new Response(response.body, { status: response.status, headers });
 }
 export async function GET(request: Request, { params }: { params: Promise<{ operation: string[] }> }) {
   const operation = (await params).operation.join("/");
@@ -53,5 +53,5 @@ export async function GET(request: Request, { params }: { params: Promise<{ oper
   const response = await fetch(`${serverEnv.apiBaseUrl}/portfolio-commerce/${operation}`, { headers: { "X-Portfolio-Delivery": token }, cache: "no-store" });
   const headers = new Headers({ "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" });
   for (const name of ["Content-Type", "Content-Disposition", "X-Content-Type-Options"]) { const value = response.headers.get(name); if (value) headers.set(name, value); }
-  return new Response(await response.arrayBuffer(), { status: response.status, headers });
+  return new Response(response.body, { status: response.status, headers });
 }

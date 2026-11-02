@@ -38,6 +38,10 @@ interface StoredObject {
  */
 @Injectable()
 export class R2StorageService {
+  private get maxPortfolioPdfSizeBytes() {
+    return Math.max(env.maxUploadFileSizeBytes, 50 * 1024 * 1024);
+  }
+
   async readPromotionArtifact(id: string, key: string) {
     if (!key.startsWith(`promotions/${id}/`) || !env.r2PrivatePdfBucketName || env.r2PrivatePdfBucketName === env.r2BucketName) throw new BadRequestException("Fajl objave nije dostupan.");
     const object = await this.createClient().send(new GetObjectCommand({ Bucket: env.r2PrivatePdfBucketName, Key: key }), { abortSignal: AbortSignal.timeout(20000) });
@@ -197,7 +201,7 @@ export class R2StorageService {
     // stricter shared upload limit.
     const maxAllowedSize =
       entityType === "portfolio-pdf"
-        ? Math.max(env.maxUploadFileSizeBytes, 50 * 1024 * 1024)
+        ? this.maxPortfolioPdfSizeBytes
         : env.maxUploadFileSizeBytes;
 
     if (fileSizeBytes > maxAllowedSize) {
@@ -333,11 +337,12 @@ export class R2StorageService {
     const bucket = input.privateObject ? env.r2PrivatePdfBucketName : env.r2BucketName;
     if (!bucket || (input.privateObject && bucket === env.r2BucketName)) throw new ServiceUnavailableException("Privatna PDF isporuka nije podešena.");
     const object = await this.createClient().send(new GetObjectCommand({ Bucket: bucket, Key: input.storagePath }), { abortSignal: AbortSignal.timeout(20_000) });
-    if (!object.Body || (object.ContentLength ?? 0) > env.maxUploadFileSizeBytes) throw new ServiceUnavailableException("PDF nije dostupan u dozvoljenoj veličini.");
+    const maxBytes = this.maxPortfolioPdfSizeBytes;
+    if (!object.Body || (object.ContentLength ?? 0) > maxBytes) throw new ServiceUnavailableException("PDF nije dostupan u dozvoljenoj veličini.");
     const chunks: Buffer[] = []; let size = 0;
     for await (const chunk of object.Body as AsyncIterable<Uint8Array>) {
       size += chunk.byteLength;
-      if (size > env.maxUploadFileSizeBytes) throw new ServiceUnavailableException("PDF prelazi dozvoljenu veličinu.");
+      if (size > maxBytes) throw new ServiceUnavailableException("PDF prelazi dozvoljenu veličinu.");
       chunks.push(Buffer.from(chunk));
     }
     const buffer = Buffer.concat(chunks);

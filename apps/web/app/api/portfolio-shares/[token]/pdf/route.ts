@@ -7,7 +7,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ tok
     cache: "no-store",
   });
   if (!response.ok) return new Response("Preview could not be loaded.", { status: response.status });
-  return new Response(await response.arrayBuffer(), {
+  return new Response(response.body, {
     headers: { "Content-Type": "application/pdf", "Cache-Control": "no-store", "Content-Disposition": 'inline; filename="portfolio-preview.pdf"' },
   });
 }

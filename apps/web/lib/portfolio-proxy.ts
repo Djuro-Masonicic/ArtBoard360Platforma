@@ -52,5 +52,6 @@ export async function proxyPortfolioRequest(request: Request, id: string, operat
     const value = response.headers.get(name);
     if (value) responseHeaders.set(name, value);
   }
-  return new Response(await response.arrayBuffer(), { status: response.status, headers: responseHeaders });
+  // Keep PDF delivery streamed: buffering the full file hits Vercel's response limit.
+  return new Response(response.body, { status: response.status, headers: responseHeaders });
 }

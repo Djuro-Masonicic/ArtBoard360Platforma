@@ -169,10 +169,34 @@ const write=(file,content)=>{fs.mkdirSync(path.dirname(path.join(dir,file)),{rec
  await page.locator('nav [data-step="design"]').click();await page.getByRole('button',{name:'Blok',exact:true}).click();
  await page.getByRole('option',{name:'Naslovna strana F \u00b7 QR kartica',exact:true}).click();
  const savedResponse=page.waitForResponse(r=>r.url().endsWith('/api/portfolio-editor/save'));
- await page.getByRole('button',{name:'Sa\u010duvaj izbor',exact:true}).click();const saved=await savedResponse;assert.equal(saved.status(),201);const owned=await saved.json();
- await expect(page).toHaveURL(url+`/portfolio-builder/${owned.id}`);
+ await page.locator('header').getByRole('button',{name:'Sa\u010duvaj draft',exact:true}).click();const saved=await savedResponse;assert.equal(saved.status(),201);const owned=await saved.json();
+ await expect(page).toHaveURL(url+`/portfolio-builder/${owned.id}?step=design`);
  await expect(page.locator('header[class*="topbar"]').getByText('Sa\u010duvano',{exact:true})).toBeVisible();
  check('Only the explicit Save action creates one draft with the edited data and selected design',await h.legacy.portfolioProject.count()===initialProjects+1&&owned.artistName==='Explicitly saved owner'&&owned.designConfig.minimal.style==='BLOCKS'&&owned.designConfig.minimal.cover==='F');
+ await expect(page.getByRole('heading',{name:'Izaberi dizajn PDF-a',exact:true})).toBeVisible();
+ await expect(page.getByRole('option',{name:'Naslovna strana F \u00b7 QR kartica',exact:true})).toHaveAttribute('aria-selected','true');
+ check('First Save Draft keeps the active Design tab after creating the project',true);
+ await page.reload();await expect(page.getByRole('heading',{name:'Izaberi dizajn PDF-a',exact:true})).toBeVisible();
+ check('The saved editor can reopen the requested tab',true);
+ for(const width of [1440,390]){
+  await page.setViewportSize({width,height:844});
+  await page.goto(url+`/portfolio-builder/${owned.id}?step=profile`);
+  await expect(page.getByRole('textbox',{name:'Ime i prezime',exact:true})).toHaveValue('Explicitly saved owner');
+  for(const next of ['collections','works','cv','design','export']){
+   const button=page.getByRole('button',{name:/^Dalje:/i}).last();await button.scrollIntoViewIfNeeded();
+   const scrollable=await page.evaluate(()=>{window.scrollTo(0,document.documentElement.scrollHeight);return document.documentElement.scrollHeight>innerHeight+100;});
+   if(scrollable)await expect.poll(()=>page.evaluate(()=>scrollY)).toBeGreaterThan(100);
+   await button.click();await expect(page.locator('nav [data-step="'+next+'"]').first()).toHaveAttribute('aria-current','step');
+   await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
+   check(`${width}px Next to ${next} scrolls the page to the top`,true);
+  }
+  const saveButton=(width<640?page.getByRole('region',{name:'PDF pregled za izvoz'}):page.locator('header')).getByRole('button',{name:'Sa\u010duvaj draft',exact:true});
+  const [patch]=await Promise.all([page.waitForResponse(r=>r.request().method()==='PATCH'&&new URL(r.url()).pathname===`/api/portfolio-projects/${owned.id}`),saveButton.click()]).catch(async error=>{await page.screenshot({path:path.join(out,'draft-save-failure.png'),fullPage:true});throw error;});
+  assert(patch.ok());
+  await expect(page.locator('nav [data-step="export"]').first()).toHaveAttribute('aria-current','step');
+  check(`${width}px Save Draft preserves the Export tab for an existing project`,true);
+ }
+ await page.setViewportSize({width:1440,height:1000});
  await page.locator('nav [data-step="export"]').click();await takePdf();
  check('Existing saved portfolio also has a clean local test download without spending quota',await h.legacy.portfolioVersion.count({where:{portfolioId:owned.id}})===0&&await h.legacy.portfolioExportUsage.count({where:{artistAccountId:owner.a.account.id}})===0);
  h.env.r2PrivatePdfBucketName='private-isolated';
@@ -232,6 +256,17 @@ const write=(file,content)=>{fs.mkdirSync(path.dirname(path.join(dir,file)),{rec
  const version=await h.legacy.portfolioVersion.findFirst({where:{portfolioId:owned.id}}),download=await context.request.get(url+`/api/portfolio-projects/${owned.id}/actions/versions/${version.id}/pdf`);
  check('Historical PDF retains its own Blocks snapshot and label',version.manifest.designConfig.minimal.style==='BLOCKS');await expect(page.getByRole('region',{name:'Verzije PDF-a'}).getByText(/^Blok ·/)).toBeVisible();
  check('Reload preserves Free quota and historical PDF download does not charge again',download.status()===200&&await h.legacy.portfolioExportUsage.count({where:{artistAccountId:owner.a.account.id,status:'COMMITTED'}})===1);
+ const storedPdf=h.storage.objects.get(version.pdfUrl),largePdf=Buffer.concat([storedPdf,Buffer.alloc(12*1024*1024)]),storageWrites=h.storage.calls.length;
+ h.storage.objects.set(version.pdfUrl,largePdf);
+ try{
+  for(const operation of ['download-pdf',`versions/${version.id}/pdf`]){
+   const large=await context.request.get(url+`/api/portfolio-projects/${owned.id}/actions/${operation}`);
+   check(`Real Next ${operation} delivers a complete PDF above 10 MiB`,large.ok()&&(await large.body()).equals(largePdf)&&large.headers()['cache-control']==='no-store');
+  }
+  const otherContext=await browser.newContext();
+  try{const denied=await otherContext.request.get(url+`/api/portfolio-projects/${owned.id}/actions/download-pdf`);check('Large PDF delivery still requires the owner session',denied.status()===401);}finally{await otherContext.close();}
+  check('Large PDF downloads do not write storage, regenerate a version or spend quota',h.storage.calls.length===storageWrites&&await h.legacy.portfolioVersion.count({where:{portfolioId:owned.id}})===1&&await h.legacy.portfolioExportUsage.count({where:{artistAccountId:owner.a.account.id,status:'COMMITTED'}})===1);
+ }finally{h.storage.objects.set(version.pdfUrl,storedPdf);}
  await page.getByRole('button',{name:'Pripremi narudžbinu za dodatni izvoz',exact:true}).click();await expect(page.getByRole('link',{name:'Status dodatnog izvoza · ništa nije naplaćeno',exact:true})).toBeVisible();
  const extra=await h.legacy.portfolioPurchase.findFirst({where:{artistAccountId:owner.a.account.id}});check('Extra export preparation binds the authenticated owner, snapshot and server-side price',extra?.amountCents===490&&extra.status==='PENDING'&&extra.portfolioId===owned.id);
  await page.goto(url+`/portfolio-builder/${owned.id}/preview`);await page.getByRole('button',{name:'Otvori čist PDF',exact:true}).click();await expect(page).toHaveURL(new RegExp(`/portfolio-builder/${owned.id}/download`));
