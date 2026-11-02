@@ -1,6 +1,9 @@
 {
   "$schema": "https://schema.railpack.com",
   "deploy": {
-    "aptPackages": ["...", "chromium"]
+    "aptPackages": ["...", "chromium"],
+    "variables": {
+      "R2_PRIVATE_PDF_BUCKET_NAME": "artboard-platform-private"
+    }
   }
 }

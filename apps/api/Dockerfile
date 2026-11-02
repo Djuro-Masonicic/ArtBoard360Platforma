@@ -3,6 +3,7 @@ FROM node:22-alpine
 WORKDIR /app
 RUN apk add --no-cache chromium
 ENV PROMOTION_CHROME_EXECUTABLE=/usr/bin/chromium
+ENV R2_PRIVATE_PDF_BUCKET_NAME=artboard-platform-private
 
 # We copy workspace manifests first so Docker can cache dependency installs.
 COPY package.json package-lock.json tsconfig.base.json ./

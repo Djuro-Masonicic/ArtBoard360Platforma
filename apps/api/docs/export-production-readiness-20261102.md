@@ -5,9 +5,11 @@
 - Generator, QR vizit karta i Portfolio PDF koriste isti privatni R2 bucket,
   preko `R2_PRIVATE_PDF_BUCKET_NAME`. Vrijednost mora biti različita od
   `R2_BUCKET_NAME`, koji sadrži javne originalne slike.
-- Lokalni `.env` nema privatni bucket. Provjera dostupnim R2 ključevima
-  uspješno je pročitala listu bucketa: postoji samo `artboard-platform`.
-  Provjera nije čitala korisničke objekte ili mijenjala postojeće fajlove.
+- Početna provjera dostupnim R2 ključevima pronašla je samo
+  `artboard-platform`. Nakon posebnog odobrenja korisnika kreiran je zaseban
+  `artboard-platform-private`. Jedan mali dijagnostički tekst bez korisničkih
+  podataka uspješno je upisan i pročitan; postojeći objekti nijesu mijenjani
+  ili brisani. Javni pristup nije uključivan.
 - Lokalni Chrome uspješno pravi PNG i potrebni Alcyone fontovi postoje.
   Dostupnost Chrome-a u produkcionom kontejneru nije potvrđena bez pristupa
   Railway runtime-u.
@@ -16,8 +18,11 @@
 ## Pripremljeni kod
 
 `railpack.json` dodaje `chromium` runtime paketu i zadržava automatske
-pakete pomoću `...`. Ne mijenja build/start komande ili varijable baze.
-Ako API već koristi `apps/api/Dockerfile`, taj fajl već instalira Chromium;
+pakete pomoću `...`. Runtime varijabla `R2_PRIVATE_PDF_BUCKET_NAME` pokazuje
+na odobreni i provjereni privatni bucket. Ne mijenja build/start komande ili
+varijable baze. Platforma i dalje može eksplicitno postaviti svoj naziv bucketa.
+Ako API već koristi `apps/api/Dockerfile`, taj fajl instalira Chromium i
+postavlja isti naziv privatnog bucketa;
 Railpack konfiguracija pokriva alternativni podrazumijevani Railway builder.
 Reference: [Railpack paketi](https://railpack.com/guides/installing-packages/),
 [konfiguracija](https://railpack.com/config/file/).
@@ -39,9 +44,13 @@ Unutar produkcionog API kontejnera, poslije builda:
 npm run exports:check:railway --workspace @artboard/api
 ```
 
-Izlazni kod je 0 samo kada su svi produkcioni uslovi ispunjeni. Trenutna
-lokalna provjera daje `privateStorage.configured=false`, `renderReady=true`
-i `fontsReady=true`; očekivano završava kodom 1 zbog privatnog storagea.
+Izlazni kod je 0 samo kada su svi produkcioni uslovi ispunjeni. Početna
+lokalna provjera bez varijable daje `privateStorage.configured=false`,
+`renderReady=true` i `fontsReady=true`; očekivano završava kodom 1.
+Lokalni `.env` nije mijenjan; provjera sa novim bucketom koristi varijablu
+procesa, kao što je dobija produkcioni kontejner.
+Ta provjera nakon kreiranja bucketa prolazi kodom 0: sva tri `ready` polja
+su `true`, privatni bucket je dostupan, Chromium pravi PNG i fontovi postoje.
 
 ## Preostala konfiguracija
 
@@ -52,21 +61,22 @@ navodi da su novi bucketi podrazumijevano privatni. Skripta ne uključuje
 javni pristup. Jedan mali dijagnostički tekst bez korisničkih podataka
 provjerio bi pisanje i čitanje. Nema brisanja postojećih objekata.
 
-Automatska provjera odobrenja odbila je kreiranje bucketa i dijagnostički
-upis dok korisnik izričito ne odobri ove eksterne promjene. Zahtjev za
-odobrenje je poslat; bucket nije kreiran.
+Automatska provjera odobrenja prvobitno je odbila kreiranje bucketa i
+dijagnostički upis bez izričitog odobrenja. Korisnik je zatim odobrio
+kreiranje i provjeru; odobrene operacije su uspješno izvršene.
 
-Nakon odobrenog kreiranja i provjere, na Railway API servisu treba podesiti:
+Deployment konfiguracija sada postavlja:
 
 ```text
 R2_PRIVATE_PDF_BUCKET_NAME=artboard-platform-private
 ```
 
-Postojeći R2 token mora imati read/write dozvole za taj bucket. Privatni
+Postojeći lokalni R2 token uspješno je pisao i čitao taj bucket. Produkcioni
+token mora imati iste read/write dozvole. Privatni
 bucket ne dobija javni URL; isporuka ostaje kroz postojeće provjere
-vlasnika i ograničene delivery grantove. Git push ne postavlja Railway
-varijable. Pronađena Railway integracija još nije povezana, a lokalni
-Railway CLI nije prijavljen.
+vlasnika i ograničene delivery grantove. Vrijednost dolazi iz Railpack/Docker
+runtime konfiguracije, bez pisanja tajni u Git. Pronađena Railway integracija
+još nije povezana, a lokalni Railway CLI nije prijavljen.
 
 Poslije redeploya prvo izvršiti dijagnostiku u API kontejneru, zatim
 generisati i preuzeti PDF, QR PDF/PNG i Generator PNG sa testnim nalogom.
@@ -78,5 +88,9 @@ Rad nije završen dok ove produkcione provjere ne prođu.
 - API build prolazi.
 - Stvarni lokalni Chromium uspješno generiše PNG u memoriji.
 - 25/25 Generator API regresija prolazi na izolovanoj bazi i storageu.
+- 43/43 QR i portfolio commerce API regresije prolaze na izolovanim bazama
+  i storageu. Ukupno 68/68 API regresija; produkcioni korisnički zapisi nijesu
+  korišćeni za automatizovane testove.
+- Railpack konfiguracija validirana je prema zvaničnoj JSON šemi.
 - Nema novih Prisma modela, migracija, izmjena poslovnih podataka ili
   fizičkog brisanja R2 objekata.
