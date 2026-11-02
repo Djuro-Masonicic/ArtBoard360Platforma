@@ -79,6 +79,57 @@ test("Profile seeds data without writing a draft and ignores login email as cont
   );
   assert.equal(r.headers.get("cache-control"), "private, no-store");
 });
+test("Profile contact shortcuts open normalized without rewriting the artist or creating a draft", async () => {
+  const a = await h.artist();
+  await h.prisma.socialLink.updateMany({ where: { artistId: a.id, platform: "INSTAGRAM" }, data: { url: "@profile_artist" } });
+  await h.prisma.socialLink.updateMany({ where: { artistId: a.id, platform: "BEHANCE" }, data: { url: "behance.net/profile_artist" } });
+  const state = await h.request("", a);
+  assert.equal(state.status, 200);
+  assert.equal(state.data.draft.config.contacts.instagram, "https://instagram.com/profile_artist");
+  assert.equal(state.data.draft.config.contacts.behance, "https://behance.net/profile_artist");
+  assert.equal((await h.prisma.socialLink.findFirst({ where: { artistId: a.id, platform: "INSTAGRAM" } })).url, "@profile_artist");
+  assert.equal(await h.prisma.qrCardDraft.count({ where: { artistAccountId: a.account.id } }), 0);
+});
+
+test("Save normalizes Instagram and Behance shortcuts and reloads the exact saved contacts", async () => {
+  const a = await h.artist(), c = (await h.request("", a)).data.draft.config;
+  c.contacts.instagram = " @draft_artist "; c.contacts.behance = "www.behance.net/draft_artist";
+  const saved = await h.request("/draft", a, "PUT", { revision: 0, config: c });
+  assert.equal(saved.status, 200);
+  assert.equal(saved.data.config.contacts.instagram, "https://instagram.com/draft_artist");
+  assert.equal(saved.data.config.contacts.behance, "https://www.behance.net/draft_artist");
+  assert.deepEqual((await h.request("", a)).data.draft.config, saved.data.config);
+});
+
+test("A Free user exports shorthand contacts and retries with canonical links without consuming another right", async () => {
+  const a = await h.artist(), c = (await h.request("", a)).data.draft.config, key = randomUUID();
+  c.contacts.instagram = "@export_artist"; c.contacts.behance = "behance.net/export_artist";
+  const result = await exportCard(a, c, key);
+  assert.equal(result.status, 201); assert.equal(result.data.status, "READY");
+  assert.equal(result.data.config.contacts.instagram, "https://instagram.com/export_artist");
+  assert.equal(result.data.config.contacts.behance, "https://behance.net/export_artist");
+  const retry = await exportCard(a, result.data.config, key);
+  assert.equal(retry.status, 201); assert.equal(retry.data.id, result.data.id);
+  assert.equal(await h.prisma.qrCardExport.count({ where: { artistAccountId: a.account.id } }), 1);
+  for (const format of ["pdf", "front", "back", "bundle"])
+    assert.equal((await h.request(`/exports/${result.data.id}/download/${format}`, a)).status, 200);
+});
+
+test("Invalid social contacts identify the field and cannot save, reserve an export or write storage", async () => {
+  const a = await h.artist(), c = (await h.request("", a)).data.draft.config, writes = h.storage.calls;
+  for (const key of ["instagram", "behance"]) {
+    const invalid = { ...c, contacts: { ...c.contacts, [key]: "https://evil.invalid/artist" } };
+    for (const result of [await h.request("/draft", a, "PUT", { revision: 0, config: invalid }), await exportCard(a, invalid)]) {
+      assert.equal(result.status, 400);
+      assert.match(result.data.message, new RegExp(key === "instagram" ? "Instagram" : "Behance"));
+    }
+  }
+  assert.equal(await h.prisma.qrCardDraft.count({ where: { artistAccountId: a.account.id } }), 0);
+  assert.equal(await h.prisma.qrCardExport.count({ where: { artistAccountId: a.account.id } }), 0);
+  assert.equal(h.storage.calls, writes);
+  assert.equal((await h.request("", a)).data.entitlement.available, true);
+});
+
 test("Own draft persists independently of public profile; stale concurrent saves conflict", async () => {
   const a = await h.artist(),
     c = (await h.request("", a)).data.draft.config;

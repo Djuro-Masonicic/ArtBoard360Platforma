@@ -4,6 +4,7 @@ const { renderArtboard } = require("./artboard.cjs");
 const { renderClassic } = require("./classic.cjs");
 const { renderClean } = require("./clean.cjs");
 const { renderPortret } = require("./portret.cjs");
+const { normalizeCardSocialContact } = require("./contacts.cjs");
 const renderers = {
   basic: renderBasic,
   artboard: renderArtboard,
@@ -34,6 +35,7 @@ function renderCard(model, side, options = {}) {
   return renderers[model.config.templateId](model, side, options);
 }
 module.exports = {
+  normalizeCardSocialContact,
   cardTemplates,
   renderCard,
   hasNativeBleed,

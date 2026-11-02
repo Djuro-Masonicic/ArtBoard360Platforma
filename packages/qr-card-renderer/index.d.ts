@@ -37,6 +37,7 @@ export function usesCover(id: CardConfig["templateId"]): boolean;
 export function usesAvatar(id: CardConfig["templateId"]): boolean;
 export function supportsBranded(id: CardConfig["templateId"]): boolean;
 export function hasNativeBleed(id: CardConfig["templateId"]): boolean;
+export function normalizeCardSocialContact(platform: "instagram" | "behance", value: string): string | null;
 export function renderCard(
   model: CardRenderModel,
   side: "front" | "back",

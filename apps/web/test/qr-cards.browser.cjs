@@ -254,6 +254,9 @@ const steps = ["Podaci", "Šablon", "Pregled", "Preuzmi"];
   const name = page.getByRole("textbox", { name: "Ime i prezime na kartici" });
   await expect(name).toHaveValue(a.name);
   await name.fill("Moja QR Kartica");
+  const instagram = page.getByRole("textbox", { name: "Instagram", exact: true });
+  const behance = page.getByRole("textbox", { name: "Behance", exact: true });
+  await instagram.fill("@browser_artist"); await behance.fill("behance.net/browser_artist");
   await page
     .getByRole("button", { name: "Sačuvaj draft", exact: true })
     .click();
@@ -262,6 +265,9 @@ const steps = ["Podaci", "Šablon", "Pregled", "Preuzmi"];
   ).toBeVisible();
   await page.reload();
   await expect(name).toHaveValue("Moja QR Kartica");
+  await expect(instagram).toHaveValue("https://instagram.com/browser_artist");
+  await expect(behance).toHaveValue("https://behance.net/browser_artist");
+  check("Instagram handles and Behance links without a scheme save and reload as HTTPS contacts");
   assert.equal(
     (await h.prisma.artist.findUnique({ where: { id: a.id } })).name,
     a.name,
@@ -654,6 +660,12 @@ const steps = ["Podaci", "Šablon", "Pregled", "Preuzmi"];
     check(`${width}px all four steps have no horizontal overflow`);
   }
   await page.setViewportSize({ width: 1536, height: 960 });
+  await gotoStep(0);
+  await instagram.fill("@download_artist");
+  await gotoStep(3);
+  await gotoStep(0);
+  await expect(instagram).toHaveValue("https://instagram.com/download_artist");
+  check("Contact shortcuts normalize when leaving the field before download");
   await gotoStep(3);
   const downloaded = page.waitForEvent("download");
   let releaseExport;
@@ -691,6 +703,9 @@ const steps = ["Podaci", "Šablon", "Pregled", "Preuzmi"];
   check(
     "Real API/private proxy generates and downloads a ZIP containing PDF and both PNG sides",
   );
+  const exported = await h.prisma.qrCardExport.findFirst({ where: { artistAccountId: a.account.id } });
+  assert.equal(exported.snapshot.config.contacts.instagram, "https://instagram.com/download_artist");
+  check("The generated PDF/PNG snapshot contains the normalized Instagram contact");
   const again = page.waitForEvent("download");
   await page
     .getByRole("button", { name: "Preuzmi ponovo · besplatno" })

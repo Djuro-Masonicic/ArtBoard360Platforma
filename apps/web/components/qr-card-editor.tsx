@@ -19,6 +19,7 @@ import {
   usesCover,
   supportsBranded,
   renderCard,
+  normalizeCardSocialContact,
   type CardConfig,
   type CardRenderModel,
 } from "@artboard/qr-card-renderer";
@@ -191,7 +192,8 @@ export function QrCardEditor({ initial }: { initial: QrCardState }) {
         revision,
       });
       setRevision(result.revision);
-      setSaved(JSON.stringify(config));
+      setConfig((current) => current === config ? result.config : current);
+      setSaved(JSON.stringify(result.config));
       setSavedAt(result.savedAt);
       setNotice("Draft je sačuvan.");
     } catch (e) {
@@ -537,7 +539,7 @@ export function QrCardEditor({ initial }: { initial: QrCardState }) {
                   <h2>Kontakt na poleđini</h2>
                   <p>
                     Podaci su preuzeti iz profila. Na poleđinu stanu najviše tri
-                    kontakta.
+                    kontakta. Za Instagram i Behance možeš unijeti @korisničko_ime ili link profila.
                   </p>
                 </div>
                 <div className={s.contacts}>
@@ -557,7 +559,7 @@ export function QrCardEditor({ initial }: { initial: QrCardState }) {
                                 ? "email"
                                 : key === "phone"
                                   ? "tel"
-                                  : "url"
+                                  : "text"
                             }
                             maxLength={
                               key === "email" ? 254 : key === "phone" ? 40 : 200
@@ -568,7 +570,7 @@ export function QrCardEditor({ initial }: { initial: QrCardState }) {
                                 ? "ime@example.com"
                                 : key === "phone"
                                   ? "+382…"
-                                  : "https://"
+                                  : "@korisnicko_ime ili link profila"
                             }
                             onChange={(e) =>
                               edit("contacts", {
@@ -576,6 +578,12 @@ export function QrCardEditor({ initial }: { initial: QrCardState }) {
                                 [key]: e.target.value,
                               })
                             }
+                            onBlur={() => {
+                              if (key !== "instagram" && key !== "behance") return;
+                              const normalized = normalizeCardSocialContact(key, config.contacts[key]);
+                              if (normalized !== null && normalized !== config.contacts[key])
+                                edit("contacts", { ...config.contacts, [key]: normalized });
+                            }}
                           />
                         </label>
                         <button

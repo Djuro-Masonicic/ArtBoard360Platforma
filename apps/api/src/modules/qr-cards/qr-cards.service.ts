@@ -12,6 +12,7 @@ import { isEmail } from "class-validator";
 import { Prisma, type QrCardExport } from "@prisma/client";
 import {
   hasNativeBleed,
+  normalizeCardSocialContact,
   usesCover,
   type CardConfig,
 } from "@artboard/qr-card-renderer";
@@ -98,6 +99,8 @@ export class QrCardsService {
           a.socialLinks.find((l) => l.platform === "INSTAGRAM")?.url || "",
         behance: a.socialLinks.find((l) => l.platform === "BEHANCE")?.url || "",
       };
+    for (const key of ["instagram", "behance"] as const)
+      contacts[key] = normalizeCardSocialContact(key, contacts[key]) ?? contacts[key];
     return {
       name: a.name,
       contacts,
@@ -129,24 +132,16 @@ export class QrCardsService {
       throw new BadRequestException("Email nije ispravan.");
     if (c.contacts.phone && !/^[+\d\s()./-]{3,40}$/.test(c.contacts.phone))
       throw new BadRequestException("Telefon nije ispravan.");
-    for (const key of ["instagram", "behance"] as const)
-      if (c.contacts[key]) {
-        let u: URL;
-        try {
-          u = new URL(c.contacts[key]);
-        } catch {
-          throw new BadRequestException("Unesi punu HTTPS adresu kontakta.");
-        }
+    c = { ...c, contacts: { ...c.contacts } };
+    for (const key of ["instagram", "behance"] as const) {
+      const normalized = normalizeCardSocialContact(key, c.contacts[key]);
+      if (normalized === null) {
+        const label = key === "instagram" ? "Instagram" : "Behance";
         const host = key === "instagram" ? "instagram.com" : "behance.net";
-        if (
-          u.protocol !== "https:" ||
-          u.username ||
-          u.password ||
-          u.port ||
-          ![host, `www.${host}`].includes(u.hostname)
-        )
-          throw new BadRequestException("Provjeri adresu kontakta.");
+        throw new BadRequestException(`${label}: unesi @korisnicko_ime ili link ${host}/korisnicko_ime.`);
       }
+      c.contacts[key] = normalized;
+    }
     // An old cover selection must not block templates which never read it.
     // Used covers still resolve exclusively from this authenticated source.
     if (
@@ -230,7 +225,7 @@ export class QrCardsService {
   }
   async save(owner: string, d: SaveCardDto) {
     const s = await this.source(owner);
-    this.validate(d.config, s);
+    const config = this.validate(d.config, s);
     return this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT "id" FROM "ArtistAccount" WHERE "id"=${owner}::uuid FOR UPDATE`;
       const old = await tx.qrCardDraft.findUnique({
@@ -242,8 +237,8 @@ export class QrCardsService {
         );
       const row = await tx.qrCardDraft.upsert({
         where: { artistAccountId: owner },
-        create: { artistAccountId: owner, config: json(d.config) },
-        update: { config: json(d.config), revision: { increment: 1 } },
+        create: { artistAccountId: owner, config: json(config) },
+        update: { config: json(config), revision: { increment: 1 } },
       });
       return {
         config: row.config,
