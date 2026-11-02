@@ -16,7 +16,9 @@
     "import:artists": "dotenv -e ../../.env -- tsx scripts/import-artists.ts",
     "import:testimonials": "dotenv -e ../../.env -- tsx scripts/import-testimonials.ts",
     "import:faqs": "dotenv -e ../../.env -- tsx scripts/import-faqs.ts",
-    "storage:setup": "dotenv -e ../../.env -- tsx scripts/setup-storage.ts"
+    "storage:setup": "dotenv -e ../../.env -- tsx scripts/setup-storage.ts",
+    "exports:check": "dotenv -e ../../.env -- tsx scripts/check-export-readiness.ts",
+    "exports:check:railway": "node dist/scripts/check-export-readiness.js"
   },
   "dependencies": {
     "@artboard/portfolio-document-plan": "*",

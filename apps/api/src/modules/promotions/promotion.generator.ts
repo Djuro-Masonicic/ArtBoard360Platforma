@@ -6,12 +6,15 @@ import { graphicHTML,selected,type PromotionConfig,type PromotionSource } from '
 import { R2StorageService } from '../../storage/r2-storage.service';
 import { env } from '../../config/env';
 export type PromotionSnapshot={config:PromotionConfig;source:PromotionSource;rendererVersion:number};
+export function promotionChromeExecutable(){
+  const candidates=[process.env.PROMOTION_CHROME_EXECUTABLE,...(process.platform==='win32'?['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe']:['/usr/bin/chromium','/usr/bin/chromium-browser','/usr/bin/google-chrome'])];
+  return candidates.find(p=>p&&existsSync(p));
+}
 @Injectable()
 export class PromotionGenerator {
   constructor(private readonly r2:R2StorageService){}
   private executable(){
-    const candidates=[process.env.PROMOTION_CHROME_EXECUTABLE,...(process.platform==='win32'?['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe']:['/usr/bin/chromium','/usr/bin/chromium-browser','/usr/bin/google-chrome'])];
-    return candidates.find(p=>p&&existsSync(p));
+    return promotionChromeExecutable();
   }
   get available(){return Boolean(this.executable());}
   async generate(snapshot:PromotionSnapshot,onSlide:(body:Buffer,slide:number)=>Promise<void>){
