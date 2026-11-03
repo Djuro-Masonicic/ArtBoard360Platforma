@@ -8,7 +8,6 @@ import { ArtBoardOpportunitiesSection } from "@/components/artboard-opportunitie
 import { ArtBoardPricingSection } from "@/components/artboard-pricing-section";
 import { ArtBoardPlatformHero, type HeroArtworkPreview } from "@/components/artboard-platform-hero";
 import { ArtBoardProofStrip } from "@/components/artboard-proof-strip";
-import { ArtBoardPortfolioShowcase } from "@/components/artboard-portfolio-showcase";
 import { ArtBoardToolsSection } from "@/components/artboard-tools-section";
 import { ArtBoardTestimonialsSection } from "@/components/artboard-testimonials-section";
 import { ArtBoardVerificationSection } from "@/components/artboard-verification-section";
@@ -614,8 +613,6 @@ export default async function ArtBoardPage() {
       <ArtBoardArtworkMarquee artworks={whyArtworks} />
 
       <ArtBoardToolsSection />
-
-      <ArtBoardPortfolioShowcase />
 
       <ArtBoardCommunitySection artists={communityArtists} />
 

@@ -14,7 +14,7 @@ const sectionShortcuts: {
 }[] = [
   {
     color: "#ff151d",
-    href: "#portfolio-builder",
+    href: siteRoutes.portfolioBuilder,
     icon: "builder",
     label: "Portfolio Builder",
     position: "top",
